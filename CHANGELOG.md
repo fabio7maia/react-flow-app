@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/puzzle-framework/react-app-flow/compare/v1.4.1...v1.4.2) (2021-10-01)
+
+
+### Bug Fixes
+
+* refined publish files ([48e2a4e](https://github.com/puzzle-framework/react-app-flow/commit/48e2a4e1bc6390007b2813359f99103fb6283d33))
+
 ## [1.4.1](https://github.com/puzzle-framework/react-app-flow/compare/v1.4.0...v1.4.1) (2021-10-01)
 
 
