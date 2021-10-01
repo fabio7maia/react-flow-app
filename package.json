@@ -4,7 +4,6 @@
 	"description": "This is a React JS library to support and simplify navigations and maximize reuse screens in different contexts",
 	"main": "dist/index.js",
 	"module": "src/index.js",
-	"private":"false",
 	"files": [
 		"dist/"
 	],
