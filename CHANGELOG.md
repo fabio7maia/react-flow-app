@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.1.1...v1.2.0) (2021-10-01)
+
+
+### Features
+
+* refine release build ([d6b31fb](https://github.com/puzzle-framework/react-app-flow/commit/d6b31fbb0ffba2c69aed5c17d58721587e472d72))
+
 ## [1.1.1](https://github.com/puzzle-framework/react-app-flow/compare/v1.1.0...v1.1.1) (2021-10-01)
 
 
