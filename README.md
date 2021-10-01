@@ -15,3 +15,4 @@ This is a React JS library to support and simplify navigations and maximize reus
 -   Commit lint
 -   Github actions
 -   Semantic release
+-   Storybook
