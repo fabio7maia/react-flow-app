@@ -1,5 +1,5 @@
 import React from 'react';
-import { FlowManager } from '@components';
+import { FlowManager } from '@models';
 import { TFlowManagerContext } from '@types';
 
 export const flowManagerContext = React.createContext<TFlowManagerContext>({
