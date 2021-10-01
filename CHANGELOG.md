@@ -1,3 +1,17 @@
+# [1.3.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.2.0...v1.3.0) (2021-10-01)
+
+
+### Bug Fixes
+
+* removed commit msg husky ([56da3b6](https://github.com/puzzle-framework/react-app-flow/commit/56da3b6573536bc45f923361ce73cf3530b0a1e8))
+* removed priate property in package.json ([d0bd9c4](https://github.com/puzzle-framework/react-app-flow/commit/d0bd9c4f1e4165dee348deacf11f8c35931aee5c))
+
+
+### Features
+
+* activated commit msg husky ([cd7673d](https://github.com/puzzle-framework/react-app-flow/commit/cd7673d7c2e9381128a39cd5ebb8ca7b5f8625c1))
+* refine semantic release for github ([7f5150d](https://github.com/puzzle-framework/react-app-flow/commit/7f5150da3559d0862eb2fbc65f06bbb34bbf1486))
+
 # [1.2.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.1.1...v1.2.0) (2021-10-01)
 
 
