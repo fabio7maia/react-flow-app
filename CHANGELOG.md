@@ -1,3 +1,12 @@
+# [1.4.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.3.2...v1.4.0) (2021-10-01)
+
+
+### Features
+
+* activate npm publish ([0cbd27e](https://github.com/puzzle-framework/react-app-flow/commit/0cbd27e28837eafa8157572f26ef2de715331cec))
+* changed publish config to public scope ([effa3cc](https://github.com/puzzle-framework/react-app-flow/commit/effa3cce89b21fd5d8a01afae58ae515adce798f))
+* refined semantic release github ([50dee39](https://github.com/puzzle-framework/react-app-flow/commit/50dee39f081bf590aedcd2d5a13bebd87a03beff))
+
 ## [1.3.2](https://github.com/puzzle-framework/react-app-flow/compare/v1.3.1...v1.3.2) (2021-10-01)
 
 
