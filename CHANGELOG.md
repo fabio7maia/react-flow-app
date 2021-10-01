@@ -1,3 +1,11 @@
+## [1.3.1](https://github.com/puzzle-framework/react-app-flow/compare/v1.3.0...v1.3.1) (2021-10-01)
+
+
+### Bug Fixes
+
+* removed semantic release github ([069d42f](https://github.com/puzzle-framework/react-app-flow/commit/069d42fac0b789d833b021b9ac78452098b6a9ed))
+* tried fix release ([7e24625](https://github.com/puzzle-framework/react-app-flow/commit/7e24625e9d7717535f3f91f95674f0dc24c9f8fc))
+
 # [1.3.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.2.0...v1.3.0) (2021-10-01)
 
 
