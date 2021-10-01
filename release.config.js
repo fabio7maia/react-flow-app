@@ -22,7 +22,7 @@ module.exports = {
 				tarballDir: 'dist',
 			},
 		],
-		'@semantic-release/github',
+		// '@semantic-release/github',
 		// [
 		// 	'@semantic-release/github',
 		// 	{
