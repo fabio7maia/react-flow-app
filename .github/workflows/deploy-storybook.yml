@@ -1,11 +1,11 @@
-name: Deploy Release
+name: Deploy Storybook to Github pages
 on:
     push:
         branches:
             - main
 jobs:
     release:
-        name: Deploy Release
+        name: Deploy Storybook to Github pages
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
@@ -20,8 +20,12 @@ jobs:
               run: yarn install --frozen-lockfile
             - name: Run tests
               run: yarn run test
-            - name: Release
+            - name: Build storybook
+              run: yarn run storybook:build
+            - name: Deploy storybook
+              uses: crazy-max/ghaction-github-pages@v1
+              with:
+                  target_brach: gh-pages
+                  build_dir: storybook-static
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-              run: npx semantic-release
