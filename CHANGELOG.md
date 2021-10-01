@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/puzzle-framework/react-app-flow/compare/v1.1.0...v1.1.1) (2021-10-01)
+
+
+### Bug Fixes
+
+* set public package ([e493d33](https://github.com/puzzle-framework/react-app-flow/commit/e493d33990c159b415df7b3b0320485d0fb37d1c))
+
 # [1.1.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.0.1...v1.1.0) (2021-10-01)
 
 
