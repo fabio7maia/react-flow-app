@@ -1,4 +1,6 @@
 import React from 'react';
+import { Placeholder } from '@components';
+import { CoreHelper } from '@helpers';
 import { TScreens, TStepOptions } from '@types';
 import { Step } from '../step';
 
@@ -42,9 +44,9 @@ export class Flow {
 			const Screen = this.steps[currentStepName].loader();
 
 			return (
-				<Suspense fallback={<Placeholder loading />}>
+				<React.Suspense fallback={<Placeholder loading />}>
 					<Screen />
-				</Suspense>
+				</React.Suspense>
 			);
 		}
 

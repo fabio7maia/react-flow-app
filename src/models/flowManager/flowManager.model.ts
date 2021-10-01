@@ -1,4 +1,4 @@
-import { TScreens } from '@types';
+import { TScreens, TStepOptions } from '@types';
 import { Flow } from '../flow';
 
 export class FlowManager {

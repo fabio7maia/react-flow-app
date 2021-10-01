@@ -11,11 +11,6 @@
 		"module": "commonjs",
 		"target": "es6",
 		"jsx": "react",
-		"paths": {
-			"@components": ["src/components"],
-			"@helpers": ["src/helpers"],
-			"@types": ["src/types"]
-		},
 		"typeRoots": ["./node_modules/@types", "./src/custom-typings"]
 	},
 	"exclude": ["dist", "**/__tests__/**", "**/__stories__/**", "node_modules"]
