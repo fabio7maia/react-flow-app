@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.0.1...v1.1.0) (2021-10-01)
+
+
+### Features
+
+* activate publish github release ([cd36443](https://github.com/puzzle-framework/react-app-flow/commit/cd36443cc04babaa95ba23637e22a0882ba0c3fb))
+
 ## [1.0.1](https://github.com/puzzle-framework/react-app-flow/compare/v1.0.0...v1.0.1) (2021-10-01)
 
 
