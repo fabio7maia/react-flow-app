@@ -1,0 +1,91 @@
+{
+	"version": "1.0",
+	"language": "en",
+	"words": [
+		"sonarjs",
+		"Helvetica",
+		"noformat",
+		"Unmount",
+		"DDTHH",
+		"stylelint",
+		"toastify",
+		"precached",
+		"truetype",
+		"flexbox",
+		"Antd",
+		"flexboxgrid"
+	],
+	"flagWords": [],
+	"ignorePaths": [
+		"cspell.json",
+		"react-app-env.d.ts",
+		"src/packages/*/node_modules/**",
+		"src/packages/*/build/**",
+		"src/packages/*/dist/**",
+		"src/packages/*/src/**/externalLibs/**",
+		"src/packages/*/src/**/i18n/**",
+		"src/packages/*/src/**/__stories/**",
+		"src/packages/*/src/**/*.stories.*"
+	],
+	"maxNumberOfProblems": 10000,
+	"allowCompoundWords": false,
+	"languageSettings": [
+		{
+			"languageId": "*",
+			"dictionaries": ["companies", "softwareTerms", "misc", "filetypes"]
+		},
+		{
+			"languageId": "javascript,javascriptreact",
+			"dictionaries": ["typescript", "node", "npm"]
+		},
+		{
+			"languageId": "typescript,typescriptreact",
+			"dictionaries": ["typescript", "node", "npm"]
+		},
+		{
+			"languageId": "javascriptreact,typescriptreact",
+			"dictionaries": ["html", "css", "fonts"]
+		},
+		{
+			"languageId": "markdown,asciidoc",
+			"dictionaries": ["npm", "html"]
+		},
+		{
+			"languageId": "html,pug,jade",
+			"dictionaries": ["html", "fonts", "typescript", "css", "npm"]
+		},
+		{
+			"languageId": "handlebars",
+			"dictionaries": ["html", "css", "fonts", "typescript"]
+		},
+		{
+			"languageId": "json",
+			"dictionaries": ["node", "npm"]
+		},
+		{
+			"languageId": "css,less,scss",
+			"dictionaries": ["fonts", "css"]
+		},
+		{
+			"languageId": "map",
+			"enabled": false
+		},
+		{
+			"languageId": "image",
+			"enabled": false
+		},
+		{
+			"languageId": "binary",
+			"enabled": false
+		},
+		{
+			"languageId": "html",
+			"ignoreRegExpList": ["href"]
+		}
+	],
+	"import": [
+		"./node_modules/cspell-dict-en_us/cspell-ext.json",
+		"./node_modules/cspell-dict-en-gb/cspell-ext.json",
+		"./node_modules/cspell-dict-lorem-ipsum/cspell-ext.json"
+	]
+}

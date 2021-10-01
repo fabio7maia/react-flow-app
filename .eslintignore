@@ -1,0 +1,19 @@
+# root folders
+/build
+/config
+/dist
+/node_modules
+/public
+/scripts
+/src/react-app-env.d.ts
+/src/serviceWorker.ts
+
+# packages folders
+/src/**/*.test.*
+/src/packages/**/build
+/src/packages/**/config
+/src/packages/**/dist
+/src/packages/**/node_modules
+/src/packages/**/public
+/src/packages/**/scripts
+/src/packages/*/src/externalLibs

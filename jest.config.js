@@ -1,0 +1,43 @@
+module.exports = {
+	coverageThreshold: {
+		global: {
+			branches: 0,
+		},
+	},
+	roots: ['<rootDir>/src'],
+	collectCoverageFrom: [
+		'src/**/*.{js,jsx,ts,tsx}',
+		'!node_modules/**/*',
+		'!src/**/__stories__/**/*',
+		'!src/**/__tests__/**/*',
+		'!src/flows/**/*',
+		'!src/**/*.d.ts',
+		'!**/src/serviceWorker.ts',
+		'!**/src/setupTests.js',
+	],
+	setupFiles: ['react-app-polyfill/jsdom', './src/setupTests.js'],
+	setupFilesAfterEnv: [],
+	testMatch: ['<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}', '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}'],
+	testEnvironment: 'jest-environment-jsdom-fourteen',
+	transform: {
+		'^.+\\.(js|jsx|ts|tsx)$': '<rootDir>/node_modules/babel-jest',
+		'^.+\\.css$': '<rootDir>/config/jest/cssTransform.js',
+		'^(?!.*\\.(js|jsx|ts|tsx|css|json)$)': '<rootDir>/config/jest/fileTransform.js',
+	},
+	transformIgnorePatterns: ['[/\\\\]node_modules[/\\\\].+\\.(js|jsx|ts|tsx)$', '^.+\\.module\\.(css|sass|scss)$'],
+	modulePaths: [],
+	moduleNameMapper: {
+		'^react-native$': 'react-native-web',
+		'^.+\\.module\\.(css|sass|scss)$': 'identity-obj-proxy',
+		'^@components$': 'src/components',
+		'^@helpers$': 'src/helpers',
+		'^@hooks$': 'src/hooks',
+		'^@models$': 'src/models',
+		'^@providers$': 'src/providers',
+		'^@sb$': 'src/storybook',
+		'^@types$': 'src/types',
+	},
+	moduleFileExtensions: ['web.js', 'js', 'web.ts', 'ts', 'web.tsx', 'tsx', 'json', 'web.jsx', 'jsx', 'node'],
+	watchPlugins: ['jest-watch-typeahead/filename', 'jest-watch-typeahead/testname'],
+	testResultsProcessor: 'jest-sonar-reporter',
+};
