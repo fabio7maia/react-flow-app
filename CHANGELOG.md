@@ -1,0 +1,14 @@
+# 1.0.0 (2021-10-01)
+
+
+### Bug Fixes
+
+* fixed problem with script build and release github action ([94d5149](https://github.com/puzzle-framework/react-app-flow/commit/94d5149bc8d48483cbf257acc8672952a6ee8f5e))
+* fixed repository url ([03befcb](https://github.com/puzzle-framework/react-app-flow/commit/03befcb8c35066023bc2dc9f7798343ff6f0353b))
+
+
+### Features
+
+* added github action to deploy storybook to github pages ([e7f5398](https://github.com/puzzle-framework/react-app-flow/commit/e7f53983c89c0e7ea21182cf49a35aba7e879b9d))
+* initial sources ([91c78f6](https://github.com/puzzle-framework/react-app-flow/commit/91c78f6876818e60a4ed0853989d8b69e97efbc8))
+* initial sources (fix github actions) ([47e5764](https://github.com/puzzle-framework/react-app-flow/commit/47e57642ec9891c841dcdec0551dfa1aab1a791e))
