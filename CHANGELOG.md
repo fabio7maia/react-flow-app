@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.4.2...v1.5.0) (2021-10-02)
+
+
+### Features
+
+* added logger helper and useLogger hook ([bf3551d](https://github.com/puzzle-framework/react-app-flow/commit/bf3551d702082b38c977dba06166f895d0cab478))
+
 ## [1.4.2](https://github.com/puzzle-framework/react-app-flow/compare/v1.4.1...v1.4.2) (2021-10-01)
 
 
