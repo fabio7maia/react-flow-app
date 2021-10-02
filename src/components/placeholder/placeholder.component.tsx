@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLogger } from '@hooks';
 import './placeholder.styles.css';
 
 export interface PlaceholderProps {
@@ -7,6 +8,10 @@ export interface PlaceholderProps {
 }
 
 export const Placeholder: React.FC<PlaceholderProps> = ({ children, loading }) => {
+	const { log } = useLogger('components');
+
+	log('Placeholder > render', { loading });
+
 	return (
 		<>
 			{loading && (
