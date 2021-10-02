@@ -2,7 +2,7 @@ import React from 'react';
 import { Placeholder, PlaceholderProps } from '.';
 import { StorybookHelper } from '@sb';
 
-const story = StorybookHelper.writeStory({ component: Placeholder });
+const story = StorybookHelper.writeStory({ component: Placeholder, group: 'Components' });
 
 export default story.meta;
 
