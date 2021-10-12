@@ -27,7 +27,7 @@
 		"test:coverage": "node scripts/test.js \"--coverage\" \"--watchAll=false\" \"--silent\" \"--forceExit\"",
 		"prepare": "husky install",
 		"git:pre-commit": "lint-staged",
-		"git:pre-push": "yarn run test:coverage",
+		"git:pre-push": "yarn run build && yarn run test:coverage",
 		"docs:build": "typedoc",
 		"docs:serve": "yarn run docs:build && npx serve docs"
 	},

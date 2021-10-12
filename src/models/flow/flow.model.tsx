@@ -57,7 +57,7 @@ export class Flow {
 		step.actions[actionName] = gotoScreenName;
 	};
 
-	addWatcher = (callback: TFlowWatchCallback, type?: TFlowWatch = 'all') => {
+	addWatcher = (callback: TFlowWatchCallback, type: TFlowWatch = 'all') => {
 		this.watchers[type].push(callback);
 	};
 
