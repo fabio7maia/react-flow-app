@@ -1,4 +1,4 @@
-import { TScreens, TStepOptions } from '@types';
+import { TFlowWatch, TFlowWatchCallback, TScreens, TStepOptions } from '@types';
 import { Flow } from '../flow';
 
 export class FlowManager {
@@ -72,7 +72,16 @@ export class FlowManager {
 					});
 				};
 			},
-			watch: ({}) => {},
+			// eslint-disable-next-line @typescript-eslint/no-empty-function
+			watch: (input: TFlowWatchCallback | { callback: TFlowWatchCallback; type: TFlowWatch }) => {
+				if (typeof input === 'function') {
+					const params: any = input;
+					return FlowManager.getFlow(flowName).addWatcher(params, 'all');
+				} else {
+					const params: any = input;
+					return FlowManager.getFlow(flowName).addWatcher(params.callback, params.type);
+				}
+			},
 		};
 	};
 }

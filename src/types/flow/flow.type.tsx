@@ -1,7 +1,7 @@
 import React from 'react';
 
 export type TScreen = {
-	actions: any;
+	actions: any; // needs to any type to working properly to infer actions
 	loader: () => React.LazyExoticComponent<React.ComponentType<any>>;
 	url?: string;
 };
@@ -12,7 +12,7 @@ export type TFlowManagerContext = {
 	currentFlowName: string;
 	start: (flowName: string) => void;
 	back: () => void;
-	doAction: (name: string, payload?: Record<string, any>) => void;
+	dispatch: (name: string, payload?: Record<string, any>) => void;
 };
 
 export type TStepAction = string | (() => void);
@@ -38,4 +38,9 @@ export type TStepOptions = {
 	checkpoint?: boolean;
 };
 
-export type TFlowWatch = 'mount' | 'doAction' | 'unmount';
+export type TFlowWatch = 'all' | 'mount' | 'dispatch' | 'unmount';
+export type TFlowWatchCallbackInput = {
+	oldStepName?: string;
+	currentStepName: string;
+};
+export type TFlowWatchCallback = (input: TFlowWatchCallbackInput) => void;

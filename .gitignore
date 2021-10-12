@@ -39,3 +39,5 @@ test-report.xml
 
 /storybook-static
 !/src/packages/core/src/components/**/*
+
+/docs
