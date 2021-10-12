@@ -3,12 +3,12 @@ import { flowManagerContext } from '@providers';
 import { TScreen } from '@types';
 
 export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => {
-	const { back, doAction } = React.useContext(flowManagerContext);
+	const { back, dispatch } = React.useContext(flowManagerContext);
 
 	return {
 		back: back,
-		doAction: (name: TScreen['actions'][number], payload?: Record<string, any>) => {
-			doAction(name, payload);
+		dispatch: (name: TScreenInner['actions'][number], payload?: Record<string, any>) => {
+			dispatch(name, payload);
 		},
 	};
 };

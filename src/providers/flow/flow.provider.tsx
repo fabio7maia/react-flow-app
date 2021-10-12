@@ -10,8 +10,8 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	back: (): void => {
 		console.log('flowManagerContext > back > Not init');
 	},
-	doAction: (name: string, payload?: Record<string, any>): void => {
-		console.log('flowManagerContext > doAction > Not init');
+	dispatch: (name: string, payload?: Record<string, any>): void => {
+		console.log('flowManagerContext > dispatch > Not init');
 	},
 });
 
@@ -40,11 +40,13 @@ export const FlowProvider: React.FC = ({ children }) => {
 		changed && setForceUpdate(val => val + 1);
 	}, [flow]);
 
-	const handleDoAction = React.useCallback(
+	const handleDispatch = React.useCallback(
 		(name: string, payload?: Record<string, any>) => {
-			console.log('FlowProvider > doAction', { name, payload });
+			console.log('FlowProvider > dispatch [start]', { name, payload });
 
-			const changed = flow?.doAction(name, payload);
+			const changed = flow?.dispatch(name, payload);
+
+			console.log('FlowProvider > dispatch [end]', { name, payload, changed });
 
 			changed && setForceUpdate(val => val + 1);
 		},
@@ -59,7 +61,7 @@ export const FlowProvider: React.FC = ({ children }) => {
 				currentFlowName,
 				start: handleStart,
 				back: handleBack,
-				doAction: handleDoAction,
+				dispatch: handleDispatch,
 			}}
 		>
 			{children}

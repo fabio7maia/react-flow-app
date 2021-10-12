@@ -13,5 +13,13 @@
 		"jsx": "react",
 		"typeRoots": ["./node_modules/@types", "./src/custom-typings"]
 	},
-	"exclude": ["dist", "node_modules"]
+	"exclude": [
+		"dist",
+		"**/__tests__/**",
+		"**/__stories__/**",
+		"node_modules",
+		"src/**/storybook/**",
+		"src/**/*.tests.*",
+		"src/**/*.stories.*"
+	]
 }
