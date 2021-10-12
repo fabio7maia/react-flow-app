@@ -1,3 +1,16 @@
+# [1.6.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.5.0...v1.6.0) (2021-10-12)
+
+
+### Bug Fixes
+
+* fixed code in addWatcher method of flow model ([8497b75](https://github.com/puzzle-framework/react-app-flow/commit/8497b754666356037880a81f5e69d08cbe4f1a72))
+
+
+### Features
+
+* added build to pre-push husky hook to prevent errors ([31dc763](https://github.com/puzzle-framework/react-app-flow/commit/31dc76334124de4b7c7ad79a385349fae3bf7858))
+* renamed doAction to dispatch, added watchers and added stories with flow examples ([79a18d6](https://github.com/puzzle-framework/react-app-flow/commit/79a18d61e55b4bb0e0ed2cd31cc205e98411c66e))
+
 # [1.5.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.4.2...v1.5.0) (2021-10-02)
 
 
