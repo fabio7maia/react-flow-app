@@ -1,10 +1,11 @@
 import React from 'react';
 import { FlowManager } from '@models';
 import { TFlowManagerContext } from '@types';
+import { Flow } from 'src/models/flow';
 
 export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	currentFlowName: '',
-	start: (flowName: string): void => {
+	start: (flowName: string, stepName?: string): void => {
 		console.log('flowManagerContext > start > Not init');
 	},
 	back: (): void => {
@@ -17,55 +18,77 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 
 export const FlowProvider: React.FC = ({ children }) => {
 	const [_, setForceUpdate] = React.useState(0);
-	const [currentFlowName, setCurrentFlowName] = React.useState('');
+	const currentFlowName = React.useRef('');
+	const flow = React.useRef<Flow>();
+	// const [state, setState] = React.useState({
+	// 	tick: 0,
+	// 	currentFlowName: '',
+	// 	currentStepName: '',
+	// });
 
-	const flow = FlowManager.getFlow(currentFlowName);
+	// const flow = FlowManager.getFlow(currentFlowName);
+
+	const forceUpdate = React.useCallback(() => {
+		flow.current = FlowManager.getFlow(currentFlowName.current);
+
+		setForceUpdate(val => val + 1);
+	}, []);
 
 	const handleStart = React.useCallback(
-		(flowName: string): void => {
+		(flowName: string, stepName?: string, ignoreFromFlow?: boolean): void => {
 			console.log('FlowProvider > handleStart', { flowName });
 
-			flow?.start();
+			const flow = FlowManager.getFlow(flowName);
 
-			setCurrentFlowName(flowName);
+			flow?.start(stepName, ignoreFromFlow ? undefined : currentFlowName.current);
+
+			currentFlowName.current = flowName;
+
+			forceUpdate();
 		},
-		[flow]
+		[forceUpdate]
 	);
 
 	const handleBack = React.useCallback(() => {
-		console.log('FlowProvider > back');
+		const { changed, currentFlowName } = flow.current?.back();
 
-		const changed = flow?.back();
+		console.log('FlowProvider > back', { changed, currentFlowName });
 
-		changed && setForceUpdate(val => val + 1);
-	}, [flow]);
+		if (changed && currentFlowName) {
+			handleStart(currentFlowName, undefined, true);
+		} else if (changed) {
+			forceUpdate();
+		}
+	}, [forceUpdate, handleStart]);
 
 	const handleDispatch = React.useCallback(
 		(name: string, payload?: Record<string, any>) => {
-			console.log('FlowProvider > dispatch [start]', { name, payload });
+			const { changed, currentFlowName, currentStepName } = flow.current?.dispatch(name, payload);
 
-			const changed = flow?.dispatch(name, payload);
+			console.log('FlowProvider > dispatch', { name, payload, changed });
 
-			console.log('FlowProvider > dispatch [end]', { name, payload, changed });
-
-			changed && setForceUpdate(val => val + 1);
+			if (currentFlowName) {
+				handleStart(currentFlowName, currentStepName);
+			} else {
+				changed && forceUpdate();
+			}
 		},
-		[flow]
+		[forceUpdate, handleStart]
 	);
 
-	console.log('FlowProvider', { flow, currentFlowName });
+	console.log('FlowProvider', { flow: flow.current });
 
 	return (
 		<flowManagerContext.Provider
 			value={{
-				currentFlowName,
+				currentFlowName: flow.current?.name,
 				start: handleStart,
 				back: handleBack,
 				dispatch: handleDispatch,
 			}}
 		>
 			{children}
-			{flow?.render()}
+			{flow.current?.render()}
 		</flowManagerContext.Provider>
 	);
 };

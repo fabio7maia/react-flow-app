@@ -1,39 +1,62 @@
 import React from 'react';
 import { Placeholder } from '@components';
 import { CoreHelper } from '@helpers';
-import { TFlowWatch, TFlowWatchCallback, TScreens, TStepOptions } from '@types';
+import {
+	TFlowBackMethodOutput,
+	TFlowDispatchMethodOutput,
+	TFlowWatch,
+	TFlowWatchCallback,
+	TFlowWatchCallbackInput,
+	TFlowWatchCallbackInputDispatch,
+	TScreens,
+	TStepOptions,
+} from '@types';
 import { Step } from '../step';
 
 export class Flow {
 	name: string;
 	steps: Record<string, Step>;
-	oldStepName?: string;
-	currentStepName?: string;
+	lastSteps: Record<number, string>;
 	history: Array<string>;
 	watchers: Record<TFlowWatch, TFlowWatchCallback[]>;
+	fromFlowName?: string;
 
 	constructor(name: string) {
 		this.name = name;
 		this.steps = {};
-		this.oldStepName = undefined;
-		this.currentStepName = undefined;
+		this.lastSteps = {};
 		this.history = [];
 		this.watchers = {
 			all: [],
+			back: [],
 			dispatch: [],
 			mount: [],
-			unmount: [],
 		};
+	}
+
+	private get lastStepName(): string {
+		return this.lastSteps[1];
+	}
+
+	private get currentStepName(): string {
+		return this.lastSteps[0];
+	}
+
+	private set currentStepName(value: string) {
+		this.lastSteps[1] = this.lastSteps[0];
+		this.lastSteps[0] = value;
 	}
 
 	private logger = (message: string, ...args: any[]): void => {
 		console.log('Flow', message, args);
 	};
 
-	private callWatchers = (type: TFlowWatch): void => {
-		const data = {
-			oldStepName: this.oldStepName,
-			currentStepName: this.currentStepName !== this.oldStepName ? this.currentStepName : '__function__',
+	private callWatchers = (type: TFlowWatch, dispatch?: TFlowWatchCallbackInputDispatch): void => {
+		const data: TFlowWatchCallbackInput = {
+			lastStepName: this.lastStepName,
+			currentStepName: this.currentStepName !== this.lastStepName ? this.currentStepName : '__function__',
+			type,
+			dispatch,
 		};
 
 		this.watchers[type].forEach(fn => fn(data));
@@ -45,26 +68,39 @@ export class Flow {
 		screen: TScreen,
 		name: string,
 		options?: TStepOptions
-	) => {
+	): void => {
 		const step = new Step(name as string, screen.loader, options);
 
 		this.steps[name] = step;
 	};
 
-	addAction = (screenName: string, actionName: string, gotoScreenName: string) => {
+	addAction = (screenName: string, actionName: string, gotoScreenName: string): void => {
 		const step = this.steps[screenName];
 
 		step.actions[actionName] = gotoScreenName;
 	};
 
-	addWatcher = (callback: TFlowWatchCallback, type: TFlowWatch = 'all') => {
+	addWatcher = (callback: TFlowWatchCallback, type: TFlowWatch = 'all'): void => {
 		this.watchers[type].push(callback);
+	};
+
+	start = (stepName?: string, fromFlowName?: string): void => {
+		this.logger('start', { stepName, fromFlowName });
+
+		this.fromFlowName = fromFlowName;
+		const currentStepName = stepName || this.currentStepName || this.steps[Object.keys(this.steps)[0]].name;
+
+		this.currentStepName = currentStepName;
 	};
 
 	render = (): React.ReactNode => {
 		const currentStepName = this.currentStepName || this.steps[Object.keys(this.steps)[0]].name;
 
 		this.logger('Flow > render [start]', { currentStepName });
+
+		if (this.lastStepName !== this.currentStepName) {
+			this.mount();
+		}
 
 		if (currentStepName && this.steps.hasOwnProperty(currentStepName)) {
 			const Screen = this.steps[currentStepName].loader();
@@ -79,30 +115,48 @@ export class Flow {
 		return null;
 	};
 
-	start = (stepName?: string) => {
-		this.logger('start', { stepName });
-
-		const currentStepName = stepName || this.steps[Object.keys(this.steps)[0]].name;
-
-		this.currentStepName = currentStepName;
+	mount = (): void => {
+		this.callWatchers('mount');
 	};
 
-	back = (): boolean => {
+	back = (): TFlowBackMethodOutput => {
 		const backStepName = this.history.pop();
 
 		if (backStepName) {
-			this.oldStepName = this.currentStepName;
 			this.currentStepName = backStepName;
 
-			this.callWatchers('dispatch');
+			this.callWatchers('back');
 
-			return true;
+			return { changed: true };
+		} else if (this.fromFlowName) {
+			return { changed: true, currentFlowName: this.fromFlowName };
 		}
 
-		return false;
+		return { changed: false };
 	};
 
-	dispatch = (actionName: string, payload?: Record<string, any>): boolean => {
+	private treatHistory = (): void => {
+		if (this.currentStepName) {
+			const currentStep = this.steps[this.currentStepName];
+
+			this.logger('Flow > treatHistory', {
+				currentStep,
+				ignoreHistory: currentStep.options?.ignoreHistory,
+			});
+
+			// when clear history it's necessary empty history and from flow name when back not doing anything
+			if (CoreHelper.getValueOrDefault(currentStep.options?.clearHistory, false)) {
+				this.history = [];
+				this.fromFlowName = undefined;
+			}
+
+			if (!CoreHelper.getValueOrDefault(currentStep.options?.ignoreHistory, false)) {
+				this.history.push(this.currentStepName);
+			}
+		}
+	};
+
+	dispatch = (actionName: string, payload?: Record<string, any>): TFlowDispatchMethodOutput => {
 		this.logger('Flow > dispatch [start]', {
 			actionName,
 			payload,
@@ -112,6 +166,7 @@ export class Flow {
 		const currentStep = this.currentStepName ? this.steps[this.currentStepName] : undefined;
 		let nextStepNameOrFn = undefined;
 		let changed = false;
+		let nextStepFnResult;
 
 		if (currentStep?.actions.hasOwnProperty(actionName)) {
 			nextStepNameOrFn = currentStep.actions[actionName];
@@ -119,33 +174,22 @@ export class Flow {
 			if (typeof nextStepNameOrFn === 'string') {
 				changed = this.currentStepName !== nextStepNameOrFn;
 
-				if (changed && this.currentStepName) {
-					const currentStep = this.steps[this.currentStepName];
+				changed && this.treatHistory();
 
-					this.logger('Flow > dispatch', {
-						nextStepNameOrFn,
-						changed,
-						ignoreHistory: currentStep.options?.ignoreHistory,
-					});
-
-					if (!CoreHelper.getValueOrDefault(currentStep.options?.ignoreHistory, false)) {
-						this.history.push(this.currentStepName);
-					}
-				}
-
-				this.oldStepName = this.currentStepName;
 				this.currentStepName = nextStepNameOrFn;
 			} else {
-				this.oldStepName = this.currentStepName;
+				// set to current step to update lastThreeSteps
+				// eslint-disable-next-line no-self-assign
+				this.currentStepName = this.currentStepName;
 
-				nextStepNameOrFn();
+				nextStepFnResult = nextStepNameOrFn();
 
 				changed = true;
 			}
 		}
 
 		if (changed) {
-			this.callWatchers('dispatch');
+			this.callWatchers('dispatch', { actionName, payload });
 		}
 
 		this.logger('Flow > dispatch [end]', {
@@ -154,6 +198,6 @@ export class Flow {
 			flow: this,
 		});
 
-		return changed;
+		return { ...nextStepFnResult, changed };
 	};
 }

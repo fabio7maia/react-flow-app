@@ -1,4 +1,4 @@
-import { TFlowWatch, TFlowWatchCallback, TScreens, TStepOptions } from '@types';
+import { TFlowScreenActionCallbackResult, TFlowWatch, TFlowWatchCallback, TScreens, TStepOptions } from '@types';
 import { Flow } from '../flow';
 
 export class FlowManager {
@@ -52,7 +52,9 @@ export class FlowManager {
 				const screen = screens[name];
 				type ScreenActions = typeof screen['actions'][number];
 
-				return (screenActions: Record<ScreenActions, keyof typeof steps | (() => void)>) => {
+				return (
+					screenActions: Record<ScreenActions, keyof typeof steps | (() => TFlowScreenActionCallbackResult)>
+				): void => {
 					Object.keys(screenActions).forEach(action => {
 						const gotoScreen = (screenActions as any)[action];
 
