@@ -8,11 +8,13 @@ export type TScreen = {
 
 export type TScreens = Record<string, TScreen>;
 
+export type TFlowActionPayload = Record<string, any>;
+
 export type TFlowManagerContext = {
 	currentFlowName: string;
 	start: (flowName: string) => void;
 	back: () => void;
-	dispatch: (name: string, payload?: Record<string, any>) => void;
+	dispatch: (name: string, payload?: TFlowActionPayload) => void;
 };
 
 export type TStepAction = string | (() => void);
@@ -24,6 +26,12 @@ export type TStepOptions = {
 	 * Default: false
 	 */
 	ignoreHistory?: boolean;
+	/**
+	 * Set true to clear all steps saved in history to not allow back
+	 *
+	 * Default: false
+	 */
+	clearHistory?: boolean;
 	/**
 	 * Set true to allow cyclic history
 	 *
@@ -38,9 +46,30 @@ export type TStepOptions = {
 	checkpoint?: boolean;
 };
 
-export type TFlowWatch = 'all' | 'mount' | 'dispatch' | 'unmount';
-export type TFlowWatchCallbackInput = {
-	oldStepName?: string;
-	currentStepName: string;
+export type TFlowWatch = 'all' | 'mount' | 'back' | 'dispatch';
+
+export type TFlowWatchCallbackInputDispatch = {
+	actionName?: string;
+	payload?: TFlowActionPayload;
 };
+
+export type TFlowWatchCallbackInput = {
+	lastStepName?: string;
+	currentStepName: string;
+	type: TFlowWatch;
+	dispatch?: TFlowWatchCallbackInputDispatch;
+};
+
 export type TFlowWatchCallback = (input: TFlowWatchCallbackInput) => void;
+
+export type TFlowBaseActionMethodOutput = {
+	changed: boolean;
+	currentFlowName?: string;
+	currentStepName?: string;
+};
+
+export type TFlowBackMethodOutput = TFlowBaseActionMethodOutput;
+
+export type TFlowDispatchMethodOutput = TFlowBaseActionMethodOutput;
+
+export type TFlowScreenActionCallbackResult = Omit<TFlowBaseActionMethodOutput, 'changed'>;

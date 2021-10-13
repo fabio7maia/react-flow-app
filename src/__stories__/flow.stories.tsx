@@ -10,13 +10,13 @@ const FlowExample: React.FC = () => {
 
 	// eslint-disable-next-line react-hooks/rules-of-hooks
 	React.useEffect(() => {
-		start('f0');
+		start('f1');
 	}, [start]);
 
 	return <></>;
 };
 
-const Flow = () => <FlowExample />;
+const Flow = (): JSX.Element => <FlowExample />;
 
 const story = StorybookHelper.writeStory({ component: Flow, group: 'Modules' });
 
