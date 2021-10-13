@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.6.0...v1.7.0) (2021-10-13)
+
+
+### Features
+
+* improved watchers and add support to navigate between flows ([3b6cbc2](https://github.com/puzzle-framework/react-app-flow/commit/3b6cbc26bbc6ddd81974b3f36708e38389b805ea))
+
 # [1.6.0](https://github.com/puzzle-framework/react-app-flow/compare/v1.5.0...v1.6.0) (2021-10-12)
 
 
