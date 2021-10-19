@@ -1,3 +1,4 @@
+import { FlowManager } from '@models';
 import React from 'react';
 
 export type TScreen = {
@@ -12,7 +13,7 @@ export type TFlowActionPayload = Record<string, any>;
 
 export type TFlowManagerContext = {
 	currentFlowName: string;
-	start: (flowName: string) => void;
+	start: (flowName: string, stepName?: string) => void;
 	back: () => void;
 	dispatch: (name: string, payload?: TFlowActionPayload) => void;
 };
@@ -46,21 +47,21 @@ export type TStepOptions = {
 	checkpoint?: boolean;
 };
 
-export type TFlowWatch = 'all' | 'mount' | 'back' | 'dispatch';
+export type TFlowListen = 'all' | 'mount' | 'back' | 'dispatch';
 
-export type TFlowWatchCallbackInputDispatch = {
+export type TFlowListenCallbackInputDispatch = {
 	actionName?: string;
 	payload?: TFlowActionPayload;
 };
 
-export type TFlowWatchCallbackInput = {
+export type TFlowListenCallbackInput = {
 	lastStepName?: string;
 	currentStepName: string;
-	type: TFlowWatch;
-	dispatch?: TFlowWatchCallbackInputDispatch;
+	type: TFlowListen;
+	dispatch?: TFlowListenCallbackInputDispatch;
 };
 
-export type TFlowWatchCallback = (input: TFlowWatchCallbackInput) => void;
+export type TFlowListenCallback = (input: TFlowListenCallbackInput) => void;
 
 export type TFlowBaseActionMethodOutput = {
 	changed: boolean;
@@ -72,4 +73,30 @@ export type TFlowBackMethodOutput = TFlowBaseActionMethodOutput;
 
 export type TFlowDispatchMethodOutput = TFlowBaseActionMethodOutput;
 
-export type TFlowScreenActionCallbackResult = Omit<TFlowBaseActionMethodOutput, 'changed'>;
+export type TFlowScreenActionCallbackResult = {
+	flowName: string;
+	stepName: string;
+};
+
+export type TFlowStartMethodOutput = {
+	flowName: string;
+	stepName?: string;
+};
+
+// export type TFlowScreenActionCallbackResult = (
+// 	flow: Flow
+// ) => <TStepName extends keyof typeof flow.steps>(
+// 	stepName: TStepName
+// ) => {
+// 	flowName: string;
+// 	stepName: string;
+// };
+
+// export type TFlowScreenActionCallbackResult = <TFlow extends Flow, TStepName extends keyof TFlow['steps']>({
+// 	flow: Flow,
+// 	stepName: TStepName,
+// }) => () => void;
+
+// export type TFlowScreenActionCallbackResult = {
+// 	flowName: keyof FlowManager['flows'];
+// };

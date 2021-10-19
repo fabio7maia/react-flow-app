@@ -1,7 +1,12 @@
 import { FlowManager } from '@models';
 import { screens } from './screens';
 
-export const f0 = FlowManager.flow('f0').steps(screens, {
+export const fm = new FlowManager(screens, {
+	f0: { screen1: {}, screen2: {}, screen3: {} },
+	f1: { screen2: {}, screen3: {} },
+} as const);
+
+export const f0 = fm.flow('f0').steps({
 	screen1: {},
 	screen2: { ignoreHistory: true /*, clearHistory: true*/ },
 	screen3: {},
@@ -16,41 +21,43 @@ f0.step('screen3')({
 	end: 'screen1',
 });
 
-export const f1 = FlowManager.flow('f1').steps(screens, { screen2: {}, screen3: {} });
+export const f1 = fm.flow('f1').steps({ screen2: {}, screen3: {} });
 
 f1.step('screen2')({ next: 'screen3' });
 f1.step('screen3')({
 	end: () => {
 		alert('Final step');
 
-		return {
-			currentFlowName: 'f0',
-			currentStepName: 'screen2',
-		};
+		// return {
+		// 	currentFlowName: 'f0',
+		// 	currentStepName: 'screen2',
+		// };
+
+		return f0.navigateTo('screen2');
 	},
 });
 
-// f0.watch(input => {
-// 	console.log('watch all', { input });
+// f0.listen(input => {
+// 	console.log('listen all', { input });
 // });
 
-f0.watch({
+f0.listen({
 	callback: input => {
-		console.log('watch back', { input });
+		console.log('listen back', { input });
 	},
 	type: 'back',
 });
 
-f0.watch({
+f0.listen({
 	callback: input => {
-		console.log('watch dispatch', { input });
+		console.log('listen dispatch', { input });
 	},
 	type: 'dispatch',
 });
 
-f0.watch({
+f0.listen({
 	callback: input => {
-		console.log('watch mount', { input });
+		console.log('listen mount', { input });
 	},
 	type: 'mount',
 });

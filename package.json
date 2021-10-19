@@ -1,6 +1,6 @@
 {
-	"name": "@puzzle-framework/react-app-flow",
-	"version": "0.0.0",
+	"name": "react-app-flow",
+	"version": "0.1.0",
 	"description": "This is a React JS library to support and simplify navigations and maximize reuse screens in different contexts",
 	"main": "dist/index.js",
 	"module": "src/index.js",

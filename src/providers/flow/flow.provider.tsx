@@ -16,7 +16,11 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	},
 });
 
-export const FlowProvider: React.FC = ({ children }) => {
+interface FlowProviderProps {
+	fm: FlowManager<any, any, any>;
+}
+
+export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 	const [_, setForceUpdate] = React.useState(0);
 	const currentFlowName = React.useRef('');
 	const flow = React.useRef<Flow>();
@@ -29,7 +33,7 @@ export const FlowProvider: React.FC = ({ children }) => {
 	// const flow = FlowManager.getFlow(currentFlowName);
 
 	const forceUpdate = React.useCallback(() => {
-		flow.current = FlowManager.getFlow(currentFlowName.current);
+		flow.current = fm.getFlow(currentFlowName.current);
 
 		setForceUpdate(val => val + 1);
 	}, []);
@@ -38,7 +42,7 @@ export const FlowProvider: React.FC = ({ children }) => {
 		(flowName: string, stepName?: string, ignoreFromFlow?: boolean): void => {
 			console.log('FlowProvider > handleStart', { flowName });
 
-			const flow = FlowManager.getFlow(flowName);
+			const flow = fm.getFlow(flowName);
 
 			flow?.start(stepName, ignoreFromFlow ? undefined : currentFlowName.current);
 

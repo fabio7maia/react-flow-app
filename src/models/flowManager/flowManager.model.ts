@@ -1,55 +1,95 @@
-import { TFlowScreenActionCallbackResult, TFlowWatch, TFlowWatchCallback, TScreens, TStepOptions } from '@types';
+import {
+	TFlowScreenActionCallbackResult,
+	TFlowListen,
+	TFlowListenCallback,
+	TScreens,
+	TStepOptions,
+	TFlowStartMethodOutput,
+} from '@types';
 import { Flow } from '../flow';
 
-export class FlowManager {
-	static flows: Record<string, Flow> = {};
+export class FlowManager<
+	TScreensInner extends TScreens,
+	TFlowName extends string,
+	TFlowStep extends keyof TScreensInner
+> {
+	private _instance;
+	flows: Record<TFlowName, Flow>;
+	screens: TScreensInner;
+	simpleFlows: Record<TFlowName, Partial<Record<TFlowStep, any>>>;
 
-	static flow = (name: string) => {
-		console.log('FlowManager > flow [start]', { name });
+	constructor(screens: TScreensInner, simpleFlows: Record<TFlowName, Partial<Record<TFlowStep, any>>>) {
+		if (!this._instance) {
+			this.screens = screens;
+			this.simpleFlows = simpleFlows;
+			this.flows = {} as any;
 
-		if (!FlowManager.flows.hasOwnProperty(name)) {
-			FlowManager.flows[name] = new Flow(name);
+			this._instance = this;
 		}
 
-		console.log('FlowManager > flow [end]', { name, flows: FlowManager.flows });
+		return this._instance;
+	}
+
+	private checkFlowExists = (name: string, throwException = true): boolean => {
+		const exists = this.flows.hasOwnProperty(name);
+
+		if (!exists && throwException) {
+			throw new Error(`The flow name "${name}" doesn't exists.`);
+		}
+
+		return exists;
+	};
+
+	flow = (name: TFlowName) => {
+		console.log('FlowManager > flow [start]', { name });
+
+		if (!this.flows.hasOwnProperty(name)) {
+			this.flows[name] = new Flow(name);
+		}
+
+		console.log('FlowManager > flow [end]', { name, flows: this.flows });
 
 		return {
-			steps: FlowManager.steps(name),
+			steps: this.steps(name),
 		};
 	};
 
-	static getFlow = (name: string): Flow => {
+	getFlow = (name: string): Flow | undefined => {
 		// if (!FlowManager.flows.hasOwnProperty(name)) {
 		//   throw new Error(`Flow ${name} not exists.`);
 		// }
 
-		return FlowManager.flows[name];
+		return this.flows[name];
 	};
 
-	private static steps = (flowName: string) => <
-		TScreensInner extends TScreens,
-		TStepName extends keyof TScreensInner
-	>(
-		screens: TScreensInner,
+	steps = (flowName: string) => </*TScreensInner extends TScreens,*/ TStepName extends keyof TScreensInner>(
+		// screens: TScreensInner,
 		steps: Partial<Record<TStepName, TStepOptions>>
 	) => {
+		this.checkFlowExists(flowName);
+
+		const flow = this.getFlow(flowName);
+
 		Object.keys(steps).forEach(step => {
-			const screen = screens[step];
+			const screen = this.screens[step];
 
 			console.log('steps', {
-				screens,
+				screens: this.screens,
 				screen,
 				step,
 			});
 
-			FlowManager.getFlow(flowName).addStep(screen, step, (steps as any)[step]);
+			flow.addStep(screen, step, (steps as any)[step]);
 		});
 
-		console.log('flow', { flow: FlowManager.getFlow(flowName) });
+		console.log('flow', { flow });
 
 		return {
+			// flow: (): Flow => {
+			// 	return this.getFlow(flowName);
+			// },
 			step: <TCurrentStepName extends keyof typeof steps>(name: TCurrentStepName) => {
-				const screen = screens[name];
+				const screen = this.screens[name];
 				type ScreenActions = typeof screen['actions'][number];
 
 				return (
@@ -59,30 +99,44 @@ export class FlowManager {
 						const gotoScreen = (screenActions as any)[action];
 
 						console.log('steps', {
-							screens,
+							screens: this.screens,
 							steps,
 							name,
 							gotoScreen,
 							screenActions,
 						});
 
-						FlowManager.getFlow(flowName).addAction(name as any, action, gotoScreen);
+						flow.addAction(name as any, action, gotoScreen);
 					});
 
 					console.log('flow final', {
-						flow: FlowManager.getFlow(flowName),
+						flow,
 					});
 				};
 			},
 			// eslint-disable-next-line @typescript-eslint/no-empty-function
-			watch: (input: TFlowWatchCallback | { callback: TFlowWatchCallback; type: TFlowWatch }) => {
+			listen: (input: TFlowListenCallback | { callback: TFlowListenCallback; type: TFlowListen }) => {
 				if (typeof input === 'function') {
 					const params: any = input;
-					return FlowManager.getFlow(flowName).addWatcher(params, 'all');
+					return flow.addListener(params, 'all');
 				} else {
 					const params: any = input;
-					return FlowManager.getFlow(flowName).addWatcher(params.callback, params.type);
+					return flow.addListener(params.callback, params.type);
 				}
+			},
+			start: <TStepName extends keyof typeof steps>(stepName?: TStepName): TFlowStartMethodOutput => {
+				return {
+					flowName,
+					stepName: stepName as any,
+				};
+			},
+			navigateTo: <TStepName extends keyof typeof steps>(
+				stepName: TStepName
+			): TFlowScreenActionCallbackResult => {
+				return {
+					flowName,
+					stepName: stepName as any,
+				};
 			},
 		};
 	};

@@ -4,10 +4,11 @@ import { CoreHelper } from '@helpers';
 import {
 	TFlowBackMethodOutput,
 	TFlowDispatchMethodOutput,
-	TFlowWatch,
-	TFlowWatchCallback,
-	TFlowWatchCallbackInput,
-	TFlowWatchCallbackInputDispatch,
+	TFlowListen,
+	TFlowListenCallback,
+	TFlowListenCallbackInput,
+	TFlowListenCallbackInputDispatch,
+	TFlowScreenActionCallbackResult,
 	TScreens,
 	TStepOptions,
 } from '@types';
@@ -18,15 +19,15 @@ export class Flow {
 	steps: Record<string, Step>;
 	lastSteps: Record<number, string>;
 	history: Array<string>;
-	watchers: Record<TFlowWatch, TFlowWatchCallback[]>;
+	listeners: Record<TFlowListen, TFlowListenCallback[]>;
 	fromFlowName?: string;
 
 	constructor(name: string) {
 		this.name = name;
-		this.steps = {};
+		this.steps = {} as any;
 		this.lastSteps = {};
 		this.history = [];
-		this.watchers = {
+		this.listeners = {
 			all: [],
 			back: [],
 			dispatch: [],
@@ -51,17 +52,17 @@ export class Flow {
 		console.log('Flow', message, args);
 	};
 
-	private callWatchers = (type: TFlowWatch, dispatch?: TFlowWatchCallbackInputDispatch): void => {
-		const data: TFlowWatchCallbackInput = {
+	private callListeners = (type: TFlowListen, dispatch?: TFlowListenCallbackInputDispatch): void => {
+		const data: TFlowListenCallbackInput = {
 			lastStepName: this.lastStepName,
 			currentStepName: this.currentStepName !== this.lastStepName ? this.currentStepName : '__function__',
 			type,
 			dispatch,
 		};
 
-		this.watchers[type].forEach(fn => fn(data));
+		this.listeners[type].forEach(fn => fn(data));
 
-		this.watchers['all'].forEach(fn => fn(data));
+		this.listeners['all'].forEach(fn => fn(data));
 	};
 
 	addStep = <TScreensInner extends TScreens, TScreen extends TScreens[0]>(
@@ -80,8 +81,8 @@ export class Flow {
 		step.actions[actionName] = gotoScreenName;
 	};
 
-	addWatcher = (callback: TFlowWatchCallback, type: TFlowWatch = 'all'): void => {
-		this.watchers[type].push(callback);
+	addListener = (callback: TFlowListenCallback, type: TFlowListen = 'all'): void => {
+		this.listeners[type].push(callback);
 	};
 
 	start = (stepName?: string, fromFlowName?: string): void => {
@@ -116,7 +117,7 @@ export class Flow {
 	};
 
 	mount = (): void => {
-		this.callWatchers('mount');
+		this.callListeners('mount');
 	};
 
 	back = (): TFlowBackMethodOutput => {
@@ -125,7 +126,7 @@ export class Flow {
 		if (backStepName) {
 			this.currentStepName = backStepName;
 
-			this.callWatchers('back');
+			this.callListeners('back');
 
 			return { changed: true };
 		} else if (this.fromFlowName) {
@@ -166,7 +167,10 @@ export class Flow {
 		const currentStep = this.currentStepName ? this.steps[this.currentStepName] : undefined;
 		let nextStepNameOrFn = undefined;
 		let changed = false;
-		let nextStepFnResult;
+		let nextStepFnResult: TFlowScreenActionCallbackResult = {
+			flowName: undefined,
+			stepName: undefined,
+		};
 
 		if (currentStep?.actions.hasOwnProperty(actionName)) {
 			nextStepNameOrFn = currentStep.actions[actionName];
@@ -182,14 +186,14 @@ export class Flow {
 				// eslint-disable-next-line no-self-assign
 				this.currentStepName = this.currentStepName;
 
-				nextStepFnResult = nextStepNameOrFn();
+				nextStepFnResult = nextStepNameOrFn() || {};
 
 				changed = true;
 			}
 		}
 
 		if (changed) {
-			this.callWatchers('dispatch', { actionName, payload });
+			this.callListeners('dispatch', { actionName, payload });
 		}
 
 		this.logger('Flow > dispatch [end]', {
@@ -198,6 +202,6 @@ export class Flow {
 			flow: this,
 		});
 
-		return { ...nextStepFnResult, changed };
+		return { currentFlowName: nextStepFnResult.flowName, currentStepName: nextStepFnResult.stepName, changed };
 	};
 }
