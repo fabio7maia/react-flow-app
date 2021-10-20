@@ -15,3 +15,6 @@ export const useLogger = (group: UseLoggerInput): UseLoggerOutput => {
 		warn: LoggerHelper.error(group),
 	};
 };
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export const useLoggerFlow = () => useLogger('Flow');

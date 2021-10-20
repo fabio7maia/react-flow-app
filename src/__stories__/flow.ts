@@ -1,12 +1,9 @@
 import { FlowManager } from '@models';
 import { screens } from './screens';
 
-export const fm = new FlowManager(screens, {
-	f0: { screen1: {}, screen2: {}, screen3: {} },
-	f1: { screen2: {}, screen3: {} },
-} as const);
+export const fm = new FlowManager(screens);
 
-export const f0 = fm.flow('f0').steps({
+export const f0 = fm.flow({ name: 'f0', baseUrl: 'flows/f0' }).steps({
 	screen1: {},
 	screen2: { ignoreHistory: true /*, clearHistory: true*/ },
 	screen3: {},
@@ -21,7 +18,7 @@ f0.step('screen3')({
 	end: 'screen1',
 });
 
-export const f1 = fm.flow('f1').steps({ screen2: {}, screen3: {} });
+export const f1 = fm.flow({ name: 'f1', baseUrl: 'flows/f1' }).steps({ screen2: {}, screen3: {} });
 
 f1.step('screen2')({ next: 'screen3' });
 f1.step('screen3')({

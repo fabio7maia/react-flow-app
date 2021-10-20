@@ -1,29 +1,30 @@
 import React from 'react';
+import { BrowserRouter as Router, useHistory } from 'react-router-dom';
 import { FlowManager } from '@models';
 import { TFlowManagerContext } from '@types';
-import { Flow } from 'src/models/flow';
+import { Flow } from '../../models/flow';
+import { useLoggerFlow } from '@hooks';
 
 export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	currentFlowName: '',
-	start: (flowName: string, stepName?: string): void => {
-		console.log('flowManagerContext > start > Not init');
-	},
-	back: (): void => {
-		console.log('flowManagerContext > back > Not init');
-	},
-	dispatch: (name: string, payload?: Record<string, any>): void => {
-		console.log('flowManagerContext > dispatch > Not init');
-	},
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	start: (flowName: string, stepName?: string): void => {},
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	back: (): void => {},
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	dispatch: (name: string, payload?: Record<string, any>): void => {},
 });
 
 interface FlowProviderProps {
 	fm: FlowManager<any, any, any>;
 }
 
-export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
+const FlowProviderInner: React.FC<FlowProviderProps> = ({ fm, children }) => {
 	const [_, setForceUpdate] = React.useState(0);
 	const currentFlowName = React.useRef('');
 	const flow = React.useRef<Flow>();
+	const history = useHistory();
+	const logger = useLoggerFlow();
 	// const [state, setState] = React.useState({
 	// 	tick: 0,
 	// 	currentFlowName: '',
@@ -40,47 +41,72 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 
 	const handleStart = React.useCallback(
 		(flowName: string, stepName?: string, ignoreFromFlow?: boolean): void => {
-			console.log('FlowProvider > handleStart', { flowName });
+			logger.log('FlowProvider > handleStart', { flowName });
 
 			const flow = fm.getFlow(flowName);
 
-			flow?.start(stepName, ignoreFromFlow ? undefined : currentFlowName.current);
+			const {
+				changed,
+				history: { url: historyUrl },
+			} = flow?.start(stepName, ignoreFromFlow ? undefined : currentFlowName.current);
 
-			currentFlowName.current = flowName;
+			if (changed) {
+				currentFlowName.current = flowName;
+				history.replace(historyUrl);
 
-			forceUpdate();
+				forceUpdate();
+			}
 		},
 		[forceUpdate]
 	);
 
 	const handleBack = React.useCallback(() => {
-		const { changed, currentFlowName } = flow.current?.back();
+		const {
+			changed,
+			currentFlowName: actionFlowName,
+			currentStepName,
+			history: { url: historyUrl },
+		} = flow.current?.back();
 
-		console.log('FlowProvider > back', { changed, currentFlowName });
+		logger.log('FlowProvider > back', { changed, currentFlowName });
 
-		if (changed && currentFlowName) {
-			handleStart(currentFlowName, undefined, true);
+		if (changed && actionFlowName !== currentFlowName.current) {
+			handleStart(actionFlowName, currentStepName, true);
 		} else if (changed) {
+			history.replace(historyUrl);
+
 			forceUpdate();
 		}
 	}, [forceUpdate, handleStart]);
 
 	const handleDispatch = React.useCallback(
 		(name: string, payload?: Record<string, any>) => {
-			const { changed, currentFlowName, currentStepName } = flow.current?.dispatch(name, payload);
+			const {
+				changed,
+				currentFlowName,
+				currentStepName,
+				history: { status: historyStatus, url: historyUrl },
+			} = flow.current?.dispatch(name, payload);
 
-			console.log('FlowProvider > dispatch', { name, payload, changed });
+			logger.log('FlowProvider > dispatch', { name, payload, changed });
 
 			if (currentFlowName) {
 				handleStart(currentFlowName, currentStepName);
 			} else {
 				changed && forceUpdate();
 			}
+
+			// if (historyStatus.indexOf('push') >= 0) {
+			// 	history.push(historyUrl);
+			// } else if (historyStatus.indexOf('ignore') >= 0) {
+			// 	history.replace(historyUrl);
+			// }
+			history.replace(historyUrl);
 		},
 		[forceUpdate, handleStart]
 	);
 
-	console.log('FlowProvider', { flow: flow.current });
+	logger.log('FlowProvider', { flow: flow.current });
 
 	return (
 		<flowManagerContext.Provider
@@ -94,5 +120,13 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 			{children}
 			{flow.current?.render()}
 		</flowManagerContext.Provider>
+	);
+};
+
+export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
+	return (
+		<Router>
+			<FlowProviderInner fm={fm}>{children}</FlowProviderInner>
+		</Router>
 	);
 };

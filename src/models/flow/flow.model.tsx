@@ -9,6 +9,8 @@ import {
 	TFlowListenCallbackInput,
 	TFlowListenCallbackInputDispatch,
 	TFlowScreenActionCallbackResult,
+	TFlowStartMethodOutput,
+	TFlowTreatHistoryMethodOutput,
 	TScreens,
 	TStepOptions,
 } from '@types';
@@ -16,14 +18,16 @@ import { Step } from '../step';
 
 export class Flow {
 	name: string;
+	baseUrl: string;
 	steps: Record<string, Step>;
 	lastSteps: Record<number, string>;
 	history: Array<string>;
 	listeners: Record<TFlowListen, TFlowListenCallback[]>;
 	fromFlowName?: string;
 
-	constructor(name: string) {
+	constructor(name: string, baseUrl: string) {
 		this.name = name;
+		this.baseUrl = baseUrl;
 		this.steps = {} as any;
 		this.lastSteps = {};
 		this.history = [];
@@ -85,13 +89,14 @@ export class Flow {
 		this.listeners[type].push(callback);
 	};
 
-	start = (stepName?: string, fromFlowName?: string): void => {
-		this.logger('start', { stepName, fromFlowName });
+	private stepUrl = (step: Step): string => {
+		return step.url || step.name;
+	};
 
-		this.fromFlowName = fromFlowName;
-		const currentStepName = stepName || this.currentStepName || this.steps[Object.keys(this.steps)[0]].name;
+	private buildUrl = (baseUrl: string, restUrl: string): string => {
+		baseUrl = baseUrl.substr(baseUrl.length - 1) === '/' ? baseUrl.substr(0, baseUrl.length - 1) : baseUrl;
 
-		this.currentStepName = currentStepName;
+		return `${baseUrl}/${restUrl}`;
 	};
 
 	render = (): React.ReactNode => {
@@ -116,6 +121,29 @@ export class Flow {
 		return null;
 	};
 
+	start = (stepName?: string, fromFlowName?: string): TFlowStartMethodOutput => {
+		this.logger('start', { stepName, fromFlowName });
+
+		this.fromFlowName = fromFlowName;
+		const currentStepName = stepName || this.currentStepName || this.steps[Object.keys(this.steps)[0]].name;
+
+		if (this.steps.hasOwnProperty(currentStepName)) {
+			this.currentStepName = currentStepName;
+
+			return {
+				changed: true,
+				history: {
+					status: 'push',
+					url: this.buildUrl(this.baseUrl, this.stepUrl(this.steps[this.currentStepName])),
+				},
+				currentFlowName: this.name,
+				currentStepName: this.currentStepName,
+			};
+		}
+
+		return { changed: false };
+	};
+
 	mount = (): void => {
 		this.callListeners('mount');
 	};
@@ -128,7 +156,15 @@ export class Flow {
 
 			this.callListeners('back');
 
-			return { changed: true };
+			return {
+				changed: true,
+				currentFlowName: this.name,
+				currentStepName: this.currentStepName,
+				history: {
+					status: 'push',
+					url: this.buildUrl(this.baseUrl, this.stepUrl(this.steps[this.currentStepName])),
+				},
+			};
 		} else if (this.fromFlowName) {
 			return { changed: true, currentFlowName: this.fromFlowName };
 		}
@@ -136,9 +172,15 @@ export class Flow {
 		return { changed: false };
 	};
 
-	private treatHistory = (): void => {
+	private treatHistory = (): TFlowTreatHistoryMethodOutput => {
+		let res: TFlowTreatHistoryMethodOutput = {
+			status: 'none',
+			url: '',
+		};
+
 		if (this.currentStepName) {
 			const currentStep = this.steps[this.currentStepName];
+			const url = this.buildUrl(this.baseUrl, currentStep.url || currentStep.name);
 
 			this.logger('Flow > treatHistory', {
 				currentStep,
@@ -149,12 +191,24 @@ export class Flow {
 			if (CoreHelper.getValueOrDefault(currentStep.options?.clearHistory, false)) {
 				this.history = [];
 				this.fromFlowName = undefined;
+				res = { status: 'clear', url };
 			}
 
 			if (!CoreHelper.getValueOrDefault(currentStep.options?.ignoreHistory, false)) {
 				this.history.push(this.currentStepName);
+				res = {
+					status: res.status === 'clear' ? 'clearAndPush' : 'push',
+					url,
+				};
+			} else {
+				res = {
+					status: res.status === 'clear' ? 'clearAndIgnore' : 'ignore',
+					url,
+				};
 			}
 		}
+
+		return res;
 	};
 
 	dispatch = (actionName: string, payload?: Record<string, any>): TFlowDispatchMethodOutput => {
@@ -171,6 +225,7 @@ export class Flow {
 			flowName: undefined,
 			stepName: undefined,
 		};
+		let history: TFlowTreatHistoryMethodOutput;
 
 		if (currentStep?.actions.hasOwnProperty(actionName)) {
 			nextStepNameOrFn = currentStep.actions[actionName];
@@ -178,7 +233,9 @@ export class Flow {
 			if (typeof nextStepNameOrFn === 'string') {
 				changed = this.currentStepName !== nextStepNameOrFn;
 
-				changed && this.treatHistory();
+				if (changed) {
+					history = this.treatHistory();
+				}
 
 				this.currentStepName = nextStepNameOrFn;
 			} else {
@@ -202,6 +259,11 @@ export class Flow {
 			flow: this,
 		});
 
-		return { currentFlowName: nextStepFnResult.flowName, currentStepName: nextStepFnResult.stepName, changed };
+		return {
+			currentFlowName: nextStepFnResult.flowName,
+			currentStepName: nextStepFnResult.stepName,
+			changed,
+			history,
+		};
 	};
 }

@@ -4,7 +4,8 @@ import {
 	TFlowListenCallback,
 	TScreens,
 	TStepOptions,
-	TFlowStartMethodOutput,
+	TFlowManagerStartMethodOutput,
+	TFlowCreatorInput,
 } from '@types';
 import { Flow } from '../flow';
 
@@ -16,12 +17,10 @@ export class FlowManager<
 	private _instance;
 	flows: Record<TFlowName, Flow>;
 	screens: TScreensInner;
-	simpleFlows: Record<TFlowName, Partial<Record<TFlowStep, any>>>;
 
-	constructor(screens: TScreensInner, simpleFlows: Record<TFlowName, Partial<Record<TFlowStep, any>>>) {
+	constructor(screens: TScreensInner) {
 		if (!this._instance) {
 			this.screens = screens;
-			this.simpleFlows = simpleFlows;
 			this.flows = {} as any;
 
 			this._instance = this;
@@ -40,17 +39,20 @@ export class FlowManager<
 		return exists;
 	};
 
-	flow = (name: TFlowName) => {
-		console.log('FlowManager > flow [start]', { name });
+	private log = (msg: string, ...rest: any): void => {
+		this.log(msg, rest);
+	};
+
+	// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+	flow = (input: TFlowCreatorInput<TFlowName>) => {
+		const { name, baseUrl } = input;
 
 		if (!this.flows.hasOwnProperty(name)) {
-			this.flows[name] = new Flow(name);
+			this.flows[name] = new Flow(name, baseUrl);
 		}
 
-		console.log('FlowManager > flow [end]', { name, flows: this.flows });
-
 		return {
-			steps: this.steps(name),
+			steps: this.steps(input),
 		};
 	};
 
@@ -62,8 +64,8 @@ export class FlowManager<
 		return this.flows[name];
 	};
 
-	steps = (flowName: string) => </*TScreensInner extends TScreens,*/ TStepName extends keyof TScreensInner>(
-		// screens: TScreensInner,
+	// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+	steps = ({ name: flowName, baseUrl }: TFlowCreatorInput<TFlowName>) => <TStepName extends keyof TScreensInner>(
 		steps: Partial<Record<TStepName, TStepOptions>>
 	) => {
 		this.checkFlowExists(flowName);
@@ -73,7 +75,7 @@ export class FlowManager<
 		Object.keys(steps).forEach(step => {
 			const screen = this.screens[step];
 
-			console.log('steps', {
+			this.log('steps', {
 				screens: this.screens,
 				screen,
 				step,
@@ -82,12 +84,9 @@ export class FlowManager<
 			flow.addStep(screen, step, (steps as any)[step]);
 		});
 
-		console.log('flow', { flow });
+		this.log('flow', { flow });
 
 		return {
-			// flow: (): Flow => {
-			// 	return this.getFlow(flowName);
-			// },
 			step: <TCurrentStepName extends keyof typeof steps>(name: TCurrentStepName) => {
 				const screen = this.screens[name];
 				type ScreenActions = typeof screen['actions'][number];
@@ -98,7 +97,7 @@ export class FlowManager<
 					Object.keys(screenActions).forEach(action => {
 						const gotoScreen = (screenActions as any)[action];
 
-						console.log('steps', {
+						this.log('steps', {
 							screens: this.screens,
 							steps,
 							name,
@@ -109,12 +108,12 @@ export class FlowManager<
 						flow.addAction(name as any, action, gotoScreen);
 					});
 
-					console.log('flow final', {
+					this.log('flow final', {
 						flow,
 					});
 				};
 			},
-			// eslint-disable-next-line @typescript-eslint/no-empty-function
+			// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 			listen: (input: TFlowListenCallback | { callback: TFlowListenCallback; type: TFlowListen }) => {
 				if (typeof input === 'function') {
 					const params: any = input;
@@ -124,7 +123,7 @@ export class FlowManager<
 					return flow.addListener(params.callback, params.type);
 				}
 			},
-			start: <TStepName extends keyof typeof steps>(stepName?: TStepName): TFlowStartMethodOutput => {
+			start: <TStepName extends keyof typeof steps>(stepName?: TStepName): TFlowManagerStartMethodOutput => {
 				return {
 					flowName,
 					stepName: stepName as any,
@@ -132,6 +131,7 @@ export class FlowManager<
 			},
 			navigateTo: <TStepName extends keyof typeof steps>(
 				stepName: TStepName
+				// eslint-disable-next-line sonarjs/no-identical-functions
 			): TFlowScreenActionCallbackResult => {
 				return {
 					flowName,

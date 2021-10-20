@@ -1,4 +1,3 @@
-import { FlowManager } from '@models';
 import React from 'react';
 
 export type TScreen = {
@@ -8,6 +7,11 @@ export type TScreen = {
 };
 
 export type TScreens = Record<string, TScreen>;
+
+export type TFlowCreatorInput<TFlowName extends string> = {
+	name: TFlowName;
+	baseUrl: string;
+};
 
 export type TFlowActionPayload = Record<string, any>;
 
@@ -21,6 +25,12 @@ export type TFlowManagerContext = {
 export type TStepAction = string | (() => void);
 
 export type TStepOptions = {
+	/**
+	 * Set the url for step. Allow using pass and catch route params, using ':' character
+	 *
+	 * Default: assumed name of step
+	 */
+	url?: string;
 	/**
 	 * Set true to not add current step in history when navigate
 	 *
@@ -47,6 +57,13 @@ export type TStepOptions = {
 	checkpoint?: boolean;
 };
 
+export type TFlowHistoryStatus = 'clear' | 'push' | 'ignore' | 'clearAndPush' | 'clearAndIgnore' | 'none';
+
+export type TFlowTreatHistoryMethodOutput = {
+	status: TFlowHistoryStatus;
+	url: string;
+};
+
 export type TFlowListen = 'all' | 'mount' | 'back' | 'dispatch';
 
 export type TFlowListenCallbackInputDispatch = {
@@ -67,7 +84,10 @@ export type TFlowBaseActionMethodOutput = {
 	changed: boolean;
 	currentFlowName?: string;
 	currentStepName?: string;
+	history?: TFlowTreatHistoryMethodOutput;
 };
+
+export type TFlowStartMethodOutput = TFlowBaseActionMethodOutput;
 
 export type TFlowBackMethodOutput = TFlowBaseActionMethodOutput;
 
@@ -78,25 +98,7 @@ export type TFlowScreenActionCallbackResult = {
 	stepName: string;
 };
 
-export type TFlowStartMethodOutput = {
+export type TFlowManagerStartMethodOutput = {
 	flowName: string;
 	stepName?: string;
 };
-
-// export type TFlowScreenActionCallbackResult = (
-// 	flow: Flow
-// ) => <TStepName extends keyof typeof flow.steps>(
-// 	stepName: TStepName
-// ) => {
-// 	flowName: string;
-// 	stepName: string;
-// };
-
-// export type TFlowScreenActionCallbackResult = <TFlow extends Flow, TStepName extends keyof TFlow['steps']>({
-// 	flow: Flow,
-// 	stepName: TStepName,
-// }) => () => void;
-
-// export type TFlowScreenActionCallbackResult = {
-// 	flowName: keyof FlowManager['flows'];
-// };

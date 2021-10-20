@@ -1,6 +1,6 @@
 import React from 'react';
 import { flowManagerContext } from '@providers';
-import { TFlowStartMethodOutput, TScreen } from '@types';
+import { TFlowManagerStartMethodOutput, TScreen } from '@types';
 
 export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => {
 	const { back, dispatch } = React.useContext(flowManagerContext);
@@ -18,11 +18,12 @@ export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => 
 	};
 };
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const useFlowManager = () => {
 	const { start } = React.useContext(flowManagerContext);
 
 	const handleStart = React.useCallback(
-		({ flowName, stepName }: TFlowStartMethodOutput): void => {
+		({ flowName, stepName }: TFlowManagerStartMethodOutput): void => {
 			start(flowName, stepName);
 		},
 		[start]
