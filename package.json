@@ -1,7 +1,7 @@
 {
 	"name": "react-app-flow",
 	"version": "0.1.0",
-	"description": "This is a React JS library to support and simplify navigations and maximize reuse screens in different contexts",
+	"description": "This is a React JS library to simplify navigations and maximize reuse screens in different contexts",
 	"main": "dist/index.js",
 	"module": "src/index.js",
 	"publishConfig": {
@@ -109,10 +109,10 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/puzzle-framework/react-app-flow.git"
+		"url": "https://github.com/fabio7maia/react-app-flow"
 	},
 	"author": {
-		"email": "puzzlefraemwork@gmail.com",
-		"name": "Puzzle Framework"
+		"email": "fabio7maia@gmail.com",
+		"name": "Fábio Maia"
 	}
 }
