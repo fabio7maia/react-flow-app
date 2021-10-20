@@ -1,6 +1,6 @@
 import React from 'react';
-import { Placeholder } from '@components';
-import { CoreHelper } from '@helpers';
+import { Placeholder } from '@react-flow-app/components';
+import { CoreHelper } from '@react-flow-app/helpers';
 import {
 	TFlowBackMethodOutput,
 	TFlowDispatchMethodOutput,
@@ -13,7 +13,7 @@ import {
 	TFlowTreatHistoryMethodOutput,
 	TScreens,
 	TStepOptions,
-} from '@types';
+} from '@react-flow-app/types';
 import { Step } from '../step';
 
 export class Flow {

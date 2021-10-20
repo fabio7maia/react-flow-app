@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, useHistory } from 'react-router-dom';
-import { FlowManager } from '@models';
-import { TFlowManagerContext } from '@types';
+import { FlowManager } from '@react-flow-app/models';
+import { TFlowManagerContext } from '@react-flow-app/types';
 import { Flow } from '../../models/flow';
-import { useLoggerFlow } from '@hooks';
+import { useLoggerFlow } from '@react-flow-app/hooks';
 
 export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	currentFlowName: '',

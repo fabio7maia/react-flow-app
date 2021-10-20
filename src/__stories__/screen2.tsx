@@ -1,5 +1,5 @@
-import { useFlow } from '@hooks';
 import React from 'react';
+import { useFlow } from '@react-flow-app/hooks';
 import { screens } from './screens';
 
 export const Screen2: React.FC = () => {

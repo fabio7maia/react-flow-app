@@ -6,7 +6,7 @@ import {
 	TStepOptions,
 	TFlowManagerStartMethodOutput,
 	TFlowCreatorInput,
-} from '@types';
+} from '@react-flow-app/types';
 import { Flow } from '../flow';
 
 export class FlowManager<

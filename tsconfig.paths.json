@@ -2,13 +2,13 @@
 	"compilerOptions": {
 		"baseUrl": "./",
 		"paths": {
-			"@components": ["src/components"],
-			"@helpers": ["src/helpers"],
-			"@hooks": ["src/hooks"],
-			"@models": ["src/models"],
-			"@providers": ["src/providers"],
-			"@sb": ["src/storybook"],
-			"@types": ["src/types"]
+			"@react-flow-app/components": ["src/components"],
+			"@react-flow-app/helpers": ["src/helpers"],
+			"@react-flow-app/hooks": ["src/hooks"],
+			"@react-flow-app/models": ["src/models"],
+			"@react-flow-app/providers": ["src/providers"],
+			"@react-flow-app/sb": ["src/storybook"],
+			"@react-flow-app/types": ["src/types"]
 		}
 	}
 }
