@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/fabio7maia/react-flow-app/compare/v1.0.0...v1.0.1) (2021-10-21)
+
+
+### Bug Fixes
+
+* fixed problem with alias path in imports ([fe5485c](https://github.com/fabio7maia/react-flow-app/commit/fe5485c3d7795d77ebf79ec5d138de73349c4ab8))
+
 # 1.0.0 (2021-10-20)
 
 
