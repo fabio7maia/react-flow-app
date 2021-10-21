@@ -11,7 +11,7 @@
 		"dist/"
 	],
 	"scripts": {
-		"build": "node scripts/pre-build.js && tsc --project tsconfig.prod.json",
+		"build": "node scripts/pre-build.js && tsc --project tsconfig.prod.json && node scripts/copy-files.js",
 		"start": "yarn run storybook",
 		"storybook": "start-storybook -p 6006 -s public",
 		"storybook:build": "build-storybook -s public",
