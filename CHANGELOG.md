@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/fabio7maia/react-flow-app/compare/v1.0.1...v1.0.2) (2021-10-21)
+
+
+### Bug Fixes
+
+* refined paths alias ([12fe35c](https://github.com/fabio7maia/react-flow-app/commit/12fe35c50881826a17f7b598f43f2a04dcfff592))
+
 ## [1.0.1](https://github.com/fabio7maia/react-flow-app/compare/v1.0.0...v1.0.1) (2021-10-21)
 
 
