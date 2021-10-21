@@ -1,3 +1,4 @@
+import { LoggerHelper } from '../../helpers';
 import {
 	TFlowScreenActionCallbackResult,
 	TFlowListen,
@@ -6,7 +7,7 @@ import {
 	TStepOptions,
 	TFlowManagerStartMethodOutput,
 	TFlowCreatorInput,
-} from '@react-flow-app/types';
+} from '../../types';
 import { Flow } from '../flow';
 
 export class FlowManager<
@@ -40,7 +41,7 @@ export class FlowManager<
 	};
 
 	private log = (msg: string, ...rest: any): void => {
-		this.log(msg, rest);
+		LoggerHelper.log('Flow')(msg, rest);
 	};
 
 	// eslint-disable-next-line @typescript-eslint/explicit-function-return-type

@@ -1,4 +1,4 @@
-import { LoggerHelper } from '@react-flow-app/helpers';
+import { LoggerHelper } from '../../helpers';
 
 type UseLoggerInput = string;
 

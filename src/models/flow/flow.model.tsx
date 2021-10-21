@@ -1,6 +1,6 @@
 import React from 'react';
-import { Placeholder } from '@react-flow-app/components';
-import { CoreHelper } from '@react-flow-app/helpers';
+import { Placeholder } from '../../components';
+import { CoreHelper } from '../../helpers';
 import {
 	TFlowBackMethodOutput,
 	TFlowDispatchMethodOutput,
@@ -13,7 +13,7 @@ import {
 	TFlowTreatHistoryMethodOutput,
 	TScreens,
 	TStepOptions,
-} from '@react-flow-app/types';
+} from '../../types';
 import { Step } from '../step';
 
 export class Flow {
@@ -110,6 +110,8 @@ export class Flow {
 
 		if (currentStepName && this.steps.hasOwnProperty(currentStepName)) {
 			const Screen = this.steps[currentStepName].loader();
+
+			this.logger('Flow > render [start]', { currentStepName, Screen });
 
 			return (
 				<React.Suspense fallback={<Placeholder loading />}>

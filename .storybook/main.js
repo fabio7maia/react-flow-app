@@ -11,20 +11,4 @@ module.exports = {
 		'@storybook/addon-viewport',
 		'storybook-addon-i18n/register',
 	],
-	webpackFinal: async config => ({
-		...config,
-		resolve: {
-			...config.resolve,
-			alias: {
-				...config.resolve?.alias,
-				'@react-flow-app/components': path.resolve(__dirname, '../src/components'),
-				'@react-flow-app/helpers': path.resolve(__dirname, '../src/helpers'),
-				'@react-flow-app/hooks': path.resolve(__dirname, '../src/hooks'),
-				'@react-flow-app/models': path.resolve(__dirname, '../src/models'),
-				'@react-flow-app/providers': path.resolve(__dirname, '../src/providers'),
-				'@react-flow-app/sb': path.resolve(__dirname, '../src/storybook'),
-				'@react-flow-app/types': path.resolve(__dirname, '../src/types'),
-			},
-		},
-	}),
 };

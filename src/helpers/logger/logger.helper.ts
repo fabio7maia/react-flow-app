@@ -1,5 +1,5 @@
-import { CoreHelper } from '@react-flow-app/helpers';
-import { Logger, LoggerType } from '@react-flow-app/types';
+import { CoreHelper } from '../../helpers';
+import { Logger, LoggerType } from '../../types';
 
 export class LoggerHelper {
 	private static _groups: Record<string, boolean | Logger> = {

@@ -1,7 +1,7 @@
 import React from 'react';
-import { StorybookHelper } from '@react-flow-app/sb';
-import { FlowProvider } from '@react-flow-app/providers';
-import { useFlowManager } from '@react-flow-app/hooks';
+import { StorybookHelper } from '../storybook';
+import { FlowProvider } from '../providers';
+import { useFlowManager } from '../hooks';
 import { f1, fm } from './flow';
 
 const FlowExample: React.FC = () => {

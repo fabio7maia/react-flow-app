@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLogger } from '@react-flow-app/hooks';
+import { useLogger } from '../../hooks';
 import './placeholder.styles.css';
 
 export interface PlaceholderProps {

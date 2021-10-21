@@ -1,6 +1,6 @@
 import React from 'react';
-import { flowManagerContext } from '@react-flow-app/providers';
-import { TFlowManagerStartMethodOutput, TScreen } from '@react-flow-app/types';
+import { flowManagerContext } from '../../providers';
+import { TFlowManagerStartMethodOutput, TScreen } from '../../types';
 
 export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => {
 	const { back, dispatch } = React.useContext(flowManagerContext);
