@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/fabio7maia/react-flow-app/compare/v1.0.2...v1.0.3) (2021-10-21)
+
+
+### Bug Fixes
+
+* fixed problem with router in ssr and fixed loader screen ([989d81b](https://github.com/fabio7maia/react-flow-app/commit/989d81bbbf9628f6d038882f5ce13966dcd87e7d))
+
 ## [1.0.2](https://github.com/fabio7maia/react-flow-app/compare/v1.0.1...v1.0.2) (2021-10-21)
 
 
