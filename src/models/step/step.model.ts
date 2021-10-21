@@ -1,5 +1,5 @@
 import React from 'react';
-import { TStepAction, TStepOptions } from '@types';
+import { TStepAction, TStepOptions } from '../../types';
 
 export class Step {
 	name: string;

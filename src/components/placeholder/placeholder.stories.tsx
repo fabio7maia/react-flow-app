@@ -1,6 +1,6 @@
 import React from 'react';
 import { Placeholder, PlaceholderProps } from '.';
-import { StorybookHelper } from '@sb';
+import { StorybookHelper } from '../../storybook';
 
 const story = StorybookHelper.writeStory({ component: Placeholder, group: 'Components' });
 

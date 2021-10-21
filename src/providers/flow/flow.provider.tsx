@@ -1,9 +1,10 @@
 import React from 'react';
-import { BrowserRouter as Router, useHistory } from 'react-router-dom';
-import { FlowManager } from '@models';
-import { TFlowManagerContext } from '@types';
+import { StaticRouter as Router, useHistory } from 'react-router';
+import { FlowManager } from '../../models';
+import { TFlowManagerContext } from '../../types';
 import { Flow } from '../../models/flow';
-import { useLoggerFlow } from '@hooks';
+import { useLoggerFlow } from '../../hooks';
+import { ErrorBoundary, UnexpectedError } from '../../components';
 
 export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	currentFlowName: '',
@@ -45,14 +46,15 @@ const FlowProviderInner: React.FC<FlowProviderProps> = ({ fm, children }) => {
 
 			const flow = fm.getFlow(flowName);
 
-			const {
-				changed,
-				history: { url: historyUrl },
-			} = flow?.start(stepName, ignoreFromFlow ? undefined : currentFlowName.current);
+			const { changed, history: historyAction } = flow?.start(
+				stepName,
+				ignoreFromFlow ? undefined : currentFlowName.current
+			);
+			const { url: historyUrl } = historyAction || { status: undefined, url: undefined };
 
 			if (changed) {
 				currentFlowName.current = flowName;
-				history.replace(historyUrl);
+				historyUrl && history.replace(historyUrl);
 
 				forceUpdate();
 			}
@@ -65,8 +67,9 @@ const FlowProviderInner: React.FC<FlowProviderProps> = ({ fm, children }) => {
 			changed,
 			currentFlowName: actionFlowName,
 			currentStepName,
-			history: { url: historyUrl },
+			history: historyAction,
 		} = flow.current?.back();
+		const { url: historyUrl } = historyAction || { status: undefined, url: undefined };
 
 		logger.log('FlowProvider > back', { changed, currentFlowName });
 
@@ -81,27 +84,21 @@ const FlowProviderInner: React.FC<FlowProviderProps> = ({ fm, children }) => {
 
 	const handleDispatch = React.useCallback(
 		(name: string, payload?: Record<string, any>) => {
-			const {
-				changed,
-				currentFlowName,
-				currentStepName,
-				history: { status: historyStatus, url: historyUrl },
-			} = flow.current?.dispatch(name, payload);
+			const { changed, currentFlowName, currentStepName, history: historyAction } = flow.current?.dispatch(
+				name,
+				payload
+			);
+			const { url: historyUrl } = historyAction || { status: undefined, url: undefined };
 
 			logger.log('FlowProvider > dispatch', { name, payload, changed });
 
 			if (currentFlowName) {
-				handleStart(currentFlowName, currentStepName);
+				return handleStart(currentFlowName, currentStepName);
 			} else {
 				changed && forceUpdate();
 			}
 
-			// if (historyStatus.indexOf('push') >= 0) {
-			// 	history.push(historyUrl);
-			// } else if (historyStatus.indexOf('ignore') >= 0) {
-			// 	history.replace(historyUrl);
-			// }
-			history.replace(historyUrl);
+			historyUrl && history.replace(historyUrl);
 		},
 		[forceUpdate, handleStart]
 	);
@@ -125,8 +122,10 @@ const FlowProviderInner: React.FC<FlowProviderProps> = ({ fm, children }) => {
 
 export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 	return (
-		<Router>
-			<FlowProviderInner fm={fm}>{children}</FlowProviderInner>
-		</Router>
+		<ErrorBoundary containerErrorMessage={(error: any): React.ReactNode => <UnexpectedError error={error} />}>
+			<Router>
+				<FlowProviderInner fm={fm}>{children}</FlowProviderInner>
+			</Router>
+		</ErrorBoundary>
 	);
 };

@@ -1,5 +1,5 @@
-import { CoreHelper } from '@helpers';
-import { Logger, LoggerType } from '@types';
+import { CoreHelper } from '../../helpers';
+import { Logger, LoggerType } from '../../types';
 
 export class LoggerHelper {
 	private static _groups: Record<string, boolean | Logger> = {

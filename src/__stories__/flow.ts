@@ -1,4 +1,4 @@
-import { FlowManager } from '@models';
+import { FlowManager } from '../models';
 import { screens } from './screens';
 
 export const fm = new FlowManager(screens);

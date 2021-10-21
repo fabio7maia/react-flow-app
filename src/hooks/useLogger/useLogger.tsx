@@ -1,4 +1,4 @@
-import { LoggerHelper } from '@helpers';
+import { LoggerHelper } from '../../helpers';
 
 type UseLoggerInput = string;
 
