@@ -1,5 +1,4 @@
 import React from 'react';
-import { screens } from '../../__stories__/screens';
 import { Placeholder } from '../../components';
 import { CoreHelper } from '../../helpers';
 import {
