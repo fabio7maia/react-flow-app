@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/fabio7maia/react-flow-app/compare/v1.0.3...v1.0.4) (2021-10-22)
+
+
+### Bug Fixes
+
+* refine sematic release ([8212f51](https://github.com/fabio7maia/react-flow-app/commit/8212f516355404d13f42780cc5190add08f208aa))
+
 ## [1.0.3](https://github.com/fabio7maia/react-flow-app/compare/v1.0.2...v1.0.3) (2021-10-21)
 
 
