@@ -22,19 +22,18 @@ module.exports = {
 				tarballDir: 'dist',
 			},
 		],
-		// '@semantic-release/github',
-		[
-			'@semantic-release/github',
-			{
-				assets: [{ path: 'dist/**' }],
-			},
-		],
 		[
 			'@semantic-release/git',
 			{
 				assets: ['CHANGELOG.md'],
 				message:
 					'chore(release): set `package.json` to ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}',
+			},
+		],
+		[
+			'@semantic-release/github',
+			{
+				assets: [{ path: 'dist/**' }],
 			},
 		],
 	],
