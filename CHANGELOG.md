@@ -1,3 +1,31 @@
+# [1.1.0](https://github.com/fabio7maia/react-flow-app/compare/v1.0.5...v1.1.0) (2021-10-26)
+
+
+### Features
+
+* added getPreviousStep, getCurrentStep and getHistory functions to useFlow ([8fc69c7](https://github.com/fabio7maia/react-flow-app/commit/8fc69c7292bf50594b64caa8a617d2d3227e183e))
+
+## [1.0.5](https://github.com/fabio7maia/react-flow-app/compare/v1.0.4...v1.0.5) (2021-10-26)
+
+
+### Bug Fixes
+
+* fixed problems with routing ([5e6819e](https://github.com/fabio7maia/react-flow-app/commit/5e6819e7eeeb5cbe92d2f4e2eeb3e9dcfabab3fe))
+
+## [1.0.4](https://github.com/fabio7maia/react-flow-app/compare/v1.0.3...v1.0.4) (2021-10-22)
+
+
+### Bug Fixes
+
+* refine sematic release ([8212f51](https://github.com/fabio7maia/react-flow-app/commit/8212f516355404d13f42780cc5190add08f208aa))
+
+## [1.0.3](https://github.com/fabio7maia/react-flow-app/compare/v1.0.2...v1.0.3) (2021-10-21)
+
+
+### Bug Fixes
+
+* fixed problem with router in ssr and fixed loader screen ([989d81b](https://github.com/fabio7maia/react-flow-app/commit/989d81bbbf9628f6d038882f5ce13966dcd87e7d))
+
 ## [1.0.2](https://github.com/fabio7maia/react-flow-app/compare/v1.0.1...v1.0.2) (2021-10-21)
 
 
