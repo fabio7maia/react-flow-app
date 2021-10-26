@@ -93,7 +93,10 @@ export class FlowManager<
 				type ScreenActions = typeof screen['actions'][number];
 
 				return (
-					screenActions: Record<ScreenActions, keyof typeof steps | (() => TFlowScreenActionCallbackResult)>
+					screenActions: Record<
+						ScreenActions,
+						keyof typeof steps | (() => TFlowScreenActionCallbackResult | void)
+					>
 				): void => {
 					Object.keys(screenActions).forEach(action => {
 						const gotoScreen = (screenActions as any)[action];

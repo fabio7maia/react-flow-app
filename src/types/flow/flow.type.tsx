@@ -59,11 +59,6 @@ export type TStepOptions = {
 
 export type TFlowHistoryStatus = 'clear' | 'push' | 'ignore' | 'clearAndPush' | 'clearAndIgnore' | 'none';
 
-export type TFlowTreatHistoryMethodOutput = {
-	status: TFlowHistoryStatus;
-	url: string;
-};
-
 export type TFlowListen = 'all' | 'mount' | 'back' | 'dispatch';
 
 export type TFlowListenCallbackInputDispatch = {
@@ -84,7 +79,7 @@ export type TFlowBaseActionMethodOutput = {
 	changed: boolean;
 	currentFlowName?: string;
 	currentStepName?: string;
-	history?: TFlowTreatHistoryMethodOutput;
+	historyUrl?: string;
 };
 
 export type TFlowStartMethodOutput = TFlowBaseActionMethodOutput;

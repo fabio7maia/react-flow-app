@@ -1,10 +1,9 @@
 import React from 'react';
-import { StaticRouter as Router, useHistory } from 'react-router';
+import { BrowserRouter as Router, useHistory } from 'react-router-dom';
 import { FlowManager } from '../../models';
 import { TFlowManagerContext } from '../../types';
 import { Flow } from '../../models/flow';
 import { useLoggerFlow } from '../../hooks';
-import { ErrorBoundary, UnexpectedError } from '../../components';
 
 export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	currentFlowName: '',
@@ -20,25 +19,18 @@ interface FlowProviderProps {
 	fm: FlowManager<any, any, any>;
 }
 
-const FlowProviderInner: React.FC<FlowProviderProps> = ({ fm, children }) => {
+export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 	const [_, setForceUpdate] = React.useState(0);
 	const currentFlowName = React.useRef('');
 	const flow = React.useRef<Flow>();
 	const history = useHistory();
 	const logger = useLoggerFlow();
-	// const [state, setState] = React.useState({
-	// 	tick: 0,
-	// 	currentFlowName: '',
-	// 	currentStepName: '',
-	// });
-
-	// const flow = FlowManager.getFlow(currentFlowName);
 
 	const forceUpdate = React.useCallback(() => {
 		flow.current = fm.getFlow(currentFlowName.current);
 
 		setForceUpdate(val => val + 1);
-	}, []);
+	}, [fm]);
 
 	const handleStart = React.useCallback(
 		(flowName: string, stepName?: string, ignoreFromFlow?: boolean): void => {
@@ -46,11 +38,7 @@ const FlowProviderInner: React.FC<FlowProviderProps> = ({ fm, children }) => {
 
 			const flow = fm.getFlow(flowName);
 
-			const { changed, history: historyAction } = flow?.start(
-				stepName,
-				ignoreFromFlow ? undefined : currentFlowName.current
-			);
-			const { url: historyUrl } = historyAction || { status: undefined, url: undefined };
+			const { changed, historyUrl } = flow?.start(stepName, ignoreFromFlow ? undefined : currentFlowName.current);
 
 			if (changed) {
 				currentFlowName.current = flowName;
@@ -59,17 +47,11 @@ const FlowProviderInner: React.FC<FlowProviderProps> = ({ fm, children }) => {
 				forceUpdate();
 			}
 		},
-		[forceUpdate]
+		[fm, forceUpdate, history, logger]
 	);
 
 	const handleBack = React.useCallback(() => {
-		const {
-			changed,
-			currentFlowName: actionFlowName,
-			currentStepName,
-			history: historyAction,
-		} = flow.current?.back();
-		const { url: historyUrl } = historyAction || { status: undefined, url: undefined };
+		const { changed, currentFlowName: actionFlowName, currentStepName, historyUrl } = flow.current?.back();
 
 		logger.log('FlowProvider > back', { changed, currentFlowName });
 
@@ -80,15 +62,11 @@ const FlowProviderInner: React.FC<FlowProviderProps> = ({ fm, children }) => {
 
 			forceUpdate();
 		}
-	}, [forceUpdate, handleStart]);
+	}, [forceUpdate, handleStart, history, logger]);
 
 	const handleDispatch = React.useCallback(
 		(name: string, payload?: Record<string, any>) => {
-			const { changed, currentFlowName, currentStepName, history: historyAction } = flow.current?.dispatch(
-				name,
-				payload
-			);
-			const { url: historyUrl } = historyAction || { status: undefined, url: undefined };
+			const { changed, currentFlowName, currentStepName, historyUrl } = flow.current?.dispatch(name, payload);
 
 			logger.log('FlowProvider > dispatch', { name, payload, changed });
 
@@ -100,7 +78,7 @@ const FlowProviderInner: React.FC<FlowProviderProps> = ({ fm, children }) => {
 
 			historyUrl && history.replace(historyUrl);
 		},
-		[forceUpdate, handleStart]
+		[forceUpdate, handleStart, history, logger]
 	);
 
 	logger.log('FlowProvider', { flow: flow.current });
@@ -120,12 +98,12 @@ const FlowProviderInner: React.FC<FlowProviderProps> = ({ fm, children }) => {
 	);
 };
 
-export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
-	return (
-		<ErrorBoundary containerErrorMessage={(error: any): React.ReactNode => <UnexpectedError error={error} />}>
-			<Router>
-				<FlowProviderInner fm={fm}>{children}</FlowProviderInner>
-			</Router>
-		</ErrorBoundary>
-	);
-};
+// export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
+// 	return (
+// 		<ErrorBoundary containerErrorMessage={(error: any): React.ReactNode => <UnexpectedError error={error} />}>
+// 			<Router>
+// 				<FlowProviderInner fm={fm}>{children}</FlowProviderInner>
+// 			</Router>
+// 		</ErrorBoundary>
+// 	);
+// };
