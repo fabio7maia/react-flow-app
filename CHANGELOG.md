@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/fabio7maia/react-flow-app/compare/v1.0.5...v1.1.0) (2021-10-26)
+
+
+### Features
+
+* added getPreviousStep, getCurrentStep and getHistory functions to useFlow ([8fc69c7](https://github.com/fabio7maia/react-flow-app/commit/8fc69c7292bf50594b64caa8a617d2d3227e183e))
+
 ## [1.0.5](https://github.com/fabio7maia/react-flow-app/compare/v1.0.4...v1.0.5) (2021-10-26)
 
 
