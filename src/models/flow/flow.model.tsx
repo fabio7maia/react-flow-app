@@ -1,6 +1,6 @@
 import React from 'react';
 import { Placeholder } from '../../components';
-import { CoreHelper } from '../../helpers';
+import { CoreHelper, LoggerHelper } from '../../helpers';
 import {
 	TFlowBackMethodOutput,
 	TFlowDispatchMethodOutput,
@@ -10,7 +10,6 @@ import {
 	TFlowListenCallbackInputDispatch,
 	TFlowScreenActionCallbackResult,
 	TFlowStartMethodOutput,
-	TFlowTreatHistoryMethodOutput,
 	TScreens,
 	TStepOptions,
 } from '../../types';
@@ -53,7 +52,7 @@ export class Flow {
 	}
 
 	private logger = (message: string, ...args: any[]): void => {
-		console.log('Flow', message, args);
+		LoggerHelper.log('Flow')(message, args);
 	};
 
 	private callListeners = (type: TFlowListen, dispatch?: TFlowListenCallbackInputDispatch): void => {
@@ -90,13 +89,17 @@ export class Flow {
 	};
 
 	private stepUrl = (step: Step): string => {
-		return step.url || step.name;
+		return step?.options?.url || step.name;
 	};
 
-	private buildUrl = (baseUrl: string, restUrl: string): string => {
+	private buildUrl = (): string => {
+		let baseUrl = this.baseUrl;
+		const currentStepUrl = this.stepUrl(this.steps[this.currentStepName]);
+
+		baseUrl = baseUrl.substr(0, 1) === '/' ? baseUrl.substr(1, baseUrl.length) : baseUrl;
 		baseUrl = baseUrl.substr(baseUrl.length - 1) === '/' ? baseUrl.substr(0, baseUrl.length - 1) : baseUrl;
 
-		return `${baseUrl}/${restUrl}`;
+		return `/${baseUrl}/${currentStepUrl}`;
 	};
 
 	render = (): React.ReactNode => {
@@ -134,10 +137,7 @@ export class Flow {
 
 			return {
 				changed: true,
-				history: {
-					status: 'push',
-					url: this.buildUrl(this.baseUrl, this.stepUrl(this.steps[this.currentStepName])),
-				},
+				historyUrl: this.buildUrl(),
 				currentFlowName: this.name,
 				currentStepName: this.currentStepName,
 			};
@@ -162,10 +162,7 @@ export class Flow {
 				changed: true,
 				currentFlowName: this.name,
 				currentStepName: this.currentStepName,
-				history: {
-					status: 'push',
-					url: this.buildUrl(this.baseUrl, this.stepUrl(this.steps[this.currentStepName])),
-				},
+				historyUrl: this.buildUrl(),
 			};
 		} else if (this.fromFlowName) {
 			return { changed: true, currentFlowName: this.fromFlowName };
@@ -174,15 +171,9 @@ export class Flow {
 		return { changed: false };
 	};
 
-	private treatHistory = (): TFlowTreatHistoryMethodOutput => {
-		let res: TFlowTreatHistoryMethodOutput = {
-			status: 'none',
-			url: '',
-		};
-
+	private treatHistory = (): void => {
 		if (this.currentStepName) {
 			const currentStep = this.steps[this.currentStepName];
-			const url = this.buildUrl(this.baseUrl, currentStep.url || currentStep.name);
 
 			this.logger('Flow > treatHistory', {
 				currentStep,
@@ -193,24 +184,12 @@ export class Flow {
 			if (CoreHelper.getValueOrDefault(currentStep.options?.clearHistory, false)) {
 				this.history = [];
 				this.fromFlowName = undefined;
-				res = { status: 'clear', url };
 			}
 
 			if (!CoreHelper.getValueOrDefault(currentStep.options?.ignoreHistory, false)) {
 				this.history.push(this.currentStepName);
-				res = {
-					status: res.status === 'clear' ? 'clearAndPush' : 'push',
-					url,
-				};
-			} else {
-				res = {
-					status: res.status === 'clear' ? 'clearAndIgnore' : 'ignore',
-					url,
-				};
 			}
 		}
-
-		return res;
 	};
 
 	dispatch = (actionName: string, payload?: Record<string, any>): TFlowDispatchMethodOutput => {
@@ -227,7 +206,6 @@ export class Flow {
 			flowName: undefined,
 			stepName: undefined,
 		};
-		let history: TFlowTreatHistoryMethodOutput;
 
 		if (currentStep?.actions.hasOwnProperty(actionName)) {
 			nextStepNameOrFn = currentStep.actions[actionName];
@@ -236,7 +214,7 @@ export class Flow {
 				changed = this.currentStepName !== nextStepNameOrFn;
 
 				if (changed) {
-					history = this.treatHistory();
+					this.treatHistory();
 				}
 
 				this.currentStepName = nextStepNameOrFn;
@@ -265,7 +243,7 @@ export class Flow {
 			currentFlowName: nextStepFnResult.flowName,
 			currentStepName: nextStepFnResult.stepName,
 			changed,
-			history,
+			historyUrl: this.buildUrl(),
 		};
 	};
 }

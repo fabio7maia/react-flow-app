@@ -1,3 +1,4 @@
+import React from 'react';
 import { LoggerHelper } from '../../helpers';
 
 type UseLoggerInput = string;
@@ -9,11 +10,14 @@ interface UseLoggerOutput {
 }
 
 export const useLogger = (group: UseLoggerInput): UseLoggerOutput => {
-	return {
-		error: LoggerHelper.error(group),
-		log: LoggerHelper.log(group),
-		warn: LoggerHelper.error(group),
-	};
+	return React.useCallback(
+		() => ({
+			error: LoggerHelper.error(group),
+			log: LoggerHelper.log(group),
+			warn: LoggerHelper.error(group),
+		}),
+		[group]
+	)();
 };
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

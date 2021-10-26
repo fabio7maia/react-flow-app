@@ -13,8 +13,6 @@ export class LoggerHelper {
 		const value = CoreHelper.getPropertyValue(LoggerHelper._groups, group, true);
 		const valueByType = CoreHelper.getPropertyValue(value, type);
 
-		console.log('LoggerHelper > isGroupActive', { all, allByType, value, valueByType });
-
 		return allByType !== undefined
 			? allByType
 			: all !== undefined && typeof all === 'boolean'

@@ -3,7 +3,6 @@ import { TStepAction, TStepOptions } from '../../types';
 
 export class Step {
 	name: string;
-	url?: string;
 	loader: () => React.LazyExoticComponent<React.ComponentType<any>>;
 	actions: Record<string, TStepAction>;
 	options?: TStepOptions;
@@ -15,7 +14,7 @@ export class Step {
 	) {
 		this.name = name;
 		this.loader = loader;
-		this.actions = {};
 		this.options = options;
+		this.actions = {};
 	}
 }
