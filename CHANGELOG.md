@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/fabio7maia/react-flow-app/compare/v1.0.4...v1.0.5) (2021-10-26)
+
+
+### Bug Fixes
+
+* fixed problems with routing ([5e6819e](https://github.com/fabio7maia/react-flow-app/commit/5e6819e7eeeb5cbe92d2f4e2eeb3e9dcfabab3fe))
+
 ## [1.0.4](https://github.com/fabio7maia/react-flow-app/compare/v1.0.3...v1.0.4) (2021-10-22)
 
 
