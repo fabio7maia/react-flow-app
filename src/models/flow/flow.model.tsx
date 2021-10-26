@@ -1,3 +1,4 @@
+import { throws } from 'assert';
 import React from 'react';
 import { Placeholder } from '../../components';
 import { CoreHelper, LoggerHelper } from '../../helpers';
@@ -66,6 +67,18 @@ export class Flow {
 		this.listeners[type].forEach(fn => fn(data));
 
 		this.listeners['all'].forEach(fn => fn(data));
+	};
+
+	getPreviousStep = (): Step | undefined => {
+		return this.steps[this.lastStepName];
+	};
+
+	getCurrentStep = (): Step | undefined => {
+		return this.steps[this.currentStepName];
+	};
+
+	getHistory = (): string[] => {
+		return this.history;
 	};
 
 	addStep = <TScreensInner extends TScreens, TScreen extends TScreens[0]>(

@@ -1,4 +1,5 @@
 import React from 'react';
+import { FlowManager } from '../../models';
 
 export type TScreen = {
 	actions: any; // needs to any type to working properly to infer actions
@@ -16,10 +17,12 @@ export type TFlowCreatorInput<TFlowName extends string> = {
 export type TFlowActionPayload = Record<string, any>;
 
 export type TFlowManagerContext = {
+	fm: FlowManager<any, any, any>;
 	currentFlowName: string;
 	start: (flowName: string, stepName?: string) => void;
 	back: () => void;
 	dispatch: (name: string, payload?: TFlowActionPayload) => void;
+	refresh: () => void;
 };
 
 export type TStepAction = string | (() => void);

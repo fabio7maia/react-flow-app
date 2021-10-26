@@ -3,7 +3,8 @@ import { flowManagerContext } from '../../providers';
 import { TFlowManagerStartMethodOutput, TScreen } from '../../types';
 
 export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => {
-	const { back, dispatch } = React.useContext(flowManagerContext);
+	const { back, dispatch, currentFlowName, fm, refresh } = React.useContext(flowManagerContext);
+	const flow = fm.getFlow(currentFlowName);
 
 	const handleDispatch = React.useCallback(
 		(name: TScreenInner['actions'][number], payload?: Record<string, any>): void => {
@@ -12,9 +13,19 @@ export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => 
 		[dispatch]
 	);
 
+	const getCurrentStep = React.useCallback(flow.getCurrentStep, [flow]);
+
+	const getPreviousStep = React.useCallback(flow.getPreviousStep, [flow]);
+
+	const getHistory = React.useCallback(flow.getHistory, [flow]);
+
 	return {
 		back: back,
 		dispatch: handleDispatch,
+		getCurrentStep,
+		getHistory,
+		getPreviousStep,
+		refresh,
 	};
 };
 

@@ -6,6 +6,7 @@ import { Flow } from '../../models/flow';
 import { useLoggerFlow } from '../../hooks';
 
 export const flowManagerContext = React.createContext<TFlowManagerContext>({
+	fm: undefined,
 	currentFlowName: '',
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	start: (flowName: string, stepName?: string): void => {},
@@ -13,6 +14,8 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	back: (): void => {},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	dispatch: (name: string, payload?: Record<string, any>): void => {},
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	refresh: (): void => {},
 });
 
 interface FlowProviderProps {
@@ -81,15 +84,21 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 		[forceUpdate, handleStart, history, logger]
 	);
 
+	const handleRefresh = React.useCallback(() => {
+		forceUpdate();
+	}, [forceUpdate]);
+
 	logger.log('FlowProvider', { flow: flow.current });
 
 	return (
 		<flowManagerContext.Provider
 			value={{
+				fm,
 				currentFlowName: flow.current?.name,
 				start: handleStart,
 				back: handleBack,
 				dispatch: handleDispatch,
+				refresh: handleRefresh,
 			}}
 		>
 			{children}
