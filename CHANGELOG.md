@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/fabio7maia/react-flow-app/compare/v1.1.2...v1.1.3) (2021-10-27)
+
+
+### Bug Fixes
+
+* fixed getCurrentStep, getPreviousStep and getHistory to return empty callback when not exists flow to working properly in tests ([ee7e7a9](https://github.com/fabio7maia/react-flow-app/commit/ee7e7a9c4d593e511de271b812791d0c359c526a))
+
 ## [1.1.2](https://github.com/fabio7maia/react-flow-app/compare/v1.1.1...v1.1.2) (2021-10-26)
 
 
