@@ -2,6 +2,11 @@ import React from 'react';
 import { flowManagerContext } from '../../providers';
 import { TFlowManagerStartMethodOutput, TScreen } from '../../types';
 
+// eslint-disable-next-line @typescript-eslint/no-empty-function
+const emptyFn = <TOuput extends any>(ret?: TOuput): TOuput => {
+	return ret;
+};
+
 export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => {
 	const { back, dispatch, currentFlowName, fm, refresh } = React.useContext(flowManagerContext);
 	const flow = fm.getFlow(currentFlowName);
@@ -13,11 +18,11 @@ export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => 
 		[dispatch]
 	);
 
-	const getCurrentStep = React.useCallback(flow.getCurrentStep, [flow]);
+	const getCurrentStep = React.useCallback(flow?.getCurrentStep || ((): undefined => emptyFn()), [flow]);
 
-	const getPreviousStep = React.useCallback(flow.getPreviousStep, [flow]);
+	const getPreviousStep = React.useCallback(flow?.getPreviousStep || ((): undefined => emptyFn()), [flow]);
 
-	const getHistory = React.useCallback(flow.getHistory, [flow]);
+	const getHistory = React.useCallback(flow?.getHistory || ((): string[] => emptyFn([])), [flow]);
 
 	return {
 		back: back,
