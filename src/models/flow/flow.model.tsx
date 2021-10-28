@@ -39,6 +39,16 @@ export class Flow {
 		};
 	}
 
+	private get stepsArray(): string[] {
+		return Object.keys(this.steps);
+	}
+
+	private get firstStepName(): string {
+		const stepsArray = this.stepsArray;
+
+		return stepsArray.length > 0 ? stepsArray[0] : undefined;
+	}
+
 	private get lastStepName(): string {
 		return this.lastSteps[1];
 	}
@@ -69,8 +79,8 @@ export class Flow {
 		this.listeners['all'].forEach(fn => fn(data));
 	};
 
-	getPreviousStep = (): Step | undefined => {
-		return this.steps[this.lastStepName];
+	getPreviousStepHistory = (): Step | undefined => {
+		return this.history.length > 0 ? this.steps[this.history[this.history.length - 1]] : undefined;
 	};
 
 	getCurrentStep = (): Step | undefined => {
@@ -87,6 +97,10 @@ export class Flow {
 		options?: TStepOptions
 	): void => {
 		const step = new Step(name as string, screen.loader, options);
+
+		if (!this.currentStepName && CoreHelper.getValueOrDefault(options.initialStep, false)) {
+			this.currentStepName = step.name;
+		}
 
 		this.steps[name] = step;
 	};
@@ -107,7 +121,8 @@ export class Flow {
 
 	private buildUrl = (): string => {
 		let baseUrl = this.baseUrl;
-		const currentStepUrl = this.stepUrl(this.steps[this.currentStepName]);
+		const currentStep = this.getCurrentStep();
+		const currentStepUrl = currentStep ? this.stepUrl(currentStep) : '';
 
 		baseUrl = baseUrl.substr(0, 1) === '/' ? baseUrl.substr(1, baseUrl.length) : baseUrl;
 		baseUrl = baseUrl.substr(baseUrl.length - 1) === '/' ? baseUrl.substr(0, baseUrl.length - 1) : baseUrl;
@@ -116,9 +131,13 @@ export class Flow {
 	};
 
 	render = (): React.ReactNode => {
-		const currentStepName = this.currentStepName || this.steps[Object.keys(this.steps)[0]].name;
+		const currentStepName = this.currentStepName;
 
 		this.logger('Flow > render [start]', { currentStepName });
+
+		if (!currentStepName) {
+			return null;
+		}
 
 		if (this.lastStepName !== this.currentStepName) {
 			this.mount();
@@ -143,7 +162,7 @@ export class Flow {
 		this.logger('start', { stepName, fromFlowName });
 
 		this.fromFlowName = fromFlowName;
-		const currentStepName = stepName || this.currentStepName || this.steps[Object.keys(this.steps)[0]].name;
+		const currentStepName = stepName || this.currentStepName || this.firstStepName;
 
 		if (this.steps.hasOwnProperty(currentStepName)) {
 			this.currentStepName = currentStepName;
