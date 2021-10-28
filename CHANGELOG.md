@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/fabio7maia/react-flow-app/compare/v1.1.3...v1.2.0) (2021-10-28)
+
+
+### Features
+
+* added initialStep to options of step and refined navigateTo method to allow optional stepName passed ([338c23b](https://github.com/fabio7maia/react-flow-app/commit/338c23b57e1ac3fbef0c2b862d34803532fd48cc))
+
 ## [1.1.3](https://github.com/fabio7maia/react-flow-app/compare/v1.1.2...v1.1.3) (2021-10-27)
 
 
