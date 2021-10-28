@@ -20,7 +20,7 @@ export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => 
 
 	const getCurrentStep = React.useCallback(flow?.getCurrentStep || ((): undefined => emptyFn()), [flow]);
 
-	const getPreviousStep = React.useCallback(flow?.getPreviousStep || ((): undefined => emptyFn()), [flow]);
+	const getPreviousStep = React.useCallback(flow?.getPreviousStepHistory || ((): undefined => emptyFn()), [flow]);
 
 	const getHistory = React.useCallback(flow?.getHistory || ((): string[] => emptyFn([])), [flow]);
 

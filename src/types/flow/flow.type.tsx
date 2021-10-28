@@ -29,6 +29,10 @@ export type TStepAction = string | (() => void);
 
 export type TStepOptions = {
 	/**
+	 * Mark this step with initial step of flow. When more than 1 step is marked the first is considered and others is ignored.
+	 */
+	initialStep?: boolean;
+	/**
 	 * Set the url for step. Allow using pass and catch route params, using ':' character
 	 *
 	 * Default: assumed name of step
@@ -93,7 +97,7 @@ export type TFlowDispatchMethodOutput = TFlowBaseActionMethodOutput;
 
 export type TFlowScreenActionCallbackResult = {
 	flowName: string;
-	stepName: string;
+	stepName?: string;
 };
 
 export type TFlowManagerStartMethodOutput = {
