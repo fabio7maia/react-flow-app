@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/fabio7maia/react-flow-app/compare/v1.2.0...v1.3.0) (2021-11-04)
+
+
+### Features
+
+* disable logger before init and set default not logging ([c3f7987](https://github.com/fabio7maia/react-flow-app/commit/c3f7987520a7056a4294495314cc4ceb27937469))
+
 # [1.2.0](https://github.com/fabio7maia/react-flow-app/compare/v1.1.3...v1.2.0) (2021-10-28)
 
 
