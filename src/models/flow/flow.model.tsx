@@ -79,7 +79,11 @@ export class Flow {
 		this.listeners['all'].forEach(fn => fn(data));
 	};
 
-	getPreviousStepHistory = (): Step | undefined => {
+	hasPreviousStep = (): boolean => {
+		return this.history.length > 0 || this.fromFlowName ? true : false;
+	};
+
+	getPreviousStep = (): Step | undefined => {
 		return this.history.length > 0 ? this.steps[this.history[this.history.length - 1]] : undefined;
 	};
 
@@ -165,6 +169,10 @@ export class Flow {
 		const currentStepName = stepName || this.currentStepName || this.firstStepName;
 
 		if (this.steps.hasOwnProperty(currentStepName)) {
+			if (currentStepName === this.getPreviousStep()?.name) {
+				this.removeLastStepHistory();
+			}
+
 			this.currentStepName = currentStepName;
 
 			return {
@@ -203,6 +211,17 @@ export class Flow {
 		return { changed: false };
 	};
 
+	private removeLastStepHistory = (): void => {
+		if (this.history.length > 0) {
+			this.history.pop();
+		}
+	};
+
+	private clearHistory = (): void => {
+		this.history = [];
+		this.fromFlowName = undefined;
+	};
+
 	private treatHistory = (): void => {
 		if (this.currentStepName) {
 			const currentStep = this.steps[this.currentStepName];
@@ -214,8 +233,7 @@ export class Flow {
 
 			// when clear history it's necessary empty history and from flow name when back not doing anything
 			if (CoreHelper.getValueOrDefault(currentStep.options?.clearHistory, false)) {
-				this.history = [];
-				this.fromFlowName = undefined;
+				this.clearHistory();
 			}
 
 			if (!CoreHelper.getValueOrDefault(currentStep.options?.ignoreHistory, false)) {
@@ -255,7 +273,13 @@ export class Flow {
 				// eslint-disable-next-line no-self-assign
 				this.currentStepName = this.currentStepName;
 
+				this.treatHistory();
+
 				nextStepFnResult = nextStepNameOrFn() || {};
+
+				if (nextStepFnResult?.options?.clearHistory) {
+					this.clearHistory();
+				}
 
 				changed = true;
 			}

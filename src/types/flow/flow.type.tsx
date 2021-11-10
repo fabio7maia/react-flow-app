@@ -95,9 +95,19 @@ export type TFlowBackMethodOutput = TFlowBaseActionMethodOutput;
 
 export type TFlowDispatchMethodOutput = TFlowBaseActionMethodOutput;
 
+export type TFlowScreenActionCallbackResultOptions = {
+	/**
+	 * Set true to clear all steps saved in history to not allow back
+	 *
+	 * Default: false
+	 */
+	clearHistory?: boolean;
+};
+
 export type TFlowScreenActionCallbackResult = {
 	flowName: string;
 	stepName?: string;
+	options?: TFlowScreenActionCallbackResultOptions;
 };
 
 export type TFlowManagerStartMethodOutput = {
