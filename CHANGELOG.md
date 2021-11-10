@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/fabio7maia/react-flow-app/compare/v1.3.0...v1.4.0) (2021-11-10)
+
+
+### Features
+
+* refined return when use callback in step navigation to allow clear history ([3b7c80a](https://github.com/fabio7maia/react-flow-app/commit/3b7c80aadc1c7a714044d2b8449892a7ac769a0e))
+
 # [1.3.0](https://github.com/fabio7maia/react-flow-app/compare/v1.2.0...v1.3.0) (2021-11-04)
 
 
