@@ -121,4 +121,5 @@ export type TFlowManagerStartMethodInput = {
 export type TFlowManagerStartMethodOutput = {
 	flowName: string;
 	stepName?: string;
+	options?: TFlowActionOptions;
 };
