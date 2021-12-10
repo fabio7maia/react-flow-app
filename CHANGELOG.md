@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/fabio7maia/react-flow-app/compare/v1.4.0...v1.5.0) (2021-12-10)
+
+
+### Features
+
+* added options to flow start ([fe61890](https://github.com/fabio7maia/react-flow-app/commit/fe61890cb82e6361621cf2370ff6031925a4b90f))
+
 # [1.4.0](https://github.com/fabio7maia/react-flow-app/compare/v1.3.0...v1.4.0) (2021-11-10)
 
 
