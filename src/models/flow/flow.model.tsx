@@ -3,6 +3,7 @@ import React from 'react';
 import { Placeholder } from '../../components';
 import { CoreHelper, LoggerHelper } from '../../helpers';
 import {
+	TFlowActionOptions,
 	TFlowBackMethodOutput,
 	TFlowDispatchMethodOutput,
 	TFlowListen,
@@ -162,13 +163,18 @@ export class Flow {
 		return null;
 	};
 
-	start = (stepName?: string, fromFlowName?: string): TFlowStartMethodOutput => {
-		this.logger('start', { stepName, fromFlowName });
+	start = (stepName?: string, fromFlowName?: string, options?: TFlowActionOptions): TFlowStartMethodOutput => {
+		this.logger('start', { stepName, fromFlowName, options });
 
 		this.fromFlowName = fromFlowName;
 		const currentStepName = stepName || this.currentStepName || this.firstStepName;
+		const { clearHistory = false } = options || {};
 
 		if (this.steps.hasOwnProperty(currentStepName)) {
+			if (clearHistory) {
+				this.clearHistory();
+			}
+
 			if (currentStepName === this.getPreviousStep()?.name) {
 				this.removeLastStepHistory();
 			}

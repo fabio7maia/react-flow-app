@@ -1,7 +1,7 @@
 import React from 'react';
-import { BrowserRouter as Router, useHistory } from 'react-router-dom';
+import { useHistory } from 'react-router-dom';
 import { FlowManager } from '../../models';
-import { TFlowManagerContext } from '../../types';
+import { TFlowActionOptions, TFlowManagerContext } from '../../types';
 import { Flow } from '../../models/flow';
 import { useLoggerFlow } from '../../hooks';
 
@@ -9,7 +9,7 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	fm: undefined,
 	currentFlowName: '',
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	start: (flowName: string, stepName?: string): void => {},
+	start: (flowName: string, stepName?: string, options?: TFlowActionOptions): void => {},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	back: (): void => {},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -36,12 +36,16 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 	}, [fm]);
 
 	const handleStart = React.useCallback(
-		(flowName: string, stepName?: string, ignoreFromFlow?: boolean): void => {
+		(flowName: string, stepName?: string, options?: TFlowActionOptions, ignoreFromFlow?: boolean): void => {
 			logger.log('FlowProvider > handleStart', { flowName });
 
 			const flow = fm.getFlow(flowName);
 
-			const { changed, historyUrl } = flow?.start(stepName, ignoreFromFlow ? undefined : currentFlowName.current);
+			const { changed, historyUrl } = flow?.start(
+				stepName,
+				ignoreFromFlow ? undefined : currentFlowName.current,
+				options
+			);
 
 			if (changed) {
 				currentFlowName.current = flowName;
@@ -59,7 +63,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 		logger.log('FlowProvider > back', { changed, currentFlowName });
 
 		if (changed && actionFlowName !== currentFlowName.current) {
-			handleStart(actionFlowName, currentStepName, true);
+			handleStart(actionFlowName, currentStepName, undefined, true);
 		} else if (changed) {
 			history.replace(historyUrl);
 
