@@ -7,6 +7,7 @@ import {
 	TStepOptions,
 	TFlowManagerStartMethodOutput,
 	TFlowCreatorInput,
+	TFlowActionOptions,
 } from '../../types';
 import { Flow } from '../flow';
 
@@ -127,10 +128,14 @@ export class FlowManager<
 					return flow.addListener(params.callback, params.type);
 				}
 			},
-			start: <TStepName extends keyof typeof steps>(stepName?: TStepName): TFlowManagerStartMethodOutput => {
+			start: <TStepName extends keyof typeof steps>(
+				stepName?: TStepName,
+				options?: TFlowActionOptions
+			): TFlowManagerStartMethodOutput => {
 				return {
 					flowName,
 					stepName: stepName as any,
+					options,
 				};
 			},
 			navigateTo: <TStepName extends keyof typeof steps>(
