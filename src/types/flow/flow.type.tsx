@@ -16,10 +16,19 @@ export type TFlowCreatorInput<TFlowName extends string> = {
 
 export type TFlowActionPayload = Record<string, any>;
 
+export type TFlowActionOptions = {
+	/**
+	 * Set true to clear all steps saved in history to not allow back
+	 *
+	 * Default: false
+	 */
+	clearHistory?: boolean;
+};
+
 export type TFlowManagerContext = {
 	fm: FlowManager<any, any, any>;
 	currentFlowName: string;
-	start: (flowName: string, stepName?: string) => void;
+	start: (flowName: string, stepName?: string, options?: TFlowActionOptions) => void;
 	back: () => void;
 	dispatch: (name: string, payload?: TFlowActionPayload) => void;
 	refresh: () => void;
@@ -95,19 +104,18 @@ export type TFlowBackMethodOutput = TFlowBaseActionMethodOutput;
 
 export type TFlowDispatchMethodOutput = TFlowBaseActionMethodOutput;
 
-export type TFlowScreenActionCallbackResultOptions = {
-	/**
-	 * Set true to clear all steps saved in history to not allow back
-	 *
-	 * Default: false
-	 */
-	clearHistory?: boolean;
-};
+export type TFlowScreenActionCallbackResultOptions = TFlowActionOptions;
 
 export type TFlowScreenActionCallbackResult = {
 	flowName: string;
 	stepName?: string;
-	options?: TFlowScreenActionCallbackResultOptions;
+	options?: TFlowActionOptions;
+};
+
+export type TFlowManagerStartMethodInput = {
+	flowName: string;
+	stepName?: string;
+	options?: TFlowActionOptions;
 };
 
 export type TFlowManagerStartMethodOutput = {
