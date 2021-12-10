@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/fabio7maia/react-flow-app/compare/v1.5.0...v1.5.1) (2021-12-10)
+
+
+### Bug Fixes
+
+* added options to start method of flow manager model ([db4aaba](https://github.com/fabio7maia/react-flow-app/commit/db4aabac5c0c814ab27b428746b8c5ec7c3ac683))
+
 # [1.5.0](https://github.com/fabio7maia/react-flow-app/compare/v1.4.0...v1.5.0) (2021-12-10)
 
 
