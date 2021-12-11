@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/fabio7maia/react-flow-app/compare/v1.5.1...v1.5.2) (2021-12-11)
+
+
+### Bug Fixes
+
+* fixed problem with multiple navigation between different flows ([766227e](https://github.com/fabio7maia/react-flow-app/commit/766227e9b3b2686064dff20221cbcbcc3dc15375))
+
 ## [1.5.1](https://github.com/fabio7maia/react-flow-app/compare/v1.5.0...v1.5.1) (2021-12-10)
 
 
