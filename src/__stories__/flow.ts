@@ -3,7 +3,7 @@ import { screens } from './screens';
 
 export const fm = new FlowManager(screens);
 
-export const f0 = fm.flow({ name: 'f0', baseUrl: 'flows/f0' }).steps({
+export const f0 = fm.flow({ name: 'f0', baseUrl: 'flows-example/f0' }).steps({
 	screen1: {},
 	screen2: { ignoreHistory: true /*, clearHistory: true*/ },
 	screen3: {},
@@ -18,7 +18,7 @@ f0.step('screen3')({
 	end: 'screen1',
 });
 
-export const f1 = fm.flow({ name: 'f1', baseUrl: 'flows/f1' }).steps({ screen2: {}, screen3: {} });
+export const f1 = fm.flow({ name: 'f1', baseUrl: 'flows-example/f1' }).steps({ screen2: {}, screen3: {} });
 
 f1.step('screen2')({ next: 'screen3' });
 f1.step('screen3')({
@@ -34,7 +34,7 @@ f1.step('screen3')({
 	},
 });
 
-export const f2 = fm.flow({ name: 'f2', baseUrl: 'flows/f2' }).steps({ screen2: {} });
+export const f2 = fm.flow({ name: 'f2', baseUrl: 'flows-example/f2' }).steps({ screen2: {} });
 
 f2.step('screen2')({
 	next: () => {

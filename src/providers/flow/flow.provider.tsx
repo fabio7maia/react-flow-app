@@ -36,12 +36,21 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 	}, [fm]);
 
 	const handleStart = React.useCallback(
-		(flowName: string, stepName?: string, options?: TFlowActionOptions, fromFlowName?: string): void => {
+		(
+			flowName: string,
+			stepName?: string,
+			options?: TFlowActionOptions,
+			fromFlowName?: string,
+			ignoreFromFlow = false
+		): void => {
 			logger.log('FlowProvider > handleStart', { flowName });
 
 			const flow = fm.getFlow(flowName);
 
-			const { changed, historyUrl } = flow?.start(stepName, fromFlowName || currentFlowName.current, options);
+			// assumed value passed or current flow name when not set to ignore
+			fromFlowName = fromFlowName ? fromFlowName : ignoreFromFlow ? undefined : currentFlowName.current;
+
+			const { changed, historyUrl } = flow?.start(stepName, fromFlowName, options);
 
 			if (changed) {
 				currentFlowName.current = flowName;
@@ -61,7 +70,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 		if (changed && actionFlowName !== currentFlowName.current) {
 			const { fromFlowName } = fm.getFlow(actionFlowName);
 
-			handleStart(actionFlowName, currentStepName, undefined, fromFlowName);
+			handleStart(actionFlowName, currentStepName, undefined, fromFlowName, true);
 		} else if (changed) {
 			history.replace(historyUrl);
 

@@ -14,7 +14,19 @@ const FlowExample: React.FC = () => {
 		start(f2.start());
 	}, []);
 
-	return <></>;
+	return <h1>Test</h1>;
+};
+
+const RouteFlowTest = (): JSX.Element => {
+	return (
+		<Route
+			render={(): React.ReactNode => (
+				<FlowProvider fm={fm}>
+					<FlowExample />
+				</FlowProvider>
+			)}
+		/>
+	);
 };
 
 const Flow = (): JSX.Element => <FlowExample />;
@@ -25,13 +37,7 @@ export default story.meta;
 
 const template: React.FC = () => (
 	<Router>
-		<Route
-			render={(): React.ReactNode => (
-				<FlowProvider fm={fm}>
-					<FlowExample />
-				</FlowProvider>
-			)}
-		/>
+		<RouteFlowTest />
 	</Router>
 );
 
