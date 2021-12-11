@@ -34,6 +34,14 @@ f1.step('screen3')({
 	},
 });
 
+export const f2 = fm.flow({ name: 'f2', baseUrl: 'flows/f2' }).steps({ screen2: {} });
+
+f2.step('screen2')({
+	next: () => {
+		return f1.navigateTo();
+	},
+});
+
 // f0.listen(input => {
 // 	console.log('listen all', { input });
 // });

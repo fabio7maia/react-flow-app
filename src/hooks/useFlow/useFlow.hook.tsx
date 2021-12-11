@@ -48,7 +48,10 @@ export const useFlowManager = () => {
 		[start]
 	);
 
-	return {
-		start: handleStart,
-	};
+	return React.useMemo(
+		() => ({
+			start: handleStart,
+		}),
+		[handleStart]
+	);
 };

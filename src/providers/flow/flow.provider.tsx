@@ -36,16 +36,12 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 	}, [fm]);
 
 	const handleStart = React.useCallback(
-		(flowName: string, stepName?: string, options?: TFlowActionOptions, ignoreFromFlow?: boolean): void => {
+		(flowName: string, stepName?: string, options?: TFlowActionOptions, fromFlowName?: string): void => {
 			logger.log('FlowProvider > handleStart', { flowName });
 
 			const flow = fm.getFlow(flowName);
 
-			const { changed, historyUrl } = flow?.start(
-				stepName,
-				ignoreFromFlow ? undefined : currentFlowName.current,
-				options
-			);
+			const { changed, historyUrl } = flow?.start(stepName, fromFlowName || currentFlowName.current, options);
 
 			if (changed) {
 				currentFlowName.current = flowName;
@@ -63,13 +59,15 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 		logger.log('FlowProvider > back', { changed, currentFlowName });
 
 		if (changed && actionFlowName !== currentFlowName.current) {
-			handleStart(actionFlowName, currentStepName, undefined, true);
+			const { fromFlowName } = fm.getFlow(actionFlowName);
+
+			handleStart(actionFlowName, currentStepName, undefined, fromFlowName);
 		} else if (changed) {
 			history.replace(historyUrl);
 
 			forceUpdate();
 		}
-	}, [forceUpdate, handleStart, history, logger]);
+	}, [fm, forceUpdate, handleStart, history, logger]);
 
 	const handleDispatch = React.useCallback(
 		(name: string, payload?: Record<string, any>) => {
@@ -92,31 +90,24 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 		forceUpdate();
 	}, [forceUpdate]);
 
+	const flowManagerContextValue = React.useMemo(
+		() => ({
+			fm,
+			currentFlowName: flow.current?.name,
+			start: handleStart,
+			back: handleBack,
+			dispatch: handleDispatch,
+			refresh: handleRefresh,
+		}),
+		[fm, handleBack, handleDispatch, handleRefresh, handleStart]
+	);
+
 	logger.log('FlowProvider', { flow: flow.current });
 
 	return (
-		<flowManagerContext.Provider
-			value={{
-				fm,
-				currentFlowName: flow.current?.name,
-				start: handleStart,
-				back: handleBack,
-				dispatch: handleDispatch,
-				refresh: handleRefresh,
-			}}
-		>
+		<flowManagerContext.Provider value={flowManagerContextValue}>
 			{children}
 			{flow.current?.render()}
 		</flowManagerContext.Provider>
 	);
 };
-
-// export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
-// 	return (
-// 		<ErrorBoundary containerErrorMessage={(error: any): React.ReactNode => <UnexpectedError error={error} />}>
-// 			<Router>
-// 				<FlowProviderInner fm={fm}>{children}</FlowProviderInner>
-// 			</Router>
-// 		</ErrorBoundary>
-// 	);
-// };

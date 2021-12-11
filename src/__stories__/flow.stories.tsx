@@ -1,8 +1,9 @@
 import React from 'react';
+import { BrowserRouter as Router, Route } from 'react-router-dom';
 import { StorybookHelper } from '../storybook';
 import { FlowProvider } from '../providers';
 import { useFlowManager } from '../hooks';
-import { f1, fm } from './flow';
+import { f2, fm } from './flow';
 
 const FlowExample: React.FC = () => {
 	// eslint-disable-next-line react-hooks/rules-of-hooks
@@ -10,8 +11,8 @@ const FlowExample: React.FC = () => {
 
 	// eslint-disable-next-line react-hooks/rules-of-hooks
 	React.useEffect(() => {
-		start(f1.start());
-	}, [start]);
+		start(f2.start());
+	}, []);
 
 	return <></>;
 };
@@ -23,9 +24,15 @@ const story = StorybookHelper.writeStory({ component: Flow, group: 'Modules' });
 export default story.meta;
 
 const template: React.FC = () => (
-	<FlowProvider fm={fm}>
-		<FlowExample />
-	</FlowProvider>
+	<Router>
+		<Route
+			render={(): React.ReactNode => (
+				<FlowProvider fm={fm}>
+					<FlowExample />
+				</FlowProvider>
+			)}
+		/>
+	</Router>
 );
 
 export const Default = template.bind({});
