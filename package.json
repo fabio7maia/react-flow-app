@@ -1,9 +1,10 @@
 {
 	"name": "react-flow-app",
-	"version": "0.1.0",
+	"version": "0.0.0",
 	"description": "This is a React JS library to simplify navigations and maximize reuse screens in different contexts",
 	"main": "dist/index.js",
 	"module": "src/index.js",
+	"license": "MIT",
 	"publishConfig": {
 		"access": "public"
 	},
@@ -50,7 +51,6 @@
 		"@storybook/addon-controls": "^6.0.21",
 		"@storybook/addon-docs": "^6.0.20",
 		"@storybook/addon-essentials": "^6.0.20",
-		"@storybook/addon-knobs": "^6.0.20",
 		"@storybook/addon-links": "^6.0.20",
 		"@storybook/addon-viewport": "^6.0.20",
 		"@storybook/node-logger": "^6.0.20",
