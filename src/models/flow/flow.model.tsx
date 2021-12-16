@@ -59,8 +59,10 @@ export class Flow {
 	}
 
 	private set currentStepName(value: string) {
-		this.lastSteps[1] = this.lastSteps[0];
-		this.lastSteps[0] = value;
+		if (this.lastSteps[0] !== value) {
+			this.lastSteps[1] = this.lastSteps[0];
+			this.lastSteps[0] = value;
+		}
 	}
 
 	private logger = (message: string, ...args: any[]): void => {
@@ -144,7 +146,8 @@ export class Flow {
 			return null;
 		}
 
-		if (this.lastStepName !== this.currentStepName) {
+		// check if lastStep[1] is undefined to dispatch first mount
+		if (!this.lastSteps[1] || this.lastStepName !== this.currentStepName) {
 			this.mount();
 		}
 
