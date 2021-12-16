@@ -131,8 +131,8 @@ export class Flow {
 		const currentStep = this.getCurrentStep();
 		const currentStepUrl = currentStep ? this.stepUrl(currentStep) : '';
 
-		baseUrl = baseUrl.substr(0, 1) === '/' ? baseUrl.substr(1, baseUrl.length) : baseUrl;
-		baseUrl = baseUrl.substr(baseUrl.length - 1) === '/' ? baseUrl.substr(0, baseUrl.length - 1) : baseUrl;
+		baseUrl = baseUrl.startsWith('/') ? baseUrl.substring(1, baseUrl.length) : baseUrl;
+		baseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
 
 		return `/${baseUrl}/${currentStepUrl}`;
 	};
