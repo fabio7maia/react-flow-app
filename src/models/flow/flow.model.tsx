@@ -59,8 +59,10 @@ export class Flow {
 	}
 
 	private set currentStepName(value: string) {
-		this.lastSteps[1] = this.lastSteps[0];
-		this.lastSteps[0] = value;
+		if (this.lastSteps[0] !== value) {
+			this.lastSteps[1] = this.lastSteps[0];
+			this.lastSteps[0] = value;
+		}
 	}
 
 	private logger = (message: string, ...args: any[]): void => {
@@ -129,8 +131,8 @@ export class Flow {
 		const currentStep = this.getCurrentStep();
 		const currentStepUrl = currentStep ? this.stepUrl(currentStep) : '';
 
-		baseUrl = baseUrl.substr(0, 1) === '/' ? baseUrl.substr(1, baseUrl.length) : baseUrl;
-		baseUrl = baseUrl.substr(baseUrl.length - 1) === '/' ? baseUrl.substr(0, baseUrl.length - 1) : baseUrl;
+		baseUrl = baseUrl.startsWith('/') ? baseUrl.substring(1, baseUrl.length) : baseUrl;
+		baseUrl = baseUrl.endsWith('/') ? baseUrl.substring(0, baseUrl.length - 1) : baseUrl;
 
 		return `/${baseUrl}/${currentStepUrl}`;
 	};
@@ -144,7 +146,8 @@ export class Flow {
 			return null;
 		}
 
-		if (this.lastStepName !== this.currentStepName) {
+		// check if lastStep[1] is undefined to dispatch first mount
+		if (!this.lastSteps[1] || this.lastStepName !== this.currentStepName) {
 			this.mount();
 		}
 
