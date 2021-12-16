@@ -1,3 +1,11 @@
+## [1.5.4](https://github.com/fabio7maia/react-flow-app/compare/v1.5.3...v1.5.4) (2021-12-16)
+
+
+### Bug Fixes
+
+* fixed absolete methods of string ([d244b52](https://github.com/fabio7maia/react-flow-app/commit/d244b52ba4b52989c0090091dff04213d8e83739))
+* fixed initial mount and saved last steps ([1090346](https://github.com/fabio7maia/react-flow-app/commit/1090346ee46578dc24670e7e27963a9b2dd84444))
+
 ## [1.5.3](https://github.com/fabio7maia/react-flow-app/compare/v1.5.2...v1.5.3) (2021-12-11)
 
 
