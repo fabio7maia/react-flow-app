@@ -1,4 +1,3 @@
-import { throws } from 'assert';
 import React from 'react';
 import { Placeholder } from '../../components';
 import { CoreHelper, LoggerHelper } from '../../helpers';
@@ -21,16 +20,17 @@ export class Flow {
 	name: string;
 	baseUrl: string;
 	steps: Record<string, Step>;
-	lastSteps: Record<number, string>;
+	last2Steps: Record<number, string>;
 	history: Array<string>;
 	listeners: Record<TFlowListen, TFlowListenCallback[]>;
 	fromFlowName?: string;
+	initialStepName?: string;
 
 	constructor(name: string, baseUrl: string) {
 		this.name = name;
 		this.baseUrl = baseUrl;
 		this.steps = {} as any;
-		this.lastSteps = {};
+		this.last2Steps = {};
 		this.history = [];
 		this.listeners = {
 			all: [],
@@ -51,17 +51,17 @@ export class Flow {
 	}
 
 	private get lastStepName(): string {
-		return this.lastSteps[1];
+		return this.last2Steps[1];
 	}
 
 	private get currentStepName(): string {
-		return this.lastSteps[0];
+		return this.last2Steps[0];
 	}
 
 	private set currentStepName(value: string) {
-		if (this.lastSteps[0] !== value) {
-			this.lastSteps[1] = this.lastSteps[0];
-			this.lastSteps[0] = value;
+		if (this.last2Steps[0] !== value) {
+			this.last2Steps[1] = this.last2Steps[0];
+			this.last2Steps[0] = value;
 		}
 	}
 
@@ -70,9 +70,20 @@ export class Flow {
 	};
 
 	private callListeners = (type: TFlowListen, dispatch?: TFlowListenCallbackInputDispatch): void => {
+		const currentStepName =
+			type === 'mount'
+				? this.last2Steps[0]
+				: this.last2Steps[1]
+				? this.last2Steps[1]
+				: this.currentStepName !== this.lastStepName
+				? this.currentStepName
+				: '';
+		const currentStep = this.steps[currentStepName];
+
 		const data: TFlowListenCallbackInput = {
-			lastStepName: this.lastStepName,
-			currentStepName: this.currentStepName !== this.lastStepName ? this.currentStepName : '__function__',
+			url: this.buildUrl(currentStep),
+			flowName: this.name,
+			currentStepName,
 			type,
 			dispatch,
 		};
@@ -105,8 +116,8 @@ export class Flow {
 	): void => {
 		const step = new Step(name as string, screen.loader, options);
 
-		if (!this.currentStepName && CoreHelper.getValueOrDefault(options.initialStep, false)) {
-			this.currentStepName = step.name;
+		if (!this.initialStepName && CoreHelper.getValueOrDefault(options.initialStep, false)) {
+			this.initialStepName = step.name;
 		}
 
 		this.steps[name] = step;
@@ -126,9 +137,9 @@ export class Flow {
 		return step?.options?.url || step.name;
 	};
 
-	private buildUrl = (): string => {
+	private buildUrl = (currentStep?: Step): string => {
 		let baseUrl = this.baseUrl;
-		const currentStep = this.getCurrentStep();
+		currentStep = currentStep || this.getCurrentStep();
 		const currentStepUrl = currentStep ? this.stepUrl(currentStep) : '';
 
 		baseUrl = baseUrl.startsWith('/') ? baseUrl.substring(1, baseUrl.length) : baseUrl;
@@ -147,7 +158,7 @@ export class Flow {
 		}
 
 		// check if lastStep[1] is undefined to dispatch first mount
-		if (!this.lastSteps[1] || this.lastStepName !== this.currentStepName) {
+		if (!this.last2Steps[1] || this.lastStepName !== this.currentStepName) {
 			this.mount();
 		}
 
@@ -170,7 +181,7 @@ export class Flow {
 		this.logger('start', { stepName, fromFlowName, options });
 
 		this.fromFlowName = fromFlowName;
-		const currentStepName = stepName || this.currentStepName || this.firstStepName;
+		const currentStepName = stepName || this.currentStepName || this.initialStepName || this.firstStepName;
 		const { clearHistory = false } = options || {};
 
 		if (this.steps.hasOwnProperty(currentStepName)) {
@@ -278,16 +289,20 @@ export class Flow {
 
 				this.currentStepName = nextStepNameOrFn;
 			} else {
-				// set to current step to update lastThreeSteps
-				// eslint-disable-next-line no-self-assign
-				this.currentStepName = this.currentStepName;
-
 				this.treatHistory();
 
 				nextStepFnResult = nextStepNameOrFn() || {};
 
 				if (nextStepFnResult?.options?.clearHistory) {
 					this.clearHistory();
+				}
+
+				if (nextStepFnResult.stepName) {
+					this.currentStepName = nextStepFnResult.stepName;
+				} else {
+					// set to current step to update lastThreeSteps
+					// eslint-disable-next-line no-self-assign
+					this.currentStepName = this.currentStepName;
 				}
 
 				changed = true;
