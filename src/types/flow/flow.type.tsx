@@ -83,7 +83,8 @@ export type TFlowListenCallbackInputDispatch = {
 };
 
 export type TFlowListenCallbackInput = {
-	lastStepName?: string;
+	url: string;
+	flowName: string;
 	currentStepName: string;
 	type: TFlowListen;
 	dispatch?: TFlowListenCallbackInputDispatch;
