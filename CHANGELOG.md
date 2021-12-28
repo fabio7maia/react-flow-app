@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/fabio7maia/react-flow-app/compare/v1.6.1...v1.6.2) (2021-12-28)
+
+
+### Bug Fixes
+
+* fixed navigations between flows when only not saved anything in history ([cde232d](https://github.com/fabio7maia/react-flow-app/commit/cde232d93d39e7f2c44441f073fc6ca7d960a8a3))
+
 ## [1.6.1](https://github.com/fabio7maia/react-flow-app/compare/v1.6.0...v1.6.1) (2021-12-28)
 
 
