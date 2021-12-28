@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/fabio7maia/react-flow-app/compare/v1.6.2...v1.7.0) (2021-12-28)
+
+
+### Features
+
+* refine package description ([fb6fc4c](https://github.com/fabio7maia/react-flow-app/commit/fb6fc4cef4d95fcb59f5a22249f6821c9a49e67a))
+
 ## [1.6.2](https://github.com/fabio7maia/react-flow-app/compare/v1.6.1...v1.6.2) (2021-12-28)
 
 
