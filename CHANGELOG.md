@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/fabio7maia/react-flow-app/compare/v1.6.0...v1.6.1) (2021-12-28)
+
+
+### Bug Fixes
+
+* fixed data sent in listeners ([3291360](https://github.com/fabio7maia/react-flow-app/commit/329136082dd9833fa7945923bebd758f9c986bc6))
+
 # [1.6.0](https://github.com/fabio7maia/react-flow-app/compare/v1.5.5...v1.6.0) (2021-12-28)
 
 
