@@ -72,13 +72,7 @@ export class Flow {
 
 	private callListeners = (type: TFlowListen, dispatch?: TFlowListenCallbackInputDispatch): void => {
 		const currentStepName =
-			type === 'mount'
-				? this.last2Steps[0]
-				: this.last2Steps[1]
-				? this.last2Steps[1]
-				: this.currentStepName !== this.lastStepName
-				? this.currentStepName
-				: '';
+			type === 'mount' ? this.currentStepName : this.lastRenderStepName || this.currentStepName;
 		const currentStep = this.steps[currentStepName];
 
 		const data: TFlowListenCallbackInput = {
