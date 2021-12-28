@@ -175,12 +175,31 @@ export class Flow {
 		return null;
 	};
 
-	start = (stepName?: string, fromFlowName?: string, options?: TFlowActionOptions): TFlowStartMethodOutput => {
+	start = (
+		stepName?: string,
+		fromFlowName?: string,
+		options?: TFlowActionOptions,
+		isFromBack = false
+	): TFlowStartMethodOutput => {
 		this.logger('start', { stepName, fromFlowName, options });
 
 		this.fromFlowName = fromFlowName;
 		const currentStepName = stepName || this.currentStepName || this.initialStepName || this.firstStepName;
 		const { clearHistory = false } = options || {};
+
+		// check if is back
+		if (isFromBack) {
+			// clear last render step name to call mount listener
+			this.lastRenderStepName = undefined;
+
+			// when not has history and exists from flow name navigate to
+			if (this.fromFlowName && this.history.length === 0) {
+				return {
+					changed: true,
+					currentFlowName: this.fromFlowName,
+				};
+			}
+		}
 
 		if (this.steps.hasOwnProperty(currentStepName)) {
 			if (clearHistory) {
