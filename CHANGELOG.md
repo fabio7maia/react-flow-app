@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/fabio7maia/react-flow-app/compare/v1.5.5...v1.6.0) (2021-12-28)
+
+
+### Features
+
+* added treatment to cyclic navigations and fix multiples mounts when exists cyclic navigations ([bd82cbd](https://github.com/fabio7maia/react-flow-app/commit/bd82cbd4e03bc729035f3c345f7326f51688913d))
+
 ## [1.5.5](https://github.com/fabio7maia/react-flow-app/compare/v1.5.4...v1.5.5) (2021-12-20)
 
 
