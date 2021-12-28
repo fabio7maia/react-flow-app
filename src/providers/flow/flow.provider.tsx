@@ -41,7 +41,8 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 			stepName?: string,
 			options?: TFlowActionOptions,
 			fromFlowName?: string,
-			ignoreFromFlow = false
+			ignoreFromFlow = false,
+			isFromBack = false
 		): void => {
 			logger.log('FlowProvider > handleStart', { flowName });
 
@@ -50,9 +51,21 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 			// assumed value passed or current flow name when not set to ignore
 			fromFlowName = fromFlowName ? fromFlowName : ignoreFromFlow ? undefined : currentFlowName.current;
 
-			const { changed, historyUrl } = flow?.start(stepName, fromFlowName, options);
+			const { changed, historyUrl, currentFlowName: actionFlowName } = flow?.start(
+				stepName,
+				fromFlowName,
+				options,
+				isFromBack
+			);
 
 			if (changed) {
+				// when action flow name is different current flow name, call start again to another flow
+				if (actionFlowName && actionFlowName !== flowName) {
+					const { fromFlowName } = fm.getFlow(actionFlowName);
+
+					return handleStart(actionFlowName, undefined, undefined, fromFlowName, true, isFromBack);
+				}
+
 				currentFlowName.current = flowName;
 				historyUrl && history.replace(historyUrl);
 
@@ -70,7 +83,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 		if (changed && actionFlowName !== currentFlowName.current) {
 			const { fromFlowName } = fm.getFlow(actionFlowName);
 
-			handleStart(actionFlowName, currentStepName, undefined, fromFlowName, true);
+			handleStart(actionFlowName, currentStepName, undefined, fromFlowName, true, true);
 		} else if (changed) {
 			history.replace(historyUrl);
 
