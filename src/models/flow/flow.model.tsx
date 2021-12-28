@@ -25,6 +25,7 @@ export class Flow {
 	listeners: Record<TFlowListen, TFlowListenCallback[]>;
 	fromFlowName?: string;
 	initialStepName?: string;
+	lastRenderStepName?: string;
 
 	constructor(name: string, baseUrl: string) {
 		this.name = name;
@@ -154,13 +155,16 @@ export class Flow {
 		this.logger('Flow > render [start]', { currentStepName });
 
 		if (!currentStepName) {
+			this.lastRenderStepName = currentStepName;
 			return null;
 		}
 
-		// check if lastStep[1] is undefined to dispatch first mount
-		if (!this.last2Steps[1] || this.lastStepName !== this.currentStepName) {
+		// check if lastRenderStepName is undefined to dispatch first mount
+		if (!this.lastRenderStepName || this.lastRenderStepName !== this.currentStepName) {
 			this.mount();
 		}
+
+		this.lastRenderStepName = currentStepName;
 
 		if (currentStepName && this.steps.hasOwnProperty(currentStepName)) {
 			const Screen = this.steps[currentStepName].loader();
@@ -258,6 +262,18 @@ export class Flow {
 
 			if (!CoreHelper.getValueOrDefault(currentStep.options?.ignoreHistory, false)) {
 				this.history.push(this.currentStepName);
+			}
+
+			if (!CoreHelper.getValueOrDefault(currentStep.options?.allowCyclicHistory, false)) {
+				const numberOfStepOccurences = this.history.filter(x => x === this.currentStepName).length;
+
+				if (numberOfStepOccurences > 1) {
+					const firstStepOccurrenceIndex = this.history.findIndex(x => x === this.currentStepName);
+
+					if (firstStepOccurrenceIndex >= 0) {
+						this.history = this.history.splice(0, firstStepOccurrenceIndex + 1);
+					}
+				}
 			}
 		}
 	};
