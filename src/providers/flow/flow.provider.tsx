@@ -20,9 +20,12 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 
 interface FlowProviderProps {
 	fm: FlowManager<any, any, any>;
+	flowName: string;
+	stepName?: string;
+	options?: TFlowActionOptions;
 }
 
-export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
+export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children, flowName, stepName, options }) => {
 	const [_, setForceUpdate] = React.useState(0);
 	const currentFlowName = React.useRef('');
 	const flow = React.useRef<Flow>();
@@ -123,6 +126,11 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 		}),
 		[fm, handleBack, handleDispatch, handleRefresh, handleStart]
 	);
+
+	React.useEffect(() => {
+		handleStart(flowName, stepName, options);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [flowName, options, stepName]);
 
 	logger.log('FlowProvider', { flow: flow.current });
 

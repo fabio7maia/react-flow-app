@@ -1,6 +1,6 @@
 import React from 'react';
 import { flowManagerContext } from '../../providers';
-import { TFlowManagerStartMethodInput, TScreen } from '../../types';
+import { TScreen } from '../../types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const emptyFn = <TOuput extends any>(ret?: TOuput): TOuput => {
@@ -35,23 +35,4 @@ export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => 
 		hasPreviousStep,
 		refresh,
 	};
-};
-
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const useFlowManager = () => {
-	const { start } = React.useContext(flowManagerContext);
-
-	const handleStart = React.useCallback(
-		({ flowName, stepName, options }: TFlowManagerStartMethodInput): void => {
-			start(flowName, stepName, options);
-		},
-		[start]
-	);
-
-	return React.useMemo(
-		() => ({
-			start: handleStart,
-		}),
-		[handleStart]
-	);
 };
