@@ -2,6 +2,12 @@
 	"name": "react-flow-app",
 	"version": "0.0.0",
 	"description": "🚀 This is a React.js library to simplify navigations focused in events (user actions) for smooth integrations.",
+	"keywords": [
+		"react",
+		"navigation",
+		"flow",
+		"app"
+	],
 	"main": "dist/index.js",
 	"module": "src/index.js",
 	"license": "MIT",
