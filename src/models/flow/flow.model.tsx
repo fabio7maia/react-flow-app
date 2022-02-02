@@ -60,7 +60,7 @@ export class Flow {
 	}
 
 	private set currentStepName(value: string) {
-		if (this.last2Steps[0] !== value) {
+		if (this.steps.hasOwnProperty(value) && this.last2Steps[0] !== value) {
 			this.last2Steps[1] = this.last2Steps[0];
 			this.last2Steps[0] = value;
 		}
@@ -202,15 +202,15 @@ export class Flow {
 		}
 
 		if (this.steps.hasOwnProperty(currentStepName)) {
-			if (clearHistory) {
+			this.currentStepName = currentStepName;
+
+			if (clearHistory || this.getCurrentStep().options.clearHistory) {
 				this.clearHistory();
 			}
 
 			if (currentStepName === this.getPreviousStep()?.name) {
 				this.removeLastStepHistory();
 			}
-
-			this.currentStepName = currentStepName;
 
 			return {
 				changed: true,
@@ -278,9 +278,9 @@ export class Flow {
 			}
 
 			if (!CoreHelper.getValueOrDefault(currentStep.options?.allowCyclicHistory, false)) {
-				const numberOfStepOccurences = this.history.filter(x => x === this.currentStepName).length;
+				const numberOfStepOccurrences = this.history.filter(x => x === this.currentStepName).length;
 
-				if (numberOfStepOccurences > 1) {
+				if (numberOfStepOccurrences > 1) {
 					const firstStepOccurrenceIndex = this.history.findIndex(x => x === this.currentStepName);
 
 					if (firstStepOccurrenceIndex >= 0) {
@@ -291,6 +291,7 @@ export class Flow {
 		}
 	};
 
+	// eslint-disable-next-line sonarjs/cognitive-complexity
 	dispatch = (actionName: string, payload?: Record<string, any>): TFlowDispatchMethodOutput => {
 		this.logger('Flow > dispatch [start]', {
 			actionName,
