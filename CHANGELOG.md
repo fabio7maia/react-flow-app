@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/fabio7maia/react-flow-app/compare/v1.7.0...v1.7.1) (2022-02-02)
+
+
+### Bug Fixes
+
+* fixed problems with navigations and clear history ([d8e88c9](https://github.com/fabio7maia/react-flow-app/commit/d8e88c969c6dcc2cea423632f1b0930c389e4cb3))
+
 # [1.7.0](https://github.com/fabio7maia/react-flow-app/compare/v1.6.2...v1.7.0) (2021-12-28)
 
 
