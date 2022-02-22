@@ -85,8 +85,6 @@ export class Flow {
 			dispatch,
 		};
 
-		this.lastAction = ['back', 'dispatch'].includes(type) ? (type as TFlowLastAction) : undefined;
-
 		this.listeners[type].forEach(fn => fn(data));
 
 		this.listeners['all'].forEach(fn => fn(data));
@@ -198,6 +196,7 @@ export class Flow {
 
 		// check if is back
 		if (isFromBack) {
+			this.lastAction = 'back';
 			// clear last render step name to call mount listener
 			this.lastRenderStepName = undefined;
 
@@ -240,6 +239,7 @@ export class Flow {
 		const backStepName = this.history.pop();
 
 		if (backStepName) {
+			this.lastAction = 'back';
 			this.currentStepName = backStepName;
 
 			this.callListeners('back');
@@ -349,6 +349,7 @@ export class Flow {
 		}
 
 		if (changed) {
+			this.lastAction = 'dispatch';
 			this.callListeners('dispatch', { actionName, payload });
 		}
 
