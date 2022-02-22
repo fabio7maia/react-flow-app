@@ -124,3 +124,5 @@ export type TFlowManagerStartMethodOutput = {
 	stepName?: string;
 	options?: TFlowActionOptions;
 };
+
+export type TFlowLastAction = 'back' | 'dispatch';
