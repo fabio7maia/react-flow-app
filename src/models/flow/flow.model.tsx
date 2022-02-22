@@ -5,6 +5,7 @@ import {
 	TFlowActionOptions,
 	TFlowBackMethodOutput,
 	TFlowDispatchMethodOutput,
+	TFlowLastAction,
 	TFlowListen,
 	TFlowListenCallback,
 	TFlowListenCallbackInput,
@@ -26,6 +27,7 @@ export class Flow {
 	fromFlowName?: string;
 	initialStepName?: string;
 	lastRenderStepName?: string;
+	lastAction?: TFlowLastAction;
 
 	constructor(name: string, baseUrl: string) {
 		this.name = name;
@@ -83,6 +85,8 @@ export class Flow {
 			dispatch,
 		};
 
+		this.lastAction = ['back', 'dispatch'].includes(type) ? (type as TFlowLastAction) : undefined;
+
 		this.listeners[type].forEach(fn => fn(data));
 
 		this.listeners['all'].forEach(fn => fn(data));
@@ -102,6 +106,10 @@ export class Flow {
 
 	getHistory = (): string[] => {
 		return this.history;
+	};
+
+	getLastAction = (): TFlowLastAction | undefined => {
+		return this.lastAction;
 	};
 
 	addStep = <TScreensInner extends TScreens, TScreen extends TScreens[0]>(
@@ -183,6 +191,7 @@ export class Flow {
 	): TFlowStartMethodOutput => {
 		this.logger('start', { stepName, fromFlowName, options });
 
+		this.lastAction = undefined;
 		this.fromFlowName = fromFlowName;
 		const currentStepName = stepName || this.currentStepName || this.initialStepName || this.firstStepName;
 		const { clearHistory = false } = options || {};

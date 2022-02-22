@@ -3,7 +3,7 @@ import { flowManagerContext } from '../../providers';
 import { TFlowManagerStartMethodInput, TScreen } from '../../types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
-const emptyFn = <TOuput extends any>(ret?: TOuput): TOuput => {
+const emptyFn = <TOutput extends any>(ret?: TOutput): TOutput => {
 	return ret;
 };
 
@@ -20,17 +20,20 @@ export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => 
 
 	const getCurrentStep = React.useCallback(flow?.getCurrentStep || ((): undefined => emptyFn()), [flow]);
 
+	const getHistory = React.useCallback(flow?.getHistory || ((): string[] => emptyFn([])), [flow]);
+
+	const getLastAction = React.useCallback(flow?.getLastAction || ((): undefined => emptyFn()), [flow]);
+
 	const getPreviousStep = React.useCallback(flow?.getPreviousStep || ((): undefined => emptyFn()), [flow]);
 
 	const hasPreviousStep = React.useCallback(flow?.hasPreviousStep || ((): boolean => emptyFn(false)), [flow]);
-
-	const getHistory = React.useCallback(flow?.getHistory || ((): string[] => emptyFn([])), [flow]);
 
 	return {
 		back: back,
 		dispatch: handleDispatch,
 		getCurrentStep,
 		getHistory,
+		getLastAction,
 		getPreviousStep,
 		hasPreviousStep,
 		refresh,
