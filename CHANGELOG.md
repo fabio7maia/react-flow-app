@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/fabio7maia/react-flow-app/compare/v1.7.1...v1.8.0) (2022-02-22)
+
+
+### Features
+
+* added get last action to use flow hook ([cbff5fe](https://github.com/fabio7maia/react-flow-app/commit/cbff5fecd06b498088c4f8024906391a285cf578))
+
 ## [1.7.1](https://github.com/fabio7maia/react-flow-app/compare/v1.7.0...v1.7.1) (2022-02-02)
 
 
