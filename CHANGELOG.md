@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/fabio7maia/react-flow-app/compare/v1.8.0...v1.8.1) (2022-02-22)
+
+
+### Bug Fixes
+
+* fixed problem with getLastAction in useFlow ([58e2689](https://github.com/fabio7maia/react-flow-app/commit/58e2689409847827881d0a04a08f9ee827fdba6c))
+
 # [1.8.0](https://github.com/fabio7maia/react-flow-app/compare/v1.7.1...v1.8.0) (2022-02-22)
 
 
