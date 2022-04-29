@@ -93,19 +93,30 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 
 	const handleDispatch = React.useCallback(
 		(name: string, payload?: Record<string, any>) => {
-			const { changed, currentFlowName, currentStepName, historyUrl } = flow.current?.dispatch(name, payload);
+			const { changed, currentFlowName, currentStepName, historyUrl, clearHistory } = flow.current?.dispatch(
+				name,
+				payload
+			);
 
 			logger.log('FlowProvider > dispatch', { name, payload, changed });
 
 			if (currentFlowName) {
-				return handleStart(currentFlowName, currentStepName);
+				// when clear history get fromFlowName of goto flow to keep history correct
+				// because clear history allow to forget passed from current flow
+				if (clearHistory) {
+					const { fromFlowName } = fm.getFlow(currentFlowName);
+
+					return handleStart(currentFlowName, currentStepName, undefined, fromFlowName);
+				} else {
+					return handleStart(currentFlowName, currentStepName);
+				}
 			} else {
 				changed && forceUpdate();
 			}
 
 			historyUrl && history.replace(historyUrl);
 		},
-		[forceUpdate, handleStart, history, logger]
+		[fm, forceUpdate, handleStart, history, logger]
 	);
 
 	const handleRefresh = React.useCallback(() => {

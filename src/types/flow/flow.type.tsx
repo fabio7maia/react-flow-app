@@ -103,7 +103,7 @@ export type TFlowStartMethodOutput = TFlowBaseActionMethodOutput;
 
 export type TFlowBackMethodOutput = TFlowBaseActionMethodOutput;
 
-export type TFlowDispatchMethodOutput = TFlowBaseActionMethodOutput;
+export type TFlowDispatchMethodOutput = TFlowBaseActionMethodOutput & { clearHistory?: boolean };
 
 export type TFlowScreenActionCallbackResultOptions = TFlowActionOptions;
 
