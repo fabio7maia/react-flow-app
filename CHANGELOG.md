@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/fabio7maia/react-flow-app/compare/v1.8.1...v1.8.2) (2022-04-29)
+
+
+### Bug Fixes
+
+* fixed problem with clear history in dispatch to forget passed from current flow and keep history correct ([ca322c7](https://github.com/fabio7maia/react-flow-app/commit/ca322c7f398d91a5c122d1e2752bb3ff4ab4f587))
+
 ## [1.8.1](https://github.com/fabio7maia/react-flow-app/compare/v1.8.0...v1.8.1) (2022-02-22)
 
 
