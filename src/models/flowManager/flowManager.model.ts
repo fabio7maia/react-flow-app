@@ -139,12 +139,14 @@ export class FlowManager<
 				};
 			},
 			navigateTo: <TStepName extends keyof typeof steps>(
-				stepName?: TStepName
+				stepName?: TStepName,
+				options?: TFlowActionOptions
 				// eslint-disable-next-line sonarjs/no-identical-functions
 			): TFlowScreenActionCallbackResult => {
 				return {
 					flowName,
 					stepName: stepName as any,
+					options,
 				};
 			},
 		};

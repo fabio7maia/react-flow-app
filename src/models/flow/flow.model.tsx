@@ -364,6 +364,7 @@ export class Flow {
 			currentStepName: nextStepFnResult.stepName,
 			changed,
 			historyUrl: this.buildUrl(),
+			clearHistory: nextStepFnResult.options?.clearHistory,
 		};
 	};
 }
