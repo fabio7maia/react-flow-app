@@ -1,3 +1,13 @@
+# [2.0.0](https://github.com/fabio7maia/react-flow-app/compare/v1.8.3...v2.0.0) (2022-05-17)
+
+
+* Merge pull request #28 from fabio7maia/feature/remove-react-router-dep ([e9882ba](https://github.com/fabio7maia/react-flow-app/commit/e9882ba332a7df939c792ece5738064db2395832)), closes [#28](https://github.com/fabio7maia/react-flow-app/issues/28)
+
+
+### BREAKING CHANGES
+
+* removed react router dep and refined Flow Manager props
+
 ## [1.8.3](https://github.com/fabio7maia/react-flow-app/compare/v1.8.2...v1.8.3) (2022-05-17)
 
 
