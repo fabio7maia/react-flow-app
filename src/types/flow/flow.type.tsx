@@ -75,7 +75,7 @@ export type TStepOptions = {
 
 export type TFlowHistoryStatus = 'clear' | 'push' | 'ignore' | 'clearAndPush' | 'clearAndIgnore' | 'none';
 
-export type TFlowListen = 'all' | 'mount' | 'back' | 'dispatch';
+export type TFlowListen = 'all' | 'mount' | 'back' | 'backExit' | 'dispatch';
 
 export type TFlowListenCallbackInputDispatch = {
 	actionName?: string;

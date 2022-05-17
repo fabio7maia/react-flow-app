@@ -33,8 +33,7 @@
 		"docs:serve": "yarn run docs:build && npx serve docs"
 	},
 	"peerDependencies": {
-		"react": "^17.0.0",
-		"react-router-dom": "^5.3.0"
+		"react": "^17.0.0"
 	},
 	"devDependencies": {
 		"@babel/core": "^7.11.4",
@@ -59,8 +58,6 @@
 		"@types/jest": "^26.0.14",
 		"@types/node": "^14.0.23",
 		"@types/react": "^16.9.43",
-		"@types/react-router": "^5.1.17",
-		"@types/react-router-dom": "^5.3.2",
 		"@typescript-eslint/eslint-plugin": "^2.7.0",
 		"@typescript-eslint/parser": "^2.7.0",
 		"@wojtekmaj/enzyme-adapter-react-17": "^0.6.0",

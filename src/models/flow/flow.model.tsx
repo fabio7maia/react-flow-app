@@ -38,6 +38,7 @@ export class Flow {
 		this.listeners = {
 			all: [],
 			back: [],
+			backExit: [],
 			dispatch: [],
 			mount: [],
 		};
@@ -236,7 +237,13 @@ export class Flow {
 	};
 
 	back = (): TFlowBackMethodOutput => {
-		const backStepName = this.history.pop();
+		let backStepName = this.history.pop();
+
+		// when backStepName is equal to currentStepName, try get another back step, because working properly because outside navigation
+		// ex: when last screen not doing anything and keep in the same screen. If the user click in back, it's necessary navigate to before step
+		if (backStepName === this.currentStepName) {
+			backStepName = this.history.pop();
+		}
 
 		if (backStepName) {
 			this.lastAction = 'back';
@@ -251,6 +258,8 @@ export class Flow {
 				historyUrl: this.buildUrl(),
 			};
 		} else if (this.fromFlowName) {
+			this.callListeners('backExit');
+
 			return { changed: true, currentFlowName: this.fromFlowName };
 		}
 
