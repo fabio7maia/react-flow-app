@@ -1,5 +1,4 @@
 import React from 'react';
-import { useHistory } from 'react-router-dom';
 import { FlowManager } from '../../models';
 import { TFlowActionOptions, TFlowManagerContext } from '../../types';
 import { Flow } from '../../models/flow';
@@ -20,20 +19,26 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 
 interface FlowProviderProps {
 	fm: FlowManager<any, any, any>;
+	initialFlowName: string;
 }
 
-export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
+// eslint-disable-next-line sonarjs/cognitive-complexity
+export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, initialFlowName, children }) => {
 	const [_, setForceUpdate] = React.useState(0);
-	const currentFlowName = React.useRef('');
-	const flow = React.useRef<Flow>();
-	const history = useHistory();
+	const currentFlowName = React.useRef(initialFlowName);
+	const flow = React.useRef<Flow>(fm.getFlow(currentFlowName.current));
 	const logger = useLoggerFlow();
+	const initialized = React.useRef(false);
 
 	const forceUpdate = React.useCallback(() => {
 		flow.current = fm.getFlow(currentFlowName.current);
 
 		setForceUpdate(val => val + 1);
 	}, [fm]);
+
+	const updateLocationUrl = React.useCallback((url: string): void => {
+		url && window.history.replaceState(null, document.title, `/#${url}`);
+	}, []);
 
 	const handleStart = React.useCallback(
 		(
@@ -67,12 +72,12 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 				}
 
 				currentFlowName.current = flowName;
-				historyUrl && history.replace(historyUrl);
+				updateLocationUrl(historyUrl);
 
 				forceUpdate();
 			}
 		},
-		[fm, forceUpdate, history, logger]
+		[fm, forceUpdate, logger, updateLocationUrl]
 	);
 
 	const handleBack = React.useCallback(() => {
@@ -85,11 +90,11 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 
 			handleStart(actionFlowName, currentStepName, undefined, fromFlowName, true, true);
 		} else if (changed) {
-			history.replace(historyUrl);
+			updateLocationUrl(historyUrl);
 
 			forceUpdate();
 		}
-	}, [fm, forceUpdate, handleStart, history, logger]);
+	}, [fm, forceUpdate, handleStart, logger, updateLocationUrl]);
 
 	const handleDispatch = React.useCallback(
 		(name: string, payload?: Record<string, any>) => {
@@ -114,14 +119,19 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, children }) => {
 				changed && forceUpdate();
 			}
 
-			historyUrl && history.replace(historyUrl);
+			updateLocationUrl(historyUrl);
 		},
-		[fm, forceUpdate, handleStart, history, logger]
+		[fm, forceUpdate, handleStart, logger, updateLocationUrl]
 	);
 
 	const handleRefresh = React.useCallback(() => {
 		forceUpdate();
 	}, [forceUpdate]);
+
+	if (!initialized.current) {
+		initialized.current = true;
+		handleStart(currentFlowName.current);
+	}
 
 	const flowManagerContextValue = React.useMemo(
 		() => ({
