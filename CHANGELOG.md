@@ -1,3 +1,10 @@
+## [1.8.3](https://github.com/fabio7maia/react-flow-app/compare/v1.8.2...v1.8.3) (2022-05-17)
+
+
+### Performance Improvements
+
+* removed react-router dependency ([20cdb6b](https://github.com/fabio7maia/react-flow-app/commit/20cdb6b79083f9e0ffb262bc97d9ecfe6a19e83b))
+
 ## [1.8.2](https://github.com/fabio7maia/react-flow-app/compare/v1.8.1...v1.8.2) (2022-04-29)
 
 
