@@ -56,12 +56,8 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, initialFlowName,
 			// assumed value passed or current flow name when not set to ignore
 			fromFlowName = fromFlowName ? fromFlowName : ignoreFromFlow ? undefined : currentFlowName.current;
 
-			const { changed, historyUrl, currentFlowName: actionFlowName } = flow?.start(
-				stepName,
-				fromFlowName,
-				options,
-				isFromBack
-			);
+			const { changed, historyUrl, currentFlowName: actionFlowName } =
+				flow?.start(stepName, fromFlowName, options, isFromBack) || {};
 
 			if (changed) {
 				// when action flow name is different current flow name, call start again to another flow
@@ -81,7 +77,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, initialFlowName,
 	);
 
 	const handleBack = React.useCallback(() => {
-		const { changed, currentFlowName: actionFlowName, currentStepName, historyUrl } = flow.current?.back();
+		const { changed, currentFlowName: actionFlowName, currentStepName, historyUrl } = flow.current?.back() || {};
 
 		logger.log('FlowProvider > back', { changed, currentFlowName });
 
@@ -98,10 +94,8 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, initialFlowName,
 
 	const handleDispatch = React.useCallback(
 		(name: string, payload?: Record<string, any>) => {
-			const { changed, currentFlowName, currentStepName, historyUrl, clearHistory } = flow.current?.dispatch(
-				name,
-				payload
-			);
+			const { changed, currentFlowName, currentStepName, historyUrl, clearHistory } =
+				flow.current?.dispatch(name, payload) || {};
 
 			logger.log('FlowProvider > dispatch', { name, payload, changed });
 
