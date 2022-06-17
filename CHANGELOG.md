@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/fabio7maia/react-flow-app/compare/v2.0.0...v2.0.1) (2022-06-17)
+
+
+### Bug Fixes
+
+* fixed not exists flow ([3b46e2a](https://github.com/fabio7maia/react-flow-app/commit/3b46e2a626945cb266c015264fba48fc8ad5060f))
+
 # [2.0.0](https://github.com/fabio7maia/react-flow-app/compare/v1.8.3...v2.0.0) (2022-05-17)
 
 
