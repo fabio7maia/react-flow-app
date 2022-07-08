@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/fabio7maia/react-flow-app/compare/v2.0.1...v2.1.0) (2022-07-08)
+
+
+### Features
+
+* added initialStepName to FlowProvider to allow navigate to custom initial step ([7aa062e](https://github.com/fabio7maia/react-flow-app/commit/7aa062e856e103c128bc06b0d420e8b0dcd85617))
+
 ## [2.0.1](https://github.com/fabio7maia/react-flow-app/compare/v2.0.0...v2.0.1) (2022-06-17)
 
 
