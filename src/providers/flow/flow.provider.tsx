@@ -20,10 +20,11 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 interface FlowProviderProps {
 	fm: FlowManager<any, any, any>;
 	initialFlowName: string;
+	initialStepName?: string;
 }
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
-export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, initialFlowName, children }) => {
+export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, initialFlowName, children, initialStepName }) => {
 	const [_, setForceUpdate] = React.useState(0);
 	const currentFlowName = React.useRef(initialFlowName);
 	const flow = React.useRef<Flow>(fm.getFlow(currentFlowName.current));
@@ -124,7 +125,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, initialFlowName,
 
 	if (!initialized.current) {
 		initialized.current = true;
-		handleStart(currentFlowName.current);
+		handleStart(currentFlowName.current, initialStepName);
 	}
 
 	const flowManagerContextValue = React.useMemo(
