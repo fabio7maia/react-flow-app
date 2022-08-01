@@ -191,7 +191,7 @@ export class Flow {
 		this.logger('start', { stepName, fromFlowName, options });
 
 		this.lastAction = undefined;
-		this.fromFlowName = fromFlowName;
+		this.fromFlowName = this.name !== fromFlowName ? fromFlowName : undefined;
 		const currentStepName = stepName || this.currentStepName || this.initialStepName || this.firstStepName;
 		const { clearHistory = false } = options || {};
 
