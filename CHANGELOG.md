@@ -1,3 +1,10 @@
+## [2.1.1](https://github.com/fabio7maia/react-flow-app/compare/v2.1.0...v2.1.1) (2022-08-01)
+
+
+### Bug Fixes
+
+* fixed problem with hasPreviousStep method because fromFlowName it's filled with current flow name ([77ddaf4](https://github.com/fabio7maia/react-flow-app/commit/77ddaf4067c5f4a5dd7dfc189bf149bea3fd3e8c))
+
 # [2.1.0](https://github.com/fabio7maia/react-flow-app/compare/v2.0.1...v2.1.0) (2022-07-08)
 
 
