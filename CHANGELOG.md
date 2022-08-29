@@ -1,3 +1,10 @@
+## [2.1.2](https://github.com/fabio7maia/react-flow-app/compare/v2.1.1...v2.1.2) (2022-08-29)
+
+
+### Bug Fixes
+
+* fixed problem with window.history.replaceState when page is executed in file:// protocol ([5869cb7](https://github.com/fabio7maia/react-flow-app/commit/5869cb765d4073153df66b312d39710b87d3b444))
+
 ## [2.1.1](https://github.com/fabio7maia/react-flow-app/compare/v2.1.0...v2.1.1) (2022-08-01)
 
 
