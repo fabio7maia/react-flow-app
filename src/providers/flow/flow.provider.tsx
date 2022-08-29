@@ -38,7 +38,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, initialFlowName,
 	}, [fm]);
 
 	const updateLocationUrl = React.useCallback((url: string): void => {
-		url && window.history.replaceState(null, document.title, `/#${url}`);
+		url && window.history.replaceState(null, null, `#${url}`);
 	}, []);
 
 	const handleStart = React.useCallback(
