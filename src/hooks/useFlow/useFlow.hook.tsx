@@ -9,7 +9,7 @@ const emptyFn = <TOutput extends any>(ret?: TOutput): TOutput => {
 
 export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => {
 	const { back, dispatch, currentFlowName, fm, refresh } = React.useContext(flowManagerContext);
-	const flow = fm.getFlow(currentFlowName);
+	const flow = fm?.getFlow(currentFlowName);
 
 	const handleDispatch = React.useCallback(
 		(name: TScreenInner['actions'][number], payload?: Record<string, any>): void => {
@@ -28,16 +28,23 @@ export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => 
 
 	const hasPreviousStep = React.useCallback(flow?.hasPreviousStep || ((): boolean => emptyFn(false)), [flow]);
 
-	return {
-		back: back,
-		dispatch: handleDispatch,
-		getCurrentStep,
-		getHistory,
-		getLastAction,
-		getPreviousStep,
-		hasPreviousStep,
-		refresh,
-	};
+	return React.useMemo(
+		() => ({
+			back: (): void => {
+				back?.();
+			},
+			dispatch: handleDispatch,
+			getCurrentStep,
+			getHistory,
+			getLastAction,
+			getPreviousStep,
+			hasPreviousStep,
+			refresh: (): void => {
+				refresh?.();
+			},
+		}),
+		[back, getCurrentStep, getHistory, getLastAction, getPreviousStep, handleDispatch, hasPreviousStep, refresh]
+	);
 };
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
