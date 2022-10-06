@@ -1,3 +1,10 @@
+## [2.1.3](https://github.com/fabio7maia/react-flow-app/compare/v2.1.2...v2.1.3) (2022-10-06)
+
+
+### Bug Fixes
+
+* fixed problem with use flow manager when used it without wrapped by context ([45877ad](https://github.com/fabio7maia/react-flow-app/commit/45877adf987d09e3a622ab22c97ef0efba0ce863))
+
 ## [2.1.2](https://github.com/fabio7maia/react-flow-app/compare/v2.1.1...v2.1.2) (2022-08-29)
 
 
