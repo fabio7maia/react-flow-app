@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/fabio7maia/react-flow-app/compare/v2.1.3...v2.2.0) (2023-01-22)
+
+
+### Features
+
+* added custom template in children FlowProvider using StepRender component ([b619d7e](https://github.com/fabio7maia/react-flow-app/commit/b619d7e9190c64dfab26da02cc0b1db67f3f87cc))
+
 ## [2.1.3](https://github.com/fabio7maia/react-flow-app/compare/v2.1.2...v2.1.3) (2022-10-06)
 
 
