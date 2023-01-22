@@ -18,10 +18,23 @@ f0.step('screen3')({
 	end: 'screen1',
 });
 
-export const f1 = fm.flow({ name: 'f1', baseUrl: 'flows-example/f1' }).steps({ screen2: {}, screen3: {} });
+export const f1 = fm.flow({ name: 'f1', baseUrl: 'flows-example/f1' }).steps({ screen1: {}, screen3: {} });
 
-f1.step('screen2')({ next: 'screen3' });
+f1.step('screen1')({
+	next: 'screen3',
+	skip: () => {
+		alert('Final step');
+
+		// return {
+		// 	currentFlowName: 'f0',
+		// 	currentStepName: 'screen2',
+		// };
+
+		return f0.navigateTo('screen2');
+	},
+});
 f1.step('screen3')({
+	// eslint-disable-next-line sonarjs/no-identical-functions
 	end: () => {
 		alert('Final step');
 

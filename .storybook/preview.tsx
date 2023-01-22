@@ -2,6 +2,7 @@ import { DocsContainer, DocsPage } from '@storybook/addon-docs/blocks';
 import { INITIAL_VIEWPORTS } from '@storybook/addon-viewport';
 import { addDecorator, addParameters } from '@storybook/react';
 import anysort from 'anysort';
+import { LoggerHelper } from '../src/helpers';
 
 addParameters({
 	docs: {
@@ -60,3 +61,7 @@ export const globalTypes = {
 		},
 	},
 };
+
+LoggerHelper.init({
+	all: true,
+});

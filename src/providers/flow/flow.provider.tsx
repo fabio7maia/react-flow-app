@@ -1,12 +1,21 @@
 import React from 'react';
 import { FlowManager } from '../../models';
-import { TFlowActionOptions, TFlowManagerContext } from '../../types';
+import {
+	DEFAULT_FLOW_MANAGER_OPTIONS,
+	TFlowActionOptions,
+	TFlowManagerContext,
+	TFlowManagerOptions,
+} from '../../types';
 import { Flow } from '../../models/flow';
 import { useLoggerFlow } from '../../hooks';
 
 export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	fm: undefined,
 	currentFlowName: '',
+	options: {
+		animation: false,
+		withUrl: false,
+	},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	start: (flowName: string, stepName?: string, options?: TFlowActionOptions): void => {},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -21,15 +30,28 @@ interface FlowProviderProps {
 	fm: FlowManager<any, any, any>;
 	initialFlowName: string;
 	initialStepName?: string;
+	options?: TFlowManagerOptions;
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
-export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, initialFlowName, children, initialStepName }) => {
+export const FlowProvider: React.FC<FlowProviderProps> = ({
+	fm,
+	initialFlowName,
+	children,
+	initialStepName,
+	options,
+	// eslint-disable-next-line sonarjs/cognitive-complexity
+}) => {
 	const [_, setForceUpdate] = React.useState(0);
 	const currentFlowName = React.useRef(initialFlowName);
 	const flow = React.useRef<Flow>(fm.getFlow(currentFlowName.current));
 	const logger = useLoggerFlow();
 	const initialized = React.useRef(false);
+	const { animation = DEFAULT_FLOW_MANAGER_OPTIONS.animation, withUrl = DEFAULT_FLOW_MANAGER_OPTIONS.withUrl } =
+		options || DEFAULT_FLOW_MANAGER_OPTIONS;
+	const parsedOptions: TFlowManagerOptions = {
+		animation,
+		withUrl,
+	};
 
 	const forceUpdate = React.useCallback(() => {
 		flow.current = fm.getFlow(currentFlowName.current);
@@ -37,9 +59,18 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, initialFlowName,
 		setForceUpdate(val => val + 1);
 	}, [fm]);
 
-	const updateLocationUrl = React.useCallback((url: string): void => {
-		url && window.history.replaceState(null, null, `#${url}`);
-	}, []);
+	const updateLocationUrl = React.useCallback(
+		(url: string): void => {
+			if (!withUrl) {
+				return;
+			}
+
+			logger.log('FlowProvider > updateLocationUrl', { url: `#${url}` });
+
+			url && window.history.replaceState(null, null, `#${url}`);
+		},
+		[logger, withUrl]
+	);
 
 	const handleStart = React.useCallback(
 		(
@@ -136,16 +167,16 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({ fm, initialFlowName,
 			back: handleBack,
 			dispatch: handleDispatch,
 			refresh: handleRefresh,
+			options: parsedOptions,
 		}),
-		[fm, handleBack, handleDispatch, handleRefresh, handleStart]
+		[fm, handleBack, handleDispatch, handleRefresh, handleStart, parsedOptions]
 	);
 
 	logger.log('FlowProvider', { flow: flow.current });
 
 	return (
 		<flowManagerContext.Provider value={flowManagerContextValue}>
-			{children}
-			{flow.current?.render()}
+			{children ? children : flow.current?.render(parsedOptions)}
 		</flowManagerContext.Provider>
 	);
 };
