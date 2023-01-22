@@ -25,9 +25,30 @@ export type TFlowActionOptions = {
 	clearHistory?: boolean;
 };
 
+export interface TFlowManagerOptions {
+	/**
+	 * Allow customize and disable animation in lazy loading
+	 *
+	 * Default: true
+	 */
+	animation?: boolean | React.ReactNode;
+	/**
+	 * Allow to set of manipulate or not the url.
+	 *
+	 * Default: true
+	 */
+	withUrl?: boolean;
+}
+
+export const DEFAULT_FLOW_MANAGER_OPTIONS: TFlowManagerOptions = {
+	animation: true,
+	withUrl: true,
+};
+
 export type TFlowManagerContext = {
 	fm: FlowManager<any, any, any>;
 	currentFlowName: string;
+	options: TFlowManagerOptions;
 	start: (flowName: string, stepName?: string, options?: TFlowActionOptions) => void;
 	back: () => void;
 	dispatch: (name: string, payload?: TFlowActionPayload) => void;

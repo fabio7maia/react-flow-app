@@ -10,6 +10,7 @@ import {
 	TFlowListenCallback,
 	TFlowListenCallbackInput,
 	TFlowListenCallbackInputDispatch,
+	TFlowManagerOptions,
 	TFlowScreenActionCallbackResult,
 	TFlowStartMethodOutput,
 	TScreens,
@@ -150,8 +151,9 @@ export class Flow {
 		return `/${baseUrl}/${currentStepUrl}`;
 	};
 
-	render = (): React.ReactNode => {
+	render = (options: TFlowManagerOptions): React.ReactNode => {
 		const currentStepName = this.currentStepName;
+		const { animation } = options;
 
 		this.logger('Flow > render [start]', { currentStepName });
 
@@ -172,8 +174,10 @@ export class Flow {
 
 			this.logger('Flow > render [start]', { currentStepName, Screen });
 
+			const fallback = animation === false ? <></> : animation === true ? <Placeholder loading /> : animation;
+
 			return (
-				<React.Suspense fallback={<Placeholder loading />}>
+				<React.Suspense fallback={fallback}>
 					<Screen />
 				</React.Suspense>
 			);

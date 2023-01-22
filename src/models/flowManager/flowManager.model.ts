@@ -149,6 +149,7 @@ export class FlowManager<
 					options,
 				};
 			},
+			name: () => flowName,
 		};
 	};
 }

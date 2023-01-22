@@ -113,5 +113,14 @@
 	"author": {
 		"email": "fabio7maia@gmail.com",
 		"name": "Fábio Maia"
-	}
+	},
+	"keywords": [
+		"react",
+		"flow",
+		"wizard",
+		"step",
+		"multisetp",
+		"workflow",
+		"state machine"
+	]
 }
