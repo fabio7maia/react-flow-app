@@ -26,24 +26,39 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	refresh: (): void => {},
 });
 
-interface FlowProviderProps {
+export type FlowProviderLifeCycleHandlers<TFlows> = Partial<Record<keyof TFlows, () => void>>;
+
+type TDictionary = Record<string, any>;
+
+interface FlowProviderProps<TFlows extends TDictionary> {
 	fm: FlowManager<any, any, any>;
-	initialFlowName: string;
+	initialFlowName: keyof TFlows;
 	initialStepName?: string;
 	options?: TFlowManagerOptions;
+	/**
+	 * List of handlers by flows called when specific flow name is mounted
+	 */
+	onFlowMount?: FlowProviderLifeCycleHandlers<Partial<TFlows>>;
+	/**
+	 * List of handlers by flows called when specific flow name is unmounted
+	 */
+	onFlowUnmount?: FlowProviderLifeCycleHandlers<Partial<TFlows>>;
+	children?: React.ReactNode;
 }
 
-export const FlowProvider: React.FC<FlowProviderProps> = ({
+export const FlowProvider = <TFlows extends TDictionary>({
 	fm,
 	initialFlowName,
 	children,
 	initialStepName,
 	options,
-	// eslint-disable-next-line sonarjs/cognitive-complexity
-}) => {
+	onFlowMount,
+	onFlowUnmount,
+}: // eslint-disable-next-line sonarjs/cognitive-complexity
+FlowProviderProps<TFlows>) => {
 	const [_, setForceUpdate] = React.useState(0);
-	const currentFlowName = React.useRef(initialFlowName);
-	const flow = React.useRef<Flow>(fm.getFlow(currentFlowName.current));
+	const currentFlowName = React.useRef<string>(initialFlowName as string);
+	const flow = React.useRef<Flow>(fm.getFlow(currentFlowName.current as string));
 	const logger = useLoggerFlow();
 	const initialized = React.useRef(false);
 	const { animation = DEFAULT_FLOW_MANAGER_OPTIONS.animation, withUrl = DEFAULT_FLOW_MANAGER_OPTIONS.withUrl } =
@@ -52,6 +67,7 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({
 		animation,
 		withUrl,
 	};
+	const lastFlowName = React.useRef<string>();
 
 	const forceUpdate = React.useCallback(() => {
 		flow.current = fm.getFlow(currentFlowName.current);
@@ -172,7 +188,28 @@ export const FlowProvider: React.FC<FlowProviderProps> = ({
 		[fm, handleBack, handleDispatch, handleRefresh, handleStart, parsedOptions]
 	);
 
-	logger.log('FlowProvider', { flow: flow.current });
+	React.useEffect(() => {
+		// call unmount handler for last flow
+		if (lastFlowName.current && lastFlowName.current !== currentFlowName.current && onFlowUnmount) {
+			const handler = onFlowUnmount[lastFlowName.current];
+
+			handler?.();
+		}
+
+		// call mount handler for current flow
+		if ((!lastFlowName.current || lastFlowName.current !== currentFlowName.current) && onFlowMount) {
+			lastFlowName.current = currentFlowName.current;
+			const handler = onFlowMount[currentFlowName.current];
+
+			handler?.();
+		}
+	}, [_, onFlowMount, onFlowUnmount]);
+
+	logger.log('FlowProvider', {
+		flow: flow.current,
+		currentFlowName: currentFlowName.current,
+		lastFlowName: lastFlowName.current,
+	});
 
 	return (
 		<flowManagerContext.Provider value={flowManagerContextValue}>
