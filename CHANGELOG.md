@@ -1,3 +1,10 @@
+# [2.3.0](https://github.com/fabio7maia/react-flow-app/compare/v2.2.0...v2.3.0) (2023-05-30)
+
+
+### Features
+
+* added onFlowMount and onFlowUnmount handlers to fire when flows are mounted or unmounted ([4f64ce5](https://github.com/fabio7maia/react-flow-app/commit/4f64ce5f5714a4e1c75f24a9af4e7ce30d66ecd4))
+
 # [2.2.0](https://github.com/fabio7maia/react-flow-app/compare/v2.1.3...v2.2.0) (2023-01-22)
 
 
