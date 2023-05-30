@@ -3,7 +3,7 @@
 	"version": "0.0.0",
 	"description": "🚀 This is a React.js library to simplify navigations focused in events (user actions) for smooth integrations.",
 	"main": "dist/index.js",
-	"module": "src/index.js",
+	"module": "dist/index.js",
 	"license": "MIT",
 	"publishConfig": {
 		"access": "public"
@@ -33,7 +33,7 @@
 		"docs:serve": "yarn run docs:build && npx serve docs"
 	},
 	"peerDependencies": {
-		"react": "^17.0.0"
+		"react": "^16.0.0 || ^17.0.0 || ^18.0.0"
 	},
 	"devDependencies": {
 		"@babel/core": "^7.11.4",
