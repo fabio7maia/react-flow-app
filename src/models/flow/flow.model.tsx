@@ -276,7 +276,7 @@ export class Flow {
 		}
 	};
 
-	private clearHistory = (): void => {
+	clearHistory = (): void => {
 		this.history = [];
 		this.fromFlowName = undefined;
 	};

@@ -28,11 +28,14 @@ export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => 
 
 	const hasPreviousStep = React.useCallback(flow?.hasPreviousStep || ((): boolean => emptyFn(false)), [flow]);
 
+	const clearHistory = React.useCallback(flow?.clearHistory || ((): void => emptyFn()), [flow]);
+
 	return React.useMemo(
 		() => ({
 			back: (): void => {
 				back?.();
 			},
+			clearHistory,
 			dispatch: handleDispatch,
 			getCurrentStep,
 			getHistory,
@@ -43,7 +46,17 @@ export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => 
 				refresh?.();
 			},
 		}),
-		[back, getCurrentStep, getHistory, getLastAction, getPreviousStep, handleDispatch, hasPreviousStep, refresh]
+		[
+			back,
+			clearHistory,
+			getCurrentStep,
+			getHistory,
+			getLastAction,
+			getPreviousStep,
+			handleDispatch,
+			hasPreviousStep,
+			refresh,
+		]
 	);
 };
 
