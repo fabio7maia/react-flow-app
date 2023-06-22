@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/fabio7maia/react-flow-app/compare/v2.3.0...v2.4.0) (2023-06-22)
+
+
+### Features
+
+* added clearHistory method to useFlow hook ([bb6f819](https://github.com/fabio7maia/react-flow-app/commit/bb6f81966bdd903fdba2d5dd2960a8dd943e60df))
+
 # [2.3.0](https://github.com/fabio7maia/react-flow-app/compare/v2.2.0...v2.3.0) (2023-05-30)
 
 
