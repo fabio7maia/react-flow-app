@@ -5,6 +5,7 @@ import {
 	TFlowActionOptions,
 	TFlowManagerContext,
 	TFlowManagerOptions,
+	TScreen,
 } from '../../types';
 import { Flow } from '../../models/flow';
 import { useLoggerFlow } from '../../hooks';
@@ -21,7 +22,7 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	back: (): void => {},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	dispatch: (name: string, payload?: Record<string, any>): void => {},
+	dispatch: (screen: TScreen, name: string, payload?: Record<string, any>): void => {},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
 	refresh: (): void => {},
 });
@@ -141,9 +142,9 @@ FlowProviderProps<TFlows>) => {
 	}, [fm, forceUpdate, handleStart, logger, updateLocationUrl]);
 
 	const handleDispatch = React.useCallback(
-		(name: string, payload?: Record<string, any>) => {
+		(screen: TScreen, name: string, payload?: Record<string, any>) => {
 			const { changed, currentFlowName, currentStepName, historyUrl, clearHistory } =
-				flow.current?.dispatch(name, payload) || {};
+				flow.current?.dispatch(screen, name, payload) || {};
 
 			logger.log('FlowProvider > dispatch', { name, payload, changed });
 

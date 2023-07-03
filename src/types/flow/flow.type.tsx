@@ -51,7 +51,7 @@ export type TFlowManagerContext = {
 	options: TFlowManagerOptions;
 	start: (flowName: string, stepName?: string, options?: TFlowActionOptions) => void;
 	back: () => void;
-	dispatch: (name: string, payload?: TFlowActionPayload) => void;
+	dispatch: (screen: TScreen, name: string, payload?: TFlowActionPayload) => void;
 	refresh: () => void;
 };
 
