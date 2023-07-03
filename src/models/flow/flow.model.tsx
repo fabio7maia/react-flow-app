@@ -13,6 +13,7 @@ import {
 	TFlowManagerOptions,
 	TFlowScreenActionCallbackResult,
 	TFlowStartMethodOutput,
+	TScreen,
 	TScreens,
 	TStepOptions,
 } from '../../types';
@@ -314,14 +315,14 @@ export class Flow {
 	};
 
 	// eslint-disable-next-line sonarjs/cognitive-complexity
-	dispatch = (actionName: string, payload?: Record<string, any>): TFlowDispatchMethodOutput => {
+	dispatch = (screen: TScreen, actionName: string, payload?: Record<string, any>): TFlowDispatchMethodOutput => {
 		this.logger('Flow > dispatch [start]', {
 			actionName,
 			payload,
 			flow: this,
 		});
 
-		const currentStep = this.currentStepName ? this.steps[this.currentStepName] : undefined;
+		let currentStep = this.currentStepName ? this.steps[this.currentStepName] : undefined;
 		let nextStepNameOrFn = undefined;
 		let changed = false;
 		let nextStepFnResult: TFlowScreenActionCallbackResult = {
@@ -329,7 +330,18 @@ export class Flow {
 			stepName: undefined,
 		};
 
-		if (currentStep?.actions.hasOwnProperty(actionName)) {
+		// check if used action based on current step or based on passed screen, based on follow priorities
+		// 1. action from current step
+		// 2. action from passed screen/step
+		const existsActionInCurrentStep = currentStep?.actions.hasOwnProperty(actionName);
+		const existsActionInPassedScreen =
+			screen.actions.includes(actionName) && this.steps.hasOwnProperty((screen as any).name);
+
+		if (!existsActionInCurrentStep && existsActionInPassedScreen) {
+			currentStep = this.steps[(screen as any).name];
+		}
+
+		if (existsActionInCurrentStep || existsActionInPassedScreen) {
 			nextStepNameOrFn = currentStep.actions[actionName];
 
 			if (typeof nextStepNameOrFn === 'string') {

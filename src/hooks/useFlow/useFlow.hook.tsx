@@ -13,9 +13,9 @@ export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => 
 
 	const handleDispatch = React.useCallback(
 		(name: TScreenInner['actions'][number], payload?: Record<string, any>): void => {
-			dispatch(name, payload);
+			dispatch(screen, name, payload);
 		},
-		[dispatch]
+		[dispatch, screen]
 	);
 
 	const getCurrentStep = React.useCallback(flow?.getCurrentStep || ((): undefined => emptyFn()), [flow]);
