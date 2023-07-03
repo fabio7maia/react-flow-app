@@ -1,3 +1,10 @@
+# [2.5.0](https://github.com/fabio7maia/react-flow-app/compare/v2.4.0...v2.5.0) (2023-07-03)
+
+
+### Features
+
+* allow execute actions from current step or another screen steps (for cases when show modals or float blocks) ([5dd81af](https://github.com/fabio7maia/react-flow-app/commit/5dd81af2f6bc7e69ce41daa362e14d5e654bde62))
+
 # [2.4.0](https://github.com/fabio7maia/react-flow-app/compare/v2.3.0...v2.4.0) (2023-06-22)
 
 
