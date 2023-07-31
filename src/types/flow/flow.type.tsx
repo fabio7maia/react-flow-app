@@ -103,12 +103,15 @@ export type TFlowListenCallbackInputDispatch = {
 	payload?: TFlowActionPayload;
 };
 
+export type TFlowListenCallbackInputOptions = Pick<TStepOptions, 'clearHistory' | 'ignoreHistory'>;
+
 export type TFlowListenCallbackInput = {
 	url: string;
 	flowName: string;
 	currentStepName: string;
 	type: TFlowListen;
 	dispatch?: TFlowListenCallbackInputDispatch;
+	options?: TFlowListenCallbackInputOptions;
 };
 
 export type TFlowListenCallback = (input: TFlowListenCallbackInput) => void;
@@ -124,7 +127,8 @@ export type TFlowStartMethodOutput = TFlowBaseActionMethodOutput;
 
 export type TFlowBackMethodOutput = TFlowBaseActionMethodOutput;
 
-export type TFlowDispatchMethodOutput = TFlowBaseActionMethodOutput & { clearHistory?: boolean };
+export type TFlowDispatchMethodOutput = TFlowBaseActionMethodOutput &
+	Pick<TStepOptions, 'clearHistory' | 'ignoreHistory'>;
 
 export type TFlowScreenActionCallbackResultOptions = TFlowActionOptions;
 
