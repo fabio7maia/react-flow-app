@@ -10,6 +10,7 @@ import {
 	TFlowListenCallback,
 	TFlowListenCallbackInput,
 	TFlowListenCallbackInputDispatch,
+	TFlowListenCallbackInputOptions,
 	TFlowManagerOptions,
 	TFlowScreenActionCallbackResult,
 	TFlowStartMethodOutput,
@@ -75,7 +76,11 @@ export class Flow {
 		LoggerHelper.log('Flow')(message, args);
 	};
 
-	private callListeners = (type: TFlowListen, dispatch?: TFlowListenCallbackInputDispatch): void => {
+	private callListeners = (
+		type: TFlowListen,
+		dispatch?: TFlowListenCallbackInputDispatch,
+		options?: TFlowListenCallbackInputOptions
+	): void => {
 		const currentStepName =
 			type === 'mount' ? this.currentStepName : this.lastRenderStepName || this.currentStepName;
 		const currentStep = this.steps[currentStepName];
@@ -86,6 +91,7 @@ export class Flow {
 			currentStepName,
 			type,
 			dispatch,
+			options,
 		};
 
 		this.listeners[type].forEach(fn => fn(data));
@@ -329,6 +335,7 @@ export class Flow {
 			flowName: undefined,
 			stepName: undefined,
 		};
+		const currentStepOptions = CoreHelper.getValueOrDefault(currentStep.options, {});
 
 		// check if used action based on current step or based on passed screen, based on follow priorities
 		// 1. action from current step
@@ -373,9 +380,19 @@ export class Flow {
 			}
 		}
 
+		const clearHistory = nextStepFnResult.options?.clearHistory || currentStepOptions.clearHistory || false;
+		const ignoreHistory = currentStepOptions.ignoreHistory || false;
+
 		if (changed) {
 			this.lastAction = 'dispatch';
-			this.callListeners('dispatch', { actionName, payload });
+			this.callListeners(
+				'dispatch',
+				{ actionName, payload },
+				{
+					clearHistory,
+					ignoreHistory,
+				}
+			);
 		}
 
 		this.logger('Flow > dispatch [end]', {
@@ -389,7 +406,8 @@ export class Flow {
 			currentStepName: nextStepFnResult.stepName,
 			changed,
 			historyUrl: this.buildUrl(),
-			clearHistory: nextStepFnResult.options?.clearHistory,
+			clearHistory,
+			ignoreHistory,
 		};
 	};
 }
