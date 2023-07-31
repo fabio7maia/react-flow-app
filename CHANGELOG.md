@@ -1,3 +1,10 @@
+# [2.6.0](https://github.com/fabio7maia/react-flow-app/compare/v2.5.0...v2.6.0) (2023-07-31)
+
+
+### Features
+
+* added listen prop in flow provider to allow more flexibility ([07ea09d](https://github.com/fabio7maia/react-flow-app/commit/07ea09d0fed7e7e97040f493e6cc8fff75ea062a))
+
 # [2.5.0](https://github.com/fabio7maia/react-flow-app/compare/v2.4.0...v2.5.0) (2023-07-03)
 
 
