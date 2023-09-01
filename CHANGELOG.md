@@ -1,3 +1,11 @@
+## [2.6.1](https://github.com/fabio7maia/react-flow-app/compare/v2.6.0...v2.6.1) (2023-09-01)
+
+
+### Bug Fixes
+
+* fixed dependencies ([daa63a9](https://github.com/fabio7maia/react-flow-app/commit/daa63a929071d17f821fd27d71f2565f3e1c816e))
+* fixed problem with listen prop is optional, but is required for code working ([8b78e5a](https://github.com/fabio7maia/react-flow-app/commit/8b78e5aeedd9d62bbf39e654a2014d84aa40c740))
+
 # [2.6.0](https://github.com/fabio7maia/react-flow-app/compare/v2.5.0...v2.6.0) (2023-07-31)
 
 
