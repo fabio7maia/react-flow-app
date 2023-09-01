@@ -134,7 +134,7 @@ FlowProviderProps<TFlows>) => {
 		logger.log('FlowProvider > back', { changed, currentFlowName });
 
 		if (changed) {
-			listen({ currentStepName: '', flowName: currentFlowName.current, type: 'back', url: historyUrl });
+			listen?.({ currentStepName: '', flowName: currentFlowName.current, type: 'back', url: historyUrl });
 		}
 
 		if (changed && actionFlowName !== currentFlowName.current) {
@@ -162,7 +162,7 @@ FlowProviderProps<TFlows>) => {
 			logger.log('FlowProvider > dispatch', { name, payload, changed });
 
 			if (changed) {
-				listen({
+				listen?.({
 					currentStepName: '',
 					flowName: currentFlowName.current,
 					type: 'dispatch',
@@ -234,7 +234,7 @@ FlowProviderProps<TFlows>) => {
 
 			handler?.();
 		}
-	}, [_, fm, listen, onFlowMount, onFlowUnmount]);
+	}, [_, fm, onFlowMount, onFlowUnmount]);
 
 	logger.log('FlowProvider', {
 		flow: flow.current,
