@@ -1,3 +1,11 @@
+## [2.6.2](https://github.com/fabio7maia/react-flow-app/compare/v2.6.1...v2.6.2) (2023-11-20)
+
+
+### Bug Fixes
+
+* fixed problem found in react-18 and refined github workflows ([2271a27](https://github.com/fabio7maia/react-flow-app/commit/2271a271dd3324eb4fd5e32ab86f1e2fecabba56))
+* fixed release github workflow ([06e0f3d](https://github.com/fabio7maia/react-flow-app/commit/06e0f3d296d053f70bdecbc2664babb9c149356f))
+
 ## [2.6.1](https://github.com/fabio7maia/react-flow-app/compare/v2.6.0...v2.6.1) (2023-09-01)
 
 
