@@ -178,7 +178,7 @@ FlowProviderProps<TFlows>) => {
 				});
 			}
 
-			if (currentFlowName) {
+			if (actionFlowName) {
 				// when clear history get fromFlowName of goto flow to keep history correct
 				// because clear history allow to forget passed from current flow
 				if (clearHistory) {
