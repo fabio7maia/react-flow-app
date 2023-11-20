@@ -18,11 +18,11 @@ jobs:
               with:
                   node-version: '14.17'
             - name: Install dependencies
-              run: yarn install --frozen-lockfile
+              run: npm ci
             - name: Run tests
-              run: yarn run test
+              run: npm run test
             - name: Build storybook
-              run: yarn run storybook:build
+              run: npm run storybook:build
             - name: Deploy storybook
               uses: crazy-max/ghaction-github-pages@v1
               with:

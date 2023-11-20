@@ -18,11 +18,11 @@ jobs:
               with:
                   node-version: '18.13'
             - name: Install dependencies
-              run: yarn install --frozen-lockfile
+              run: npm ci
             - name: Run tests
-              run: yarn run test
+              run: npm run test
             - name: Run build
-              run: yarn run build
+              run: npm run build
             - name: Release
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
