@@ -1,3 +1,10 @@
+# [2.7.0](https://github.com/fabio7maia/react-flow-app/compare/v2.6.2...v2.7.0) (2023-11-23)
+
+
+### Features
+
+* added clearAllHistory to flowManager ([0db9db3](https://github.com/fabio7maia/react-flow-app/commit/0db9db39e96334a917c1ec1a3c965986d103264e))
+
 ## [2.6.2](https://github.com/fabio7maia/react-flow-app/compare/v2.6.1...v2.6.2) (2023-11-20)
 
 
