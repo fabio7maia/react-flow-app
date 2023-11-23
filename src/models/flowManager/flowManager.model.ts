@@ -1,13 +1,13 @@
 import { LoggerHelper } from '../../helpers';
 import {
-	TFlowScreenActionCallbackResult,
+	TFlowActionOptions,
+	TFlowCreatorInput,
 	TFlowListen,
 	TFlowListenCallback,
+	TFlowManagerStartMethodOutput,
+	TFlowScreenActionCallbackResult,
 	TScreens,
 	TStepOptions,
-	TFlowManagerStartMethodOutput,
-	TFlowCreatorInput,
-	TFlowActionOptions,
 } from '../../types';
 import { Flow } from '../flow';
 
@@ -45,7 +45,6 @@ export class FlowManager<
 		LoggerHelper.log('Flow')(msg, rest);
 	};
 
-	// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 	flow = (input: TFlowCreatorInput<TFlowName>) => {
 		const { name, baseUrl } = input;
 
@@ -59,10 +58,6 @@ export class FlowManager<
 	};
 
 	getFlow = (name: string): Flow | undefined => {
-		// if (!FlowManager.flows.hasOwnProperty(name)) {
-		//   throw new Error(`Flow ${name} not exists.`);
-		// }
-
 		return this.flows[name];
 	};
 
@@ -151,5 +146,14 @@ export class FlowManager<
 			},
 			name: () => flowName,
 		};
+	};
+
+	clearAllHistory = (): void => {
+		Object.keys(this._instance.flows).forEach(flow => {
+			this.log('clearAllHistory', {
+				flow,
+			});
+			this._instance.getFlow(flow).clearHistory();
+		});
 	};
 }
