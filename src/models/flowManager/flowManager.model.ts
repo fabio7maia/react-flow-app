@@ -148,12 +148,29 @@ export class FlowManager<
 		};
 	};
 
-	clearAllHistory = (): void => {
-		Object.keys(this._instance.flows).forEach(flow => {
+	/**
+	 * Allow clear history for all flows when not passed specific flow (flowName param) or clear only for specific flow
+	 *
+	 * @param flowName	flow name of flow to clear history
+	 */
+	clearAllHistory = (flowName?: string): void => {
+		if (flowName) {
+			const flow = this.getFlow(flowName);
+
 			this.log('clearAllHistory', {
 				flow,
+				flowName,
 			});
-			this._instance.getFlow(flow).clearHistory();
-		});
+
+			flow?.clearHistory();
+		} else {
+			Object.keys(this.flows).forEach(flow => {
+				this.log('clearAllHistory', {
+					flow,
+				});
+
+				this.getFlow(flow).clearHistory();
+			});
+		}
 	};
 }
