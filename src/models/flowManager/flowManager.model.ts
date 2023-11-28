@@ -156,4 +156,14 @@ export class FlowManager<
 			this._instance.getFlow(flow).clearHistory();
 		});
 	};
+
+	clearHistoryForFlow = (flowName: string): void => {
+		this.log('clearHistoryForFlow', {
+			flowName,
+		});
+
+		const flow = this.getFlow(flowName);
+
+		flow?.clearHistory();
+	};
 }
