@@ -1,3 +1,11 @@
+# [2.8.0](https://github.com/fabio7maia/react-flow-app/compare/v2.7.0...v2.8.0) (2023-11-28)
+
+
+### Features
+
+* added clearHistoryForFlow method to flow manager ([3cb30e3](https://github.com/fabio7maia/react-flow-app/commit/3cb30e3b681699593284161e4b197d0df5b6a740))
+* reverted created clearHistoryForFlow and refined clearAllHistory method receive optional param flowName to allow clear history for specific flow ([33df72d](https://github.com/fabio7maia/react-flow-app/commit/33df72dfd6d4b103a5172662c3a2a33da70f604a))
+
 # [2.7.0](https://github.com/fabio7maia/react-flow-app/compare/v2.6.2...v2.7.0) (2023-11-23)
 
 
