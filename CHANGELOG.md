@@ -1,3 +1,10 @@
+# [2.9.0](https://github.com/fabio7maia/react-flow-app/compare/v2.8.0...v2.9.0) (2023-12-07)
+
+
+### Features
+
+* added clearAllHistory to useFlowManager hook ([3949e56](https://github.com/fabio7maia/react-flow-app/commit/3949e569b54ae951f4233d101ec6115a83cf6641))
+
 # [2.8.0](https://github.com/fabio7maia/react-flow-app/compare/v2.7.0...v2.8.0) (2023-11-28)
 
 
