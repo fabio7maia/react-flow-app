@@ -1,3 +1,11 @@
+# [2.10.0](https://github.com/fabio7maia/react-flow-app/compare/v2.9.0...v2.10.0) (2023-12-20)
+
+
+### Features
+
+* added support actions in another objects non screens ([815793d](https://github.com/fabio7maia/react-flow-app/commit/815793d56a24e880372fae35b583c2fe2c09d4e4))
+* refine log ([1c1b383](https://github.com/fabio7maia/react-flow-app/commit/1c1b3837610d5c728daf0c40e2f5f61038cebb9a))
+
 # [2.9.0](https://github.com/fabio7maia/react-flow-app/compare/v2.8.0...v2.9.0) (2023-12-07)
 
 
