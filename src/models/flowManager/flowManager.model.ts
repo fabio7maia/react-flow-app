@@ -100,7 +100,7 @@ export class FlowManager<
 					Object.keys(screenActions).forEach(action => {
 						const gotoScreen = (screenActions as any)[action];
 
-						this.log('steps', {
+						this.log('step', {
 							screens: this.screens,
 							steps,
 							name,
@@ -129,7 +129,7 @@ export class FlowManager<
 					Object.keys(actions).forEach(action => {
 						const gotoScreen = (actions as any)[action];
 
-						this.log('steps', {
+						this.log('anotherObject', {
 							screens: this.screens,
 							steps,
 							name,
