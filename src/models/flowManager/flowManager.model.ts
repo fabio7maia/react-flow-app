@@ -14,15 +14,18 @@ import { Flow } from '../flow';
 export class FlowManager<
 	TScreensInner extends TScreens,
 	TFlowName extends string,
-	TFlowStep extends keyof TScreensInner
+	TFlowStep extends keyof TScreensInner,
+	TAnotherObjects extends Record<string, { actions: any }>
 > {
 	private _instance;
 	flows: Record<TFlowName, Flow>;
 	screens: TScreensInner;
+	anotherObjects: TAnotherObjects;
 
-	constructor(screens: TScreensInner) {
+	constructor(screens: TScreensInner, anotherObjects?: TAnotherObjects) {
 		if (!this._instance) {
 			this.screens = screens;
+			this.anotherObjects = anotherObjects;
 			this.flows = {} as any;
 
 			this._instance = this;
@@ -97,12 +100,41 @@ export class FlowManager<
 					Object.keys(screenActions).forEach(action => {
 						const gotoScreen = (screenActions as any)[action];
 
-						this.log('steps', {
+						this.log('step', {
 							screens: this.screens,
 							steps,
 							name,
 							gotoScreen,
 							screenActions,
+						});
+
+						flow.addAction(name as any, action, gotoScreen);
+					});
+
+					this.log('flow final', {
+						flow,
+					});
+				};
+			},
+			anotherObject: <TCurrentStepName extends keyof TAnotherObjects>(name: TCurrentStepName) => {
+				const anotherObject = this.anotherObjects[name];
+				type AnotherObjectsActions = typeof anotherObject['actions'][number];
+
+				return (
+					actions: Record<
+						AnotherObjectsActions,
+						keyof typeof steps | (() => TFlowScreenActionCallbackResult | void)
+					>
+				): void => {
+					Object.keys(actions).forEach(action => {
+						const gotoScreen = (actions as any)[action];
+
+						this.log('anotherObject', {
+							screens: this.screens,
+							steps,
+							name,
+							gotoScreen,
+							actions,
 						});
 
 						flow.addAction(name as any, action, gotoScreen);

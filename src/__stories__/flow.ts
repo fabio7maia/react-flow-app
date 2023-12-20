@@ -1,7 +1,8 @@
 import { FlowManager } from '../models';
 import { screens } from './screens';
 
-export const fm = new FlowManager(screens);
+export const anotherObjects = { modalExample: { actions: ['gotoStartScreen'] } } as const;
+export const fm = new FlowManager(screens, anotherObjects);
 
 export const f0 = fm.flow({ name: 'f0', baseUrl: 'flows-example/f0' }).steps({
 	screen1: {},
@@ -17,6 +18,8 @@ f0.step('screen3')({
 	// },
 	end: 'screen1',
 });
+
+f0.anotherObject('modalExample')({ gotoStartScreen: 'screen1' });
 
 export const f1 = fm.flow({ name: 'f1', baseUrl: 'flows-example/f1' }).steps({ screen1: {}, screen3: {} });
 

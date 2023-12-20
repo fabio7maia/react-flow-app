@@ -33,7 +33,7 @@ export type FlowProviderLifeCycleHandlers<TFlows> = Partial<Record<keyof TFlows,
 type TDictionary = Record<string, any>;
 
 interface FlowProviderProps<TFlows extends TDictionary> {
-	fm: FlowManager<any, any, any>;
+	fm: FlowManager<any, any, any, any>;
 	initialFlowName: keyof TFlows;
 	initialStepName?: string;
 	options?: TFlowManagerOptions;
