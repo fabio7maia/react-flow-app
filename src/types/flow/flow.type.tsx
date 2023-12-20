@@ -3,7 +3,7 @@ import { FlowManager } from '../../models';
 
 export type TScreen = {
 	actions: any; // needs to any type to working properly to infer actions
-	loader: () => React.LazyExoticComponent<React.ComponentType<any>>;
+	loader?: () => React.LazyExoticComponent<React.ComponentType<any>>;
 	url?: string;
 };
 
@@ -46,7 +46,7 @@ export const DEFAULT_FLOW_MANAGER_OPTIONS: TFlowManagerOptions = {
 };
 
 export type TFlowManagerContext = {
-	fm: FlowManager<any, any, any>;
+	fm: FlowManager<any, any, any, any>;
 	currentFlowName: string;
 	options: TFlowManagerOptions;
 	start: (flowName: string, stepName?: string, options?: TFlowActionOptions) => void;
