@@ -1,3 +1,10 @@
+## [2.11.1](https://github.com/fabio7maia/react-flow-app/compare/v2.11.0...v2.11.1) (2023-12-22)
+
+
+### Bug Fixes
+
+* fixed problem with not apply clear history when navigate between steps of same flow ([94e6f18](https://github.com/fabio7maia/react-flow-app/commit/94e6f184ad0e0f0a17781cbbf18d1c788c038eab))
+
 # [2.11.0](https://github.com/fabio7maia/react-flow-app/compare/v2.10.0...v2.11.0) (2023-12-22)
 
 
