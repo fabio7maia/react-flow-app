@@ -189,7 +189,14 @@ export class Flow {
 		this.lastRenderStepName = currentStepName;
 
 		if (currentStepName && this.steps.hasOwnProperty(currentStepName)) {
-			const Screen = this.steps[currentStepName].loader();
+			const step = this.steps[currentStepName];
+			const { clearHistory = false } = step.options || {};
+
+			if (clearHistory) {
+				this.clearHistory();
+			}
+
+			const Screen = step.loader();
 
 			this.logger('Flow > render [start]', { currentStepName, Screen });
 
