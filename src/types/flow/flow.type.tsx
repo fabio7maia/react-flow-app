@@ -133,7 +133,7 @@ export type TFlowDispatchMethodOutput = TFlowBaseActionMethodOutput &
 export type TFlowScreenActionCallbackResultOptions = TFlowActionOptions;
 
 export type TFlowScreenActionCallbackResult = {
-	flowName: string;
+	flowName?: string;
 	stepName?: string;
 	options?: TFlowActionOptions;
 };
