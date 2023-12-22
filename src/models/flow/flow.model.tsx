@@ -24,6 +24,7 @@ export class Flow {
 	name: string;
 	baseUrl: string;
 	steps: Record<string, Step>;
+	anotherObjects: Record<string, Step>;
 	last2Steps: Record<number, string>;
 	history: Array<string>;
 	listeners: Record<TFlowListen, TFlowListenCallback[]>;
@@ -133,10 +134,21 @@ export class Flow {
 		this.steps[name] = step;
 	};
 
-	addAction = (screenName: string, actionName: string, gotoScreenName: string): void => {
-		const step = this.steps[screenName];
+	addAction = (screenName: string, actionName: string, gotoScreenName: string, isAnotherObject = false): void => {
+		if (isAnotherObject) {
+			this.anotherObjects = this.anotherObjects || {};
+			this.anotherObjects[screenName] = this.anotherObjects[screenName] || {
+				actions: {},
+				loader: (): React.LazyExoticComponent<any> => React.lazy(() => import('./emptyComponent')),
+				name: screenName,
+			};
 
-		step.actions[actionName] = gotoScreenName;
+			this.anotherObjects[screenName].actions[actionName] = gotoScreenName;
+		} else {
+			const step = this.steps[screenName];
+
+			step.actions[actionName] = gotoScreenName;
+		}
 	};
 
 	addListener = (callback: TFlowListenCallback, type: TFlowListen = 'all'): void => {
@@ -337,18 +349,23 @@ export class Flow {
 		};
 		const currentStepOptions = CoreHelper.getValueOrDefault(currentStep.options, {});
 
-		// check if used action based on current step or based on passed screen, based on follow priorities
+		// check if used action based on current step or based on passed screen or passed another object, based on follow priorities
 		// 1. action from current step
 		// 2. action from passed screen/step
+		// 2. action from passed another object
 		const existsActionInCurrentStep = currentStep?.actions.hasOwnProperty(actionName);
 		const existsActionInPassedScreen =
 			screen.actions.includes(actionName) && this.steps.hasOwnProperty((screen as any).name);
+		const existsActionInPassedAnotherObjects =
+			screen.actions.includes(actionName) && this.anotherObjects.hasOwnProperty((screen as any).name);
 
 		if (!existsActionInCurrentStep && existsActionInPassedScreen) {
 			currentStep = this.steps[(screen as any).name];
+		} else if (!existsActionInCurrentStep && !existsActionInPassedScreen && existsActionInPassedAnotherObjects) {
+			currentStep = this.anotherObjects[(screen as any).name];
 		}
 
-		if (existsActionInCurrentStep || existsActionInPassedScreen) {
+		if (existsActionInCurrentStep || existsActionInPassedScreen || existsActionInPassedAnotherObjects) {
 			nextStepNameOrFn = currentStep.actions[actionName];
 
 			if (typeof nextStepNameOrFn === 'string') {

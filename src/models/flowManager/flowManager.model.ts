@@ -137,7 +137,7 @@ export class FlowManager<
 							actions,
 						});
 
-						flow.addAction(name as any, action, gotoScreen);
+						flow.addAction(name as any, action, gotoScreen, true);
 					});
 
 					this.log('flow final', {
