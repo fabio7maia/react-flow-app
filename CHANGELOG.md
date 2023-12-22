@@ -1,3 +1,10 @@
+# [2.11.0](https://github.com/fabio7maia/react-flow-app/compare/v2.10.0...v2.11.0) (2023-12-22)
+
+
+### Features
+
+* refine code to support actions for another objects properly ([dd2924d](https://github.com/fabio7maia/react-flow-app/commit/dd2924d726a26f90d63ef82198db3b7a17707d9a))
+
 # [2.10.0](https://github.com/fabio7maia/react-flow-app/compare/v2.9.0...v2.10.0) (2023-12-20)
 
 
