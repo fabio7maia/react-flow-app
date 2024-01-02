@@ -1,3 +1,10 @@
+## [2.11.2](https://github.com/fabio7maia/react-flow-app/compare/v2.11.1...v2.11.2) (2024-01-02)
+
+
+### Bug Fixes
+
+* fixed flowName in listen method fired in dispatch ([4c71549](https://github.com/fabio7maia/react-flow-app/commit/4c71549d07bbefb416da5d06df51620cac799b4e))
+
 ## [2.11.1](https://github.com/fabio7maia/react-flow-app/compare/v2.11.0...v2.11.1) (2023-12-22)
 
 
