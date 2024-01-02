@@ -164,7 +164,7 @@ FlowProviderProps<TFlows>) => {
 			if (changed) {
 				listen?.({
 					currentStepName: '',
-					flowName: currentFlowName.current,
+					flowName: actionFlowName,
 					type: 'dispatch',
 					url: historyUrl,
 					dispatch: {
