@@ -1,3 +1,10 @@
+## [2.11.3](https://github.com/fabio7maia/react-flow-app/compare/v2.11.2...v2.11.3) (2024-01-03)
+
+
+### Bug Fixes
+
+* fixed problem with undefined flowName in listen method ([56d9663](https://github.com/fabio7maia/react-flow-app/commit/56d9663b6a5fd58485f1c6f7009e4da5fd64050f))
+
 ## [2.11.2](https://github.com/fabio7maia/react-flow-app/compare/v2.11.1...v2.11.2) (2024-01-02)
 
 
