@@ -364,7 +364,7 @@ export class Flow {
 		const existsActionInPassedScreen =
 			screen.actions.includes(actionName) && this.steps.hasOwnProperty((screen as any).name);
 		const existsActionInPassedAnotherObjects =
-			screen.actions.includes(actionName) && this.anotherObjects.hasOwnProperty((screen as any).name);
+			screen.actions.includes(actionName) && this.anotherObjects?.hasOwnProperty((screen as any).name);
 
 		if (!existsActionInCurrentStep && existsActionInPassedScreen) {
 			currentStep = this.steps[(screen as any).name];
