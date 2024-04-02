@@ -1,3 +1,10 @@
+# [2.12.0](https://github.com/fabio7maia/react-flow-app/compare/v2.11.3...v2.12.0) (2024-04-02)
+
+
+### Features
+
+* allow control cylic history for current and next step ([0e54064](https://github.com/fabio7maia/react-flow-app/commit/0e540648e67a5148f45c1ae4b7f1760c0ab6fcc5))
+
 ## [2.11.3](https://github.com/fabio7maia/react-flow-app/compare/v2.11.2...v2.11.3) (2024-01-03)
 
 
