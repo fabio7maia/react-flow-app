@@ -307,7 +307,8 @@ export class Flow {
 		this.fromFlowName = undefined;
 	};
 
-	private treatHistory = (): void => {
+	// eslint-disable-next-line sonarjs/cognitive-complexity
+	private treatHistory = (nextStepName: string): void => {
 		if (this.currentStepName) {
 			const currentStep = this.steps[this.currentStepName];
 
@@ -325,11 +326,26 @@ export class Flow {
 				this.history.push(this.currentStepName);
 			}
 
+			// check allow cyclic for current step
 			if (!CoreHelper.getValueOrDefault(currentStep.options?.allowCyclicHistory, false)) {
 				const numberOfStepOccurrences = this.history.filter(x => x === this.currentStepName).length;
 
-				if (numberOfStepOccurrences > 1) {
+				if (numberOfStepOccurrences > 0) {
 					const firstStepOccurrenceIndex = this.history.findIndex(x => x === this.currentStepName);
+
+					if (firstStepOccurrenceIndex >= 0) {
+						this.history = this.history.splice(0, firstStepOccurrenceIndex + 1);
+					}
+				}
+			}
+
+			// check allow cyclic for next step
+			const nextStep = this.steps[nextStepName];
+			if (!CoreHelper.getValueOrDefault(nextStep.options?.allowCyclicHistory, false)) {
+				const numberOfStepOccurrences = this.history.filter(x => x === nextStepName).length;
+
+				if (numberOfStepOccurrences > 0) {
+					const firstStepOccurrenceIndex = this.history.findIndex(x => x === nextStepName);
 
 					if (firstStepOccurrenceIndex >= 0) {
 						this.history = this.history.splice(0, firstStepOccurrenceIndex + 1);
@@ -379,14 +395,14 @@ export class Flow {
 				changed = this.currentStepName !== nextStepNameOrFn;
 
 				if (changed) {
-					this.treatHistory();
+					this.treatHistory(nextStepNameOrFn);
 				}
 
 				this.currentStepName = nextStepNameOrFn;
 			} else {
-				this.treatHistory();
-
 				nextStepFnResult = nextStepNameOrFn() || {};
+
+				this.treatHistory(nextStepFnResult.stepName);
 
 				if (nextStepFnResult?.options?.clearHistory) {
 					this.clearHistory();
