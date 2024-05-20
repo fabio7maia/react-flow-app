@@ -1,3 +1,10 @@
+# [2.13.0](https://github.com/fabio7maia/react-flow-app/compare/v2.12.0...v2.13.0) (2024-05-20)
+
+
+### Features
+
+* added initialHistory to flow provider ([16ce2e0](https://github.com/fabio7maia/react-flow-app/commit/16ce2e0c16f9e5ce5bb1c072060a954ce0cb2b0e))
+
 # [2.12.0](https://github.com/fabio7maia/react-flow-app/compare/v2.11.3...v2.12.0) (2024-04-02)
 
 
