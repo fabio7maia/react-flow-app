@@ -216,7 +216,8 @@ export class Flow {
 		stepName?: string,
 		fromFlowName?: string,
 		options?: TFlowActionOptions,
-		isFromBack = false
+		isFromBack = false,
+		initialHistory = []
 	): TFlowStartMethodOutput => {
 		this.logger('start', { stepName, fromFlowName, options });
 
@@ -224,6 +225,7 @@ export class Flow {
 		this.fromFlowName = this.name !== fromFlowName ? fromFlowName : undefined;
 		const currentStepName = stepName || this.currentStepName || this.initialStepName || this.firstStepName;
 		const { clearHistory = false } = options || {};
+		this.history = initialHistory;
 
 		// check if is back
 		if (isFromBack) {
