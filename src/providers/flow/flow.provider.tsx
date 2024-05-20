@@ -36,6 +36,7 @@ interface FlowProviderProps<TFlows extends TDictionary> {
 	fm: FlowManager<any, any, any, any>;
 	initialFlowName: keyof TFlows;
 	initialStepName?: string;
+	initialHistory?: Array<string>;
 	options?: TFlowManagerOptions;
 	/**
 	 * List of handlers by flows called when specific flow name is mounted
@@ -58,6 +59,7 @@ export const FlowProvider = <TFlows extends TDictionary>({
 	onFlowMount,
 	onFlowUnmount,
 	listen,
+	initialHistory,
 }: // eslint-disable-next-line sonarjs/cognitive-complexity
 FlowProviderProps<TFlows>) => {
 	const [_, setForceUpdate] = React.useState(0);
@@ -109,7 +111,7 @@ FlowProviderProps<TFlows>) => {
 			fromFlowName = fromFlowName ? fromFlowName : ignoreFromFlow ? undefined : currentFlowName.current;
 
 			const { changed, historyUrl, currentFlowName: actionFlowName } =
-				flow?.start(stepName, fromFlowName, options, isFromBack) || {};
+				flow?.start(stepName, fromFlowName, options, isFromBack, initialHistory) || {};
 
 			if (changed) {
 				// when action flow name is different current flow name, call start again to another flow
@@ -125,7 +127,7 @@ FlowProviderProps<TFlows>) => {
 				forceUpdate();
 			}
 		},
-		[fm, forceUpdate, logger, updateLocationUrl]
+		[fm, forceUpdate, initialHistory, logger, updateLocationUrl]
 	);
 
 	const handleBack = React.useCallback(() => {
