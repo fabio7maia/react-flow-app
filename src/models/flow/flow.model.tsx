@@ -406,7 +406,9 @@ export class Flow {
 
 				this.treatHistory(nextStepFnResult.stepName);
 
-				if (nextStepFnResult?.options?.clearHistory) {
+				if (nextStepFnResult?.options?.history) {
+					this.history = nextStepFnResult?.options?.history;
+				} else if (nextStepFnResult?.options?.clearHistory) {
 					this.clearHistory();
 				}
 

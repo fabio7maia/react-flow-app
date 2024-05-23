@@ -23,6 +23,12 @@ export type TFlowActionOptions = {
 	 * Default: false
 	 */
 	clearHistory?: boolean;
+	/**
+	 * Set array of all steps saved in history. This action replace current steps in history by passed history.
+	 *
+	 * Default: null
+	 */
+	history?: Array<string>;
 };
 
 export interface TFlowManagerOptions {
