@@ -1,3 +1,10 @@
+# [2.14.0](https://github.com/fabio7maia/react-flow-app/compare/v2.13.0...v2.14.0) (2024-05-23)
+
+
+### Features
+
+* allow set history in action in flow configuration ([6e552f7](https://github.com/fabio7maia/react-flow-app/commit/6e552f7d6f4e3b3e59dce227c882a0857fd517ff))
+
 # [2.13.0](https://github.com/fabio7maia/react-flow-app/compare/v2.12.0...v2.13.0) (2024-05-20)
 
 
