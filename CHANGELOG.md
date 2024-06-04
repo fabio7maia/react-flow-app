@@ -1,3 +1,10 @@
+## [2.14.1](https://github.com/fabio7maia/react-flow-app/compare/v2.14.0...v2.14.1) (2024-06-04)
+
+
+### Bug Fixes
+
+* Fixed error when not exists next step ([2e56d3f](https://github.com/fabio7maia/react-flow-app/commit/2e56d3f7208828e5d02994e559c28b7696cfeda8))
+
 # [2.14.0](https://github.com/fabio7maia/react-flow-app/compare/v2.13.0...v2.14.0) (2024-05-23)
 
 
