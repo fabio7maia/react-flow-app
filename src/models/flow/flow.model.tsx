@@ -343,7 +343,7 @@ export class Flow {
 
 			// check allow cyclic for next step
 			const nextStep = this.steps[nextStepName];
-			if (!CoreHelper.getValueOrDefault(nextStep.options?.allowCyclicHistory, false)) {
+			if (nextStep && !CoreHelper.getValueOrDefault(nextStep.options?.allowCyclicHistory, false)) {
 				const numberOfStepOccurrences = this.history.filter(x => x === nextStepName).length;
 
 				if (numberOfStepOccurrences > 0) {
