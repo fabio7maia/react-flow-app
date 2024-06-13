@@ -217,7 +217,7 @@ export class Flow {
 		fromFlowName?: string,
 		options?: TFlowActionOptions,
 		isFromBack = false,
-		initialHistory = []
+		initialHistory: Array<string> = undefined
 	): TFlowStartMethodOutput => {
 		this.logger('start', { stepName, fromFlowName, options });
 
@@ -225,7 +225,11 @@ export class Flow {
 		this.fromFlowName = this.name !== fromFlowName ? fromFlowName : undefined;
 		const currentStepName = stepName || this.currentStepName || this.initialStepName || this.firstStepName;
 		const { clearHistory = false } = options || {};
-		this.history = initialHistory;
+
+		// only set history when initial history is defined
+		if (Array.isArray(initialHistory) && initialHistory.length > 0) {
+			this.history = initialHistory;
+		}
 
 		// check if is back
 		if (isFromBack) {
