@@ -1,3 +1,10 @@
+## [2.14.2](https://github.com/fabio7maia/react-flow-app/compare/v2.14.1...v2.14.2) (2024-06-13)
+
+
+### Bug Fixes
+
+* Fixed problem with history of flows because set on start method all time to empty array when not passed initial history ([ec9a894](https://github.com/fabio7maia/react-flow-app/commit/ec9a894ee086318567cef8812d559a53584db97c))
+
 ## [2.14.1](https://github.com/fabio7maia/react-flow-app/compare/v2.14.0...v2.14.1) (2024-06-04)
 
 
