@@ -129,7 +129,7 @@ export type TFlowBaseActionMethodOutput = {
 	historyUrl?: string;
 };
 
-export type TFlowStartMethodOutput = TFlowBaseActionMethodOutput & { initialHistory?: Array<string> };
+export type TFlowStartMethodOutput = TFlowBaseActionMethodOutput;
 
 export type TFlowBackMethodOutput = TFlowBaseActionMethodOutput;
 
