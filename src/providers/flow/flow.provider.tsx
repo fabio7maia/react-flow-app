@@ -73,7 +73,7 @@ FlowProviderProps<TFlows>) => {
 		animation,
 		withUrl,
 	};
-	const lastFlowName = React.useRef<string>();
+	const lastFlowName = React.useRef<string>(undefined);
 
 	const forceUpdate = React.useCallback(() => {
 		flow.current = fm.getFlow(currentFlowName.current);

@@ -1,10 +1,14 @@
 import React from 'react';
 import { Placeholder, PlaceholderProps } from '.';
 import { StorybookHelper } from '../../storybook';
+import { Meta } from '@storybook/react';
 
 const story = StorybookHelper.writeStory({ component: Placeholder, group: 'Components' });
-
-export default story.meta;
+const meta: Meta = {
+	...story.meta,
+	title: 'Components/Placeholder',
+};
+export default meta;
 
 const template = props => (
 	<div style={{ height: '50px' }}>

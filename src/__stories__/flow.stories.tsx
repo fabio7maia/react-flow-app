@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { JSX } from 'react';
+import { Meta } from '@storybook/react';
 import { StorybookHelper } from '../storybook';
 import { FlowProvider } from '../providers';
 import { fm, f0 } from './flow';
@@ -10,8 +11,12 @@ const Flow = (): JSX.Element => {
 };
 
 const story = StorybookHelper.writeStory({ component: Flow, group: 'Modules' });
+const meta: Meta = {
+	...story.meta,
+	title: 'Modules/Flow',
+};
 
-export default story.meta;
+export default meta;
 
 const template: React.FC = () => <FlowProvider fm={fm} initialFlowName="f2" />;
 

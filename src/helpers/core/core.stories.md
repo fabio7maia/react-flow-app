@@ -1,8 +1,8 @@
-import { Meta, Story, Canvas } from '@storybook/addon-docs';
+import { Meta } from '@storybook/blocks';
 
 import { CoreHelper } from '.';
 
-<Meta title="Helpers/Core" component={CoreHelper} />
+<Meta title="Helpers/Core" />
 
 # CoreHelper
 
