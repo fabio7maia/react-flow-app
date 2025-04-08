@@ -7,7 +7,7 @@ export interface PlaceholderProps {
 	style?: React.CSSProperties;
 }
 
-export const Placeholder: React.FC<PlaceholderProps> = ({ children, loading }) => {
+export const Placeholder = ({ children, loading }: React.PropsWithChildren<PlaceholderProps>) => {
 	const { log } = useLogger('components');
 
 	log('Placeholder > render', { loading });
@@ -15,7 +15,7 @@ export const Placeholder: React.FC<PlaceholderProps> = ({ children, loading }) =
 	return (
 		<>
 			{loading && (
-				<div className="placeholder-load-wraper">
+				<div className="placeholder-load-wrapper">
 					<div className="placeholder-activity"></div>
 				</div>
 			)}

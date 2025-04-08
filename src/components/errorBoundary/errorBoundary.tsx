@@ -1,6 +1,7 @@
 import React from 'react';
 
 interface ErrorBoundaryProps {
+	children: React.ReactNode;
 	containerErrorMessage?: (error: string) => React.ReactNode;
 }
 
@@ -10,7 +11,7 @@ interface ErrorBoundaryState {
 }
 
 export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-	constructor(props: {}) {
+	constructor(props: ErrorBoundaryProps) {
 		super(props);
 		this.state = { hasError: false };
 	}
