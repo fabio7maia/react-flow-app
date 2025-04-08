@@ -1,3 +1,16 @@
+# [2.15.0](https://github.com/fabio7maia/react-flow-app/compare/v2.14.2...v2.15.0) (2025-04-08)
+
+
+### Bug Fixes
+
+* fixed test runner ([4671c75](https://github.com/fabio7maia/react-flow-app/commit/4671c75e984adb6f5152541ab40d6f55ec3c0a1b))
+* try fix github workflows ([e963d60](https://github.com/fabio7maia/react-flow-app/commit/e963d60f2ff4ee48cd2f1421760a3ed3aaf4ec3a))
+
+
+### Features
+
+* added support for react 19 ([40baf66](https://github.com/fabio7maia/react-flow-app/commit/40baf662b6200cc51a78317d89da5bc1cfe49267))
+
 ## [2.14.2](https://github.com/fabio7maia/react-flow-app/compare/v2.14.1...v2.14.2) (2024-06-13)
 
 
