@@ -16,9 +16,9 @@ jobs:
             - name: Setup Node.js
               uses: actions/setup-node@v1
               with:
-                  node-version: '14.17'
+                  node-version: '20.17.0'
             - name: Install dependencies
-              run: yarninstall --frozen-lockfile
+              run: yarn install --frozen-lockfile
             - name: Run tests
               run: yarn run test
             - name: Build storybook
