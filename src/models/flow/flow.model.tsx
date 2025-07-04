@@ -14,8 +14,10 @@ import {
 	TFlowManagerOptions,
 	TFlowScreenActionCallbackResult,
 	TFlowStartMethodOutput,
+	TFromFlow,
 	TScreen,
 	TScreens,
+	TStep,
 	TStepOptions,
 } from '../../types';
 import { Step } from '../step';
@@ -28,7 +30,7 @@ export class Flow {
 	last2Steps: Record<number, string>;
 	history: Array<string>;
 	listeners: Record<TFlowListen, TFlowListenCallback[]>;
-	fromFlowName?: string;
+	fromFlow?: TFromFlow;
 	initialStepName?: string;
 	lastRenderStepName?: string;
 	lastAction?: TFlowLastAction;
@@ -100,16 +102,41 @@ export class Flow {
 		this.listeners['all'].forEach(fn => fn(data));
 	};
 
-	hasPreviousStep = (): boolean => {
-		return this.history.length > 0 || this.fromFlowName ? true : false;
-	};
-
-	getPreviousStep = (): Step | undefined => {
-		return this.history.length > 0 ? this.steps[this.history[this.history.length - 1]] : undefined;
-	};
-
-	getCurrentStep = (): Step | undefined => {
+	private getCurrentStepExtraInfo = (): Step | undefined => {
 		return this.steps[this.currentStepName];
+	};
+
+	hasPreviousStep = (): boolean => {
+		return this.history.length > 0 || this.fromFlow ? true : false;
+	};
+
+	getPreviousStep = (): TStep | undefined => {
+		if (this.history.length > 0) {
+			const step = this.steps[this.history[this.history.length - 1]];
+
+			return {
+				flowName: this.name,
+				name: step.name,
+			};
+		} else if (this.fromFlow) {
+			return {
+				flowName: this.fromFlow.flowName,
+				name: this.fromFlow.stepName,
+			};
+		}
+
+		return undefined;
+	};
+
+	getCurrentStep = (): TStep | undefined => {
+		const step = this.steps[this.currentStepName];
+
+		return step
+			? {
+					flowName: this.name,
+					name: step.name,
+			  }
+			: undefined;
 	};
 
 	getHistory = (): string[] => {
@@ -161,7 +188,7 @@ export class Flow {
 
 	private buildUrl = (currentStep?: Step): string => {
 		let baseUrl = this.baseUrl;
-		currentStep = currentStep || this.getCurrentStep();
+		currentStep = currentStep || this.getCurrentStepExtraInfo();
 		const currentStepUrl = currentStep ? this.stepUrl(currentStep) : '';
 
 		baseUrl = baseUrl.startsWith('/') ? baseUrl.substring(1, baseUrl.length) : baseUrl;
@@ -214,15 +241,16 @@ export class Flow {
 
 	start = (
 		stepName?: string,
-		fromFlowName?: string,
+		fromFlow?: TFromFlow,
 		options?: TFlowActionOptions,
 		isFromBack = false,
 		initialHistory: Array<string> = undefined
+		// eslint-disable-next-line sonarjs/cognitive-complexity
 	): TFlowStartMethodOutput => {
-		this.logger('start', { stepName, fromFlowName, options });
+		this.logger('start', { stepName, fromFlow, options });
 
 		this.lastAction = undefined;
-		this.fromFlowName = this.name !== fromFlowName ? fromFlowName : undefined;
+		this.fromFlow = this.name !== fromFlow?.flowName ? fromFlow : undefined;
 		const currentStepName = stepName || this.currentStepName || this.initialStepName || this.firstStepName;
 		const { clearHistory = false } = options || {};
 
@@ -238,10 +266,10 @@ export class Flow {
 			this.lastRenderStepName = undefined;
 
 			// when not has history and exists from flow name navigate to
-			if (this.fromFlowName && this.history.length === 0) {
+			if (this.fromFlow && this.history.length === 0) {
 				return {
 					changed: true,
-					currentFlowName: this.fromFlowName,
+					currentFlowName: this.fromFlow.flowName,
 				};
 			}
 		}
@@ -249,7 +277,7 @@ export class Flow {
 		if (this.steps.hasOwnProperty(currentStepName)) {
 			this.currentStepName = currentStepName;
 
-			if (clearHistory || this.getCurrentStep().options.clearHistory) {
+			if (clearHistory || this.getCurrentStepExtraInfo().options.clearHistory) {
 				this.clearHistory();
 			}
 
@@ -293,10 +321,10 @@ export class Flow {
 				currentStepName: this.currentStepName,
 				historyUrl: this.buildUrl(),
 			};
-		} else if (this.fromFlowName) {
+		} else if (this.fromFlow) {
 			this.callListeners('backExit');
 
-			return { changed: true, currentFlowName: this.fromFlowName };
+			return { changed: true, currentFlowName: this.fromFlow.flowName };
 		}
 
 		return { changed: false };
@@ -310,7 +338,7 @@ export class Flow {
 
 	clearHistory = (): void => {
 		this.history = [];
-		this.fromFlowName = undefined;
+		this.fromFlow = undefined;
 	};
 
 	// eslint-disable-next-line sonarjs/cognitive-complexity

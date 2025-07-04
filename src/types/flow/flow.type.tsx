@@ -157,3 +157,13 @@ export type TFlowManagerStartMethodOutput = {
 };
 
 export type TFlowLastAction = 'back' | 'dispatch';
+
+export type TFromFlow = {
+	flowName: string;
+	stepName: string;
+};
+
+export type TStep = {
+	flowName: string;
+	name: string;
+};
