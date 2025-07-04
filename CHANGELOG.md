@@ -1,3 +1,10 @@
+# [2.16.0](https://github.com/fabio7maia/react-flow-app/compare/v2.15.0...v2.16.0) (2025-07-04)
+
+
+### Features
+
+* refined history and previous step when going from another flow ([1f91f7f](https://github.com/fabio7maia/react-flow-app/commit/1f91f7f464f22eec19314e92edc0c35dc2755662))
+
 # [2.15.0](https://github.com/fabio7maia/react-flow-app/compare/v2.14.2...v2.15.0) (2025-04-08)
 
 
