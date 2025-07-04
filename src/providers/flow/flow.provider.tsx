@@ -110,13 +110,22 @@ FlowProviderProps<TFlows>) => {
 			// assumed value passed or current flow name when not set to ignore
 			fromFlowName = fromFlowName ? fromFlowName : ignoreFromFlow ? undefined : currentFlowName.current;
 
+			let fromFlowData;
+
+			if (fromFlowName) {
+				const fromFlow = fm.getFlow(fromFlowName);
+
+				fromFlowData = { flowName: fromFlow.name, stepName: fromFlow.getCurrentStep()?.name };
+			}
+
 			const { changed, historyUrl, currentFlowName: actionFlowName } =
-				flow?.start(stepName, fromFlowName, options, isFromBack, initialHistory) || {};
+				flow?.start(stepName, fromFlowData, options, isFromBack, initialHistory) || {};
 
 			if (changed) {
 				// when action flow name is different current flow name, call start again to another flow
 				if (actionFlowName && actionFlowName !== flowName) {
-					const { fromFlowName } = fm.getFlow(actionFlowName);
+					const { fromFlow } = fm.getFlow(actionFlowName);
+					const fromFlowName = fromFlow?.flowName;
 
 					return handleStart(actionFlowName, undefined, undefined, fromFlowName, true, isFromBack);
 				}
@@ -140,7 +149,8 @@ FlowProviderProps<TFlows>) => {
 		}
 
 		if (changed && actionFlowName !== currentFlowName.current) {
-			const { fromFlowName } = fm.getFlow(actionFlowName);
+			const { fromFlow } = fm.getFlow(actionFlowName);
+			const fromFlowName = fromFlow?.flowName;
 
 			handleStart(actionFlowName, currentStepName, undefined, fromFlowName, true, true);
 		} else if (changed) {
@@ -184,7 +194,8 @@ FlowProviderProps<TFlows>) => {
 				// when clear history get fromFlowName of goto flow to keep history correct
 				// because clear history allow to forget passed from current flow
 				if (clearHistory) {
-					const { fromFlowName } = fm.getFlow(actionFlowName);
+					const { fromFlow } = fm.getFlow(actionFlowName);
+					const fromFlowName = fromFlow?.flowName;
 
 					return handleStart(actionFlowName, currentStepName, undefined, fromFlowName);
 				} else {
