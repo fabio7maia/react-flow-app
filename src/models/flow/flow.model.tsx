@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { LazyExoticComponent } from 'react';
 import { Placeholder } from '../../components';
 import { CoreHelper, LoggerHelper } from '../../helpers';
 import {
@@ -21,6 +21,9 @@ import {
 	TStepOptions,
 } from '../../types';
 import { Step } from '../step';
+
+// using cache steps to avoid issue with blank screen when doing back
+const _cachedSteps: Record<string, Record<string, LazyExoticComponent<any>>> = {};
 
 export class Flow {
 	name: string;
@@ -197,6 +200,7 @@ export class Flow {
 		return `/${baseUrl}/${currentStepUrl}`;
 	};
 
+	// eslint-disable-next-line sonarjs/cognitive-complexity
 	render = (options: TFlowManagerOptions): React.ReactNode => {
 		const currentStepName = this.currentStepName;
 		const { animation } = options;
@@ -223,7 +227,15 @@ export class Flow {
 				this.clearHistory();
 			}
 
-			const Screen = step.loader();
+			let Screen: LazyExoticComponent<any> = null;
+
+			if (!_cachedSteps[this.name]?.[step.name]) {
+				Screen = step.loader();
+				_cachedSteps[this.name] = _cachedSteps[this.name] || {};
+				_cachedSteps[this.name][step.name] = Screen;
+			} else {
+				Screen = _cachedSteps[this.name][step.name];
+			}
 
 			this.logger('Flow > render [start]', { currentStepName, Screen });
 
@@ -339,6 +351,7 @@ export class Flow {
 	clearHistory = (): void => {
 		this.history = [];
 		this.fromFlow = undefined;
+		_cachedSteps[this.name] = {};
 	};
 
 	// eslint-disable-next-line sonarjs/cognitive-complexity
