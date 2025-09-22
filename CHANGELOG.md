@@ -1,3 +1,10 @@
+## [2.16.1](https://github.com/fabio7maia/react-flow-app/compare/v2.16.0...v2.16.1) (2025-09-22)
+
+
+### Bug Fixes
+
+* fixed issue with re-render in back navigation ([653376a](https://github.com/fabio7maia/react-flow-app/commit/653376ae77a6fd47f90b365d387a6dbfc167ad72))
+
 # [2.16.0](https://github.com/fabio7maia/react-flow-app/compare/v2.15.0...v2.16.0) (2025-07-04)
 
 
