@@ -1,3 +1,10 @@
+# [2.17.0](https://github.com/fabio7maia/react-flow-app/compare/v2.16.1...v2.17.0) (2026-03-17)
+
+
+### Features
+
+* added animated transitions (document.startViewTransition ([e7941d9](https://github.com/fabio7maia/react-flow-app/commit/e7941d9b4626f06bc5a0b2776fd8c4301352dca0))
+
 ## [2.16.1](https://github.com/fabio7maia/react-flow-app/compare/v2.16.0...v2.16.1) (2025-09-22)
 
 
