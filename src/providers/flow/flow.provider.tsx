@@ -19,13 +19,13 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 		withUrl: false,
 	},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	start: (flowName: string, stepName?: string, options?: TFlowActionOptions): void => {},
+	start: (flowName: string, stepName?: string, options?: TFlowActionOptions): void => { },
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	back: (): void => {},
+	back: (): void => { },
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	dispatch: (screen: TScreen, name: string, payload?: Record<string, any>): void => {},
+	dispatch: (screen: TScreen, name: string, payload?: Record<string, any>): void => { },
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	refresh: (): void => {},
+	refresh: (): void => { },
 });
 
 export type FlowProviderLifeCycleHandlers<TFlows> = Partial<Record<keyof TFlows, () => void>>;
@@ -61,7 +61,7 @@ export const FlowProvider = <TFlows extends TDictionary>({
 	listen,
 	initialHistory,
 }: // eslint-disable-next-line sonarjs/cognitive-complexity
-FlowProviderProps<TFlows>) => {
+	FlowProviderProps<TFlows>) => {
 	const [_, setForceUpdate] = React.useState(0);
 	const currentFlowName = React.useRef<string>(initialFlowName as string);
 	const flow = React.useRef<Flow>(fm.getFlow(currentFlowName.current as string));
@@ -78,7 +78,13 @@ FlowProviderProps<TFlows>) => {
 	const forceUpdate = React.useCallback(() => {
 		flow.current = fm.getFlow(currentFlowName.current);
 
-		setForceUpdate(val => val + 1);
+		if (document.startViewTransition) {
+			document.startViewTransition(() => {
+				setForceUpdate(val => val + 1);
+			});
+		} else {
+			setForceUpdate(val => val + 1);
+		}
 	}, [fm]);
 
 	const updateLocationUrl = React.useCallback(
