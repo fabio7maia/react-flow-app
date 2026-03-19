@@ -92,7 +92,6 @@ describe("createFlowApp", () => {
 
 		it("throws error when hooks are used outside provider", () => {
 			const { useFlowState } = app;
-			// Suppress React error boundary output
 			const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
 			function BadComponent() {
@@ -104,6 +103,62 @@ describe("createFlowApp", () => {
 				"[react-flow-app] Hook must be used inside <FlowProvider>"
 			);
 			error.mockRestore();
+		});
+
+		it("renders main landmark with flow label", async () => {
+			const { FlowProvider } = app;
+			render(<FlowProvider initialFlow="auth" />);
+
+			await waitFor(() => {
+				const main = document.querySelector("main");
+				expect(main).toBeInTheDocument();
+				expect(main).toHaveAttribute("aria-label", "auth flow");
+			});
+		});
+
+		it("renders main landmark with default label when no flow active", () => {
+			const { FlowProvider } = app;
+			render(<FlowProvider />);
+			const main = document.querySelector("main");
+			expect(main).toBeInTheDocument();
+			expect(main).toHaveAttribute("aria-label", "Application flow");
+		});
+
+		it("renders custom errorFallback in ErrorBoundary when error occurs", () => {
+			const { FlowProvider } = app;
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+			function BombComponent(): never {
+				throw new Error("Boom!");
+			}
+
+			render(
+				<FlowProvider errorFallback={<div data-testid="custom-error">Custom Error</div>}>
+					<BombComponent />
+				</FlowProvider>
+			);
+
+			expect(screen.getByTestId("custom-error")).toBeInTheDocument();
+			errorSpy.mockRestore();
+		});
+
+		it("renders default error UI when no errorFallback provided", () => {
+			const { FlowProvider } = app;
+			const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+			function BombComponent(): never {
+				throw new Error("Kaboom!");
+			}
+
+			render(
+				<FlowProvider>
+					<BombComponent />
+				</FlowProvider>
+			);
+
+			expect(screen.getByRole("alert")).toBeInTheDocument();
+			expect(screen.getByText(/Kaboom!/)).toBeInTheDocument();
+			errorSpy.mockRestore();
 		});
 	});
 
@@ -171,8 +226,12 @@ describe("createFlowApp", () => {
 				return (
 					<div>
 						<div data-testid="history-count">{history.length}</div>
-						<button onClick={() => manager.start({ flowName: "auth" })}>Start</button>
-						<button onClick={() => manager.clearHistory()}>Clear</button>
+						<button type="button" onClick={() => manager.start({ flowName: "auth" })}>
+							Start
+						</button>
+						<button type="button" onClick={() => manager.clearHistory()}>
+							Clear
+						</button>
 					</div>
 				);
 			}
@@ -202,8 +261,12 @@ describe("createFlowApp", () => {
 				return (
 					<div>
 						<span data-testid="step">{state.activeStepName ?? "none"}</span>
-						<button onClick={() => flow.dispatch("submit")}>Submit</button>
-						<button onClick={() => flow.back()}>Back</button>
+						<button type="button" onClick={() => flow.dispatch("submit")}>
+							Submit
+						</button>
+						<button type="button" onClick={() => flow.back()}>
+							Back
+						</button>
 					</div>
 				);
 			}
@@ -227,7 +290,11 @@ describe("createFlowApp", () => {
 
 			function TestComponent() {
 				const flow = useFlow(screens.login);
-				return <button onClick={() => flow.dispatch("unknown" as never)}>Dispatch</button>;
+				return (
+					<button type="button" onClick={() => flow.dispatch("unknown" as never)}>
+						Dispatch
+					</button>
+				);
 			}
 
 			render(
@@ -254,7 +321,9 @@ describe("createFlowApp", () => {
 				return (
 					<div>
 						<div data-testid="history">{history.map((h) => h.stepName).join(",")}</div>
-						<button onClick={() => flow.dispatch("forgotPassword")}>Go Settings</button>
+						<button type="button" onClick={() => flow.dispatch("forgotPassword")}>
+							Go Settings
+						</button>
 					</div>
 				);
 			}
@@ -283,7 +352,11 @@ describe("createFlowApp", () => {
 			function TestComponent() {
 				useFlowListener("mount", listener);
 				const manager = useFlowManager();
-				return <button onClick={() => manager.start({ flowName: "auth" })}>Start</button>;
+				return (
+					<button type="button" onClick={() => manager.start({ flowName: "auth" })}>
+						Start
+					</button>
+				);
 			}
 
 			render(
@@ -350,6 +423,154 @@ describe("createFlowApp", () => {
 			await waitFor(() => {
 				const announcer = document.querySelector('[role="status"]');
 				expect(announcer).toBeInTheDocument();
+			});
+		});
+
+		it("does not render announcer when announceStepChange is false", () => {
+			const { FlowProvider } = app; // no a11y options
+			render(<FlowProvider initialFlow="auth" />);
+			// No status role from announcer (there may be a loading status, so check aria-live)
+			const liveRegion = document.querySelector('[aria-live="polite"][aria-atomic="true"]');
+			expect(liveRegion).toBeNull();
+		});
+
+		it("uses assertive politeness when liveRegionPoliteness is assertive", async () => {
+			const assertiveApp = createFlowApp({
+				screens,
+				flows: { auth: authFlow },
+				options: {
+					a11y: { announceStepChange: true, liveRegionPoliteness: "assertive" },
+				},
+			});
+			const { FlowProvider } = assertiveApp;
+
+			render(<FlowProvider initialFlow="auth" />);
+
+			await waitFor(() => {
+				const announcer = document.querySelector('[aria-live="assertive"][aria-atomic="true"]');
+				expect(announcer).toBeInTheDocument();
+			});
+		});
+
+		it("announces step name after navigation", async () => {
+			const a11yApp = createFlowApp({
+				screens,
+				flows: { auth: authFlow },
+				options: { a11y: { announceStepChange: true } },
+			});
+			const { FlowProvider, useFlow } = a11yApp;
+
+			function TestComp() {
+				const flow = useFlow(screens.login);
+				return (
+					<button type="button" onClick={() => flow.dispatch("submit")}>
+						Submit
+					</button>
+				);
+			}
+
+			render(
+				<FlowProvider initialFlow="auth">
+					<TestComp />
+				</FlowProvider>
+			);
+
+			await waitFor(() => {
+				const announcer = document.querySelector('[role="status"]');
+				expect(announcer?.textContent).toContain("login");
+			});
+
+			await userEvent.click(screen.getByText("Submit"));
+
+			await waitFor(() => {
+				const announcer = document.querySelector('[role="status"]');
+				expect(announcer?.textContent).toContain("dashboard");
+			});
+		});
+	});
+
+	describe("animation", () => {
+		it("does not inject transition CSS when animation is false", () => {
+			const noAnimApp = createFlowApp({
+				screens,
+				flows: { auth: authFlow },
+				options: { animation: false },
+			});
+			const { FlowProvider } = noAnimApp;
+			render(<FlowProvider initialFlow="auth" />);
+			// No <style> tag with rfa CSS should be present
+			const styles = Array.from(document.querySelectorAll("style"));
+			const rfaStyle = styles.find((s) => s.textContent?.includes("rfa-step-wrapper"));
+			expect(rfaStyle).toBeUndefined();
+		});
+
+		it("injects transition CSS when animation is true", () => {
+			const animApp = createFlowApp({
+				screens,
+				flows: { auth: authFlow },
+				options: { animation: true },
+			});
+			const { FlowProvider } = animApp;
+			render(<FlowProvider initialFlow="auth" />);
+			const styles = Array.from(document.querySelectorAll("style"));
+			const rfaStyle = styles.find((s) => s.textContent?.includes("rfa-step-wrapper"));
+			expect(rfaStyle).toBeDefined();
+		});
+
+		it("injects CSS when animation is 'slide'", () => {
+			const slideApp = createFlowApp({
+				screens,
+				flows: { auth: authFlow },
+				options: { animation: "slide" },
+			});
+			const { FlowProvider } = slideApp;
+			render(<FlowProvider initialFlow="auth" />);
+			const styles = Array.from(document.querySelectorAll("style"));
+			const rfaStyle = styles.find((s) => s.textContent?.includes("rfa-slide-forward"));
+			expect(rfaStyle).toBeDefined();
+		});
+
+		it("injects CSS when animation is 'fade'", () => {
+			const fadeApp = createFlowApp({
+				screens,
+				flows: { auth: authFlow },
+				options: { animation: "fade" },
+			});
+			const { FlowProvider } = fadeApp;
+			render(<FlowProvider initialFlow="auth" />);
+			const styles = Array.from(document.querySelectorAll("style"));
+			const rfaStyle = styles.find((s) => s.textContent?.includes("rfa-fade"));
+			expect(rfaStyle).toBeDefined();
+		});
+
+		it("injects CSS for prefers-reduced-motion", () => {
+			const animApp = createFlowApp({
+				screens,
+				flows: { auth: authFlow },
+				options: { animation: "fade" },
+			});
+			const { FlowProvider } = animApp;
+			render(<FlowProvider initialFlow="auth" />);
+			const styles = Array.from(document.querySelectorAll("style"));
+			const rfaStyle = styles.find((s) => s.textContent?.includes("prefers-reduced-motion"));
+			expect(rfaStyle).toBeDefined();
+		});
+	});
+
+	describe("focus management", () => {
+		it("active step slot has tabIndex=-1 for programmatic focus", async () => {
+			const focusApp = createFlowApp({
+				screens,
+				flows: { auth: authFlow },
+				options: { a11y: { manageFocus: true }, animation: "none" },
+			});
+			const { FlowProvider } = focusApp;
+			render(<FlowProvider initialFlow="auth" />);
+
+			await waitFor(() => {
+				const slot = document.querySelector(".rfa-step-slot");
+				expect(slot).toBeInTheDocument();
+				expect(slot).toHaveAttribute("tabindex", "-1");
 			});
 		});
 	});

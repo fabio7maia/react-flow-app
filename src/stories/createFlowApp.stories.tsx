@@ -5,6 +5,7 @@ import { createFlowApp } from "../api/createFlowApp";
 import { defineFlow } from "../api/defineFlow";
 import { defineScreens } from "../api/defineScreens";
 import { FlowDiagramView } from "../diagram/FlowDiagramView";
+import type { AnimationType } from "../types/core";
 
 // ─── Screen Components ────────────────────────────────────────────────────────
 
@@ -94,155 +95,180 @@ const authFlow = defineFlow({
 	},
 });
 
-const { FlowProvider, useFlow, useFlowManager, useFlowDiagram } = createFlowApp({
-	screens,
-	flows: { auth: authFlow },
-	options: {
-		a11y: { announceStepChange: true },
-	},
-});
+// ─── Demo Component Factory ───────────────────────────────────────────────────
 
-// ─── Demo Component ───────────────────────────────────────────────────────────
-
-// All possible actions in the demo for the control panel
 type DemoAction = "submit" | "forgotPassword" | "logout" | "settings" | "save" | "cancel";
 
-function FlowDemo() {
-	const manager = useFlowManager();
-	// Use a generic approach for the demo - we pass the store dispatch directly
-	const { store } = createFlowApp({ screens, flows: { auth: authFlow } });
-	const diagram = useFlowDiagram();
-	const [, setCurrentNodeId] = useState<string | undefined>();
-
-	const currentId =
-		manager.currentFlowName && manager.currentStepName
-			? `${manager.currentFlowName}_${manager.currentStepName}`
-			: undefined;
-
-	const dispatch = (action: DemoAction) => store.dispatch(action);
-
-	const containerStyle: React.CSSProperties = {
-		fontFamily: "system-ui, sans-serif",
-		display: "flex",
-		flexDirection: "column",
-		gap: "1.5rem",
-		padding: "1.5rem",
-		background: "#f8f9fa",
-		borderRadius: "16px",
-	};
-
-	const buttonGroupStyle: React.CSSProperties = {
-		display: "flex",
-		gap: "0.5rem",
-		flexWrap: "wrap",
-	};
-
-	const buttonStyle = (color: string): React.CSSProperties => ({
-		padding: "0.5rem 1rem",
-		background: color,
-		color: "white",
-		border: "none",
-		borderRadius: "6px",
-		cursor: "pointer",
-		fontWeight: 600,
-		fontSize: "14px",
+function createDemo(animation: boolean | AnimationType, a11y = false) {
+	const demoApp = createFlowApp({
+		screens,
+		flows: { auth: authFlow },
+		options: {
+			animation,
+			animationDuration: 300,
+			a11y: {
+				announceStepChange: a11y,
+				manageFocus: a11y,
+			},
+		},
 	});
 
-	return (
-		<div style={containerStyle}>
-			<h2 style={{ margin: 0 }}>react-flow-app v2 Demo</h2>
+	const { FlowProvider, useFlowManager, useFlowDiagram } = demoApp;
 
-			{/* Status */}
-			<div
-				style={{
-					background: "#fff",
-					padding: "1rem",
-					borderRadius: "8px",
-					border: "1px solid #e0e0e0",
-				}}
-			>
-				<strong>Current state:</strong>{" "}
-				{manager.currentFlowName
-					? `${manager.currentFlowName} → ${manager.currentStepName}`
-					: "No flow active"}
+	function FlowDemo() {
+		const manager = useFlowManager();
+		const diagram = useFlowDiagram();
+		const [, setCurrentNodeId] = useState<string | undefined>();
+
+		const currentId =
+			manager.currentFlowName && manager.currentStepName
+				? `${manager.currentFlowName}_${manager.currentStepName}`
+				: undefined;
+
+		const dispatch = (action: DemoAction) => demoApp.store.dispatch(action);
+
+		const containerStyle: React.CSSProperties = {
+			fontFamily: "system-ui, sans-serif",
+			display: "flex",
+			flexDirection: "column",
+			gap: "1.5rem",
+			padding: "1.5rem",
+			background: "#f8f9fa",
+			borderRadius: "16px",
+		};
+
+		const buttonGroupStyle: React.CSSProperties = {
+			display: "flex",
+			gap: "0.5rem",
+			flexWrap: "wrap",
+		};
+
+		const buttonStyle = (color: string): React.CSSProperties => ({
+			padding: "0.5rem 1rem",
+			background: color,
+			color: "white",
+			border: "none",
+			borderRadius: "6px",
+			cursor: "pointer",
+			fontWeight: 600,
+			fontSize: "14px",
+		});
+
+		return (
+			<div style={containerStyle}>
+				<h2 style={{ margin: 0 }}>
+					react-flow-app — animation: <code>{String(animation)}</code>
+					{a11y && " + a11y"}
+				</h2>
+
+				<div
+					style={{
+						background: "#fff",
+						padding: "1rem",
+						borderRadius: "8px",
+						border: "1px solid #e0e0e0",
+					}}
+				>
+					<strong>Current state:</strong>{" "}
+					{manager.currentFlowName
+						? `${manager.currentFlowName} → ${manager.currentStepName}`
+						: "No flow active"}
+				</div>
+
+				<div style={buttonGroupStyle}>
+					<button
+						type="button"
+						style={buttonStyle("#4caf50")}
+						onClick={() => manager.start({ flowName: "auth" })}
+					>
+						Start Auth Flow
+					</button>
+					<button
+						type="button"
+						style={buttonStyle("#2196f3")}
+						onClick={() => dispatch("submit")}
+						disabled={!manager.currentFlowName}
+					>
+						submit
+					</button>
+					<button
+						type="button"
+						style={buttonStyle("#9c27b0")}
+						onClick={() => dispatch("forgotPassword")}
+						disabled={!manager.currentFlowName}
+					>
+						forgotPassword
+					</button>
+					<button
+						type="button"
+						style={buttonStyle("#f44336")}
+						onClick={() => dispatch("logout")}
+						disabled={!manager.currentFlowName}
+					>
+						logout
+					</button>
+					<button
+						type="button"
+						style={buttonStyle("#ff9800")}
+						onClick={() => dispatch("settings")}
+						disabled={!manager.currentFlowName}
+					>
+						settings
+					</button>
+					<button
+						type="button"
+						style={buttonStyle("#607d8b")}
+						onClick={() => demoApp.store.back()}
+						disabled={!manager.currentFlowName}
+					>
+						← Back
+					</button>
+					<button
+						type="button"
+						style={buttonStyle("#795548")}
+						onClick={() => manager.clearHistory()}
+						disabled={!manager.currentFlowName}
+					>
+						Clear History
+					</button>
+				</div>
+
+				<FlowDiagramView
+					diagram={diagram}
+					currentNodeId={currentId}
+					showActions
+					onNodeClick={(node) => setCurrentNodeId(node.id)}
+					style={{ minHeight: "200px" }}
+				/>
 			</div>
+		);
+	}
 
-			{/* Controls */}
-			<div style={buttonGroupStyle}>
-				<button style={buttonStyle("#4caf50")} onClick={() => manager.start({ flowName: "auth" })}>
-					Start Auth Flow
-				</button>
-				<button
-					style={buttonStyle("#2196f3")}
-					onClick={() => dispatch("submit")}
-					disabled={!manager.currentFlowName}
-				>
-					submit
-				</button>
-				<button
-					style={buttonStyle("#9c27b0")}
-					onClick={() => dispatch("forgotPassword")}
-					disabled={!manager.currentFlowName}
-				>
-					forgotPassword
-				</button>
-				<button
-					style={buttonStyle("#f44336")}
-					onClick={() => dispatch("logout")}
-					disabled={!manager.currentFlowName}
-				>
-					logout
-				</button>
-				<button
-					style={buttonStyle("#ff9800")}
-					onClick={() => dispatch("settings")}
-					disabled={!manager.currentFlowName}
-				>
-					settings
-				</button>
-				<button
-					style={buttonStyle("#607d8b")}
-					onClick={() => store.back()}
-					disabled={!manager.currentFlowName}
-				>
-					← Back
-				</button>
-				<button
-					style={buttonStyle("#795548")}
-					onClick={() => manager.clearHistory()}
-					disabled={!manager.currentFlowName}
-				>
-					Clear History
-				</button>
-			</div>
+	function DemoWithProvider() {
+		return (
+			<FlowProvider>
+				<FlowDemo />
+			</FlowProvider>
+		);
+	}
 
-			{/* Diagram */}
-			<FlowDiagramView
-				diagram={diagram}
-				currentNodeId={currentId}
-				showActions
-				onNodeClick={(node) => setCurrentNodeId(node.id)}
-				style={{ minHeight: "200px" }}
-			/>
-		</div>
-	);
+	DemoWithProvider.displayName = `Demo_${String(animation)}`;
+
+	return DemoWithProvider;
 }
 
-// ─── Wrapper with Provider ────────────────────────────────────────────────────
+// ─── Story Components ─────────────────────────────────────────────────────────
 
-function DemoWithProvider() {
-	return (
-		<FlowProvider>
-			<FlowDemo />
-		</FlowProvider>
-	);
-}
+const FadeDemo = createDemo("fade");
+const SlideDemo = createDemo("slide");
+const NoAnimDemo = createDemo(false);
+const A11yDemo = createDemo("fade", true);
 
 // ─── Meta ─────────────────────────────────────────────────────────────────────
 
 const meta = {
 	title: "Core/createFlowApp",
-	component: DemoWithProvider,
+	component: FadeDemo,
 	parameters: {
 		layout: "padded",
 		docs: {
@@ -256,22 +282,57 @@ The main factory function that creates a typed \`FlowProvider\` and hooks.
 const { FlowProvider, useFlow, useFlowManager } = createFlowApp({
   screens,
   flows: { auth: authFlow },
-  options: { a11y: { announceStepChange: true } },
+  options: {
+    animation: 'fade',           // 'fade' | 'slide' | 'none' | true | false
+    animationDuration: 300,      // ms
+    a11y: {
+      announceStepChange: true,  // aria-live region for screen readers
+      manageFocus: true,         // move focus to step content on navigation
+      liveRegionPoliteness: 'polite', // 'polite' | 'assertive'
+    },
+  },
 });
 \`\`\`
 
 ### Usage
 1. Click **Start Auth Flow** to begin
 2. Use action buttons to navigate between steps
-3. Click nodes in the diagram to see the current state highlighted
+3. The diagram highlights the current node
 				`,
 			},
 		},
 	},
 	tags: ["autodocs"],
-} satisfies Meta<typeof DemoWithProvider>;
+} satisfies Meta<typeof FadeDemo>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Interactive: Story = {};
+/** Fade cross-dissolve transition between steps (default when animation: true) */
+export const FadeTransition: Story = {
+	render: () => <FadeDemo />,
+	name: "Fade transition",
+};
+
+/** Horizontal slide transition — slides forward on dispatch, back on back() */
+export const SlideTransition: Story = {
+	render: () => <SlideDemo />,
+	name: "Slide transition",
+};
+
+/** No animation — instant step swap */
+export const NoAnimation: Story = {
+	render: () => <NoAnimDemo />,
+	name: "No animation",
+};
+
+/**
+ * Full accessibility demo:
+ * - `aria-live` region announces step changes to screen readers
+ * - Focus moves to the step content area on each navigation
+ * - `<main>` landmark wraps the flow for easy navigation
+ */
+export const WithAccessibility: Story = {
+	render: () => <A11yDemo />,
+	name: "With accessibility (a11y)",
+};

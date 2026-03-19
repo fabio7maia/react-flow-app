@@ -101,19 +101,48 @@ export type ListenEvent = {
 
 export type ListenCallback = (event: ListenEvent) => void;
 
+// ─── Animation ───────────────────────────────────────────────────────────────
+
+/** Visual transition type between steps.
+ *  - `'fade'`  – cross-fade (default when animation is enabled)
+ *  - `'slide'` – horizontal slide (direction-aware: forward / back)
+ *  - `'none'`  – no animation
+ */
+export type AnimationType = "fade" | "slide" | "none";
+
 // ─── App Options ─────────────────────────────────────────────────────────────
 
 export type FlowAppOptions = {
 	/** Enable URL hash synchronization */
 	withUrl?: boolean;
-	/** Enable animations between steps */
-	animation?: boolean;
+	/**
+	 * Enable and configure the transition animation between steps.
+	 * - `true`     → uses `'fade'`
+	 * - `false`    → no animation
+	 * - `AnimationType` string → explicit type
+	 */
+	animation?: boolean | AnimationType;
+	/** Duration of the transition animation in milliseconds (default 250) */
+	animationDuration?: number;
 	/** SSR-safe mode */
 	ssr?: boolean;
 	/** Accessibility options */
 	a11y?: {
+		/**
+		 * Announce the current step name to screen readers via an aria-live region.
+		 * Combine with a custom `stepLabel` to provide meaningful announcements.
+		 */
 		announceStepChange?: boolean;
+		/**
+		 * Move keyboard focus to the step content area after each navigation.
+		 * Recommended for SPA keyboard accessibility.
+		 */
 		manageFocus?: boolean;
+		/**
+		 * Politeness level for the aria-live region.
+		 * Use `'assertive'` only for time-critical updates. Default: `'polite'`.
+		 */
+		liveRegionPoliteness?: "polite" | "assertive";
 	};
 };
 
