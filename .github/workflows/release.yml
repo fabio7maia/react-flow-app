@@ -1,28 +1,50 @@
-name: Release
+name: Release (legacy – master auto-publish)
+
+# ⚠️  DEPRECATED: This workflow publishes automatically on every push to
+# master/main using semantic-release. The preferred approach going forward
+# is to use release/* branches together with the release-rc and
+# release-publish workflows, which give explicit control over versioning.
+#
+# This workflow is kept for backwards compatibility during the transition
+# period and can be disabled once the release/* branch process is adopted.
+
 on:
     workflow_dispatch:
     push:
         branches:
             - main
+            - master
+
 jobs:
     release:
-        name: Release
+        name: Release (semantic-release)
         runs-on: ubuntu-latest
+
+        permissions:
+            contents: write
+            id-token: write
+
         steps:
             - name: Checkout
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
               with:
                   fetch-depth: 0
+
             - name: Setup Node.js
-              uses: actions/setup-node@v1
+              uses: actions/setup-node@v4
               with:
-                  node-version: '20.17.0'
+                  node-version: "20"
+                  cache: "npm"
+
             - name: Install dependencies
-              run: yarn install --frozen-lockfile
+              run: npm ci --legacy-peer-deps
+
             - name: Run tests
-              run: yarn run test
-            - name: Run build
-              run: yarn run build
+              run: npm run test
+
+            - name: Build
+              run: npm run build
+
             - name: Release
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
