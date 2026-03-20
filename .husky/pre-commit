@@ -1,4 +1,13 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-yarn run git:pre-commit
+# Only run biome when files it manages are actually staged.
+# Avoids "No files were processed" error when only lock files,
+# generated files, or other unmanaged paths are staged.
+# The "|| true" is required because husky runs hooks with "sh -e" (exit on
+# error), so a grep with no matches (exit code 1) would abort the script.
+STAGED=$(git diff --cached --name-only | grep -E "^(src/|\.storybook/|biome\.json|package\.json|vitest\.config\.ts)" || true)
+
+if [ -n "$STAGED" ]; then
+  yarn run git:pre-commit
+fi
