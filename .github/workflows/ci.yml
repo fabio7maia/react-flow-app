@@ -1,22 +1,21 @@
 name: CI
 
+# Runs on every push and every PR to ensure quality gates pass.
+# This is the baseline safety net — it does NOT publish anything.
+#
+# Publishing is done by dedicated workflows:
+#   release-rc.yml      — RC on PRs targeting release/* branches
+#   release-publish.yml — Official release via manual workflow_dispatch
+
 on:
     push:
-        branches:
-            - master
-            - main
-            - "release/**"
-            - "feature/**"
-            - "fix/**"
-            - "chore/**"
-            - "claude/**"
         paths-ignore:
             - "*.md"
             - "docs/**"
     pull_request:
         types: [opened, synchronize, reopened]
 
-# Cancel in-flight runs for the same branch/PR to avoid wasted compute
+# Cancel in-flight runs for the same branch/PR
 concurrency:
     group: ci-${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true

@@ -1,16 +1,25 @@
 name: Publish RC
 
-# Triggered when a PR from a release/* branch is opened, updated or reopened
-# against main/master. Publishes a pre-release version to npm under the "rc"
-# dist-tag and creates a GitHub pre-release with the tag v{VERSION}-rc.{N}.
+# Triggered when a PR from ANY branch (feature/*, fix/*, chore/*, …) is
+# opened, updated or re-opened against a release/* branch.
+#
+# Flow:
+#   feature/my-change  ──PR──►  release/1.2.3
+#                                     │
+#                          [this workflow fires]
+#                                     │
+#                          publish 1.2.3-rc.{run_number}
+#                          npm dist-tag → rc
+#                          GitHub pre-release
+#                          PR comment with install instructions
+
 on:
     pull_request:
         branches:
-            - main
-            - master
+            - "release/**"
         types: [opened, synchronize, reopened]
 
-# Only one RC publish per PR at a time — cancel previous run if a new push arrives
+# Cancel previous RC publish for the same PR when a new commit arrives
 concurrency:
     group: release-rc-${{ github.event.pull_request.number }}
     cancel-in-progress: true
@@ -18,8 +27,6 @@ concurrency:
 jobs:
     publish-rc:
         name: Publish RC to npm
-        # Only run for PRs coming from a release/* branch
-        if: startsWith(github.head_ref, 'release/')
         runs-on: ubuntu-latest
 
         permissions:
@@ -29,31 +36,35 @@ jobs:
 
         steps:
             # ── 1. Extract & validate version ──────────────────────────────────────
-            - name: Extract version from branch name
+            # The release version lives in the BASE branch name (release/X.Y.Z)
+            - name: Extract version from target release branch
               id: version
               run: |
-                  BRANCH="${{ github.head_ref }}"
-                  VERSION="${BRANCH#release/}"
+                  BASE="${{ github.base_ref }}"          # e.g. release/1.2.3
+                  VERSION="${BASE#release/}"              # e.g. 1.2.3
 
-                  # Validate semver (MAJOR.MINOR.PATCH)
+                  # Enforce strict semver (MAJOR.MINOR.PATCH)
                   if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-                    echo "❌ Branch '$BRANCH' does not carry a valid semver version: '$VERSION'"
+                    echo "❌ Target branch '$BASE' does not carry a valid semver: '$VERSION'"
                     exit 1
                   fi
 
                   RC_VERSION="${VERSION}-rc.${{ github.run_number }}"
+
                   echo "version=${VERSION}"       >> $GITHUB_OUTPUT
                   echo "rc_version=${RC_VERSION}" >> $GITHUB_OUTPUT
                   echo "tag=v${RC_VERSION}"       >> $GITHUB_OUTPUT
-                  echo "release_branch=${BRANCH}" >> $GITHUB_OUTPUT
+                  echo "release_branch=${BASE}"   >> $GITHUB_OUTPUT
 
-                  echo "📦 Will publish: ${RC_VERSION}"
+                  echo "📦 Will publish RC: ${RC_VERSION}"
 
             # ── 2. Setup ────────────────────────────────────────────────────────────
+            # Check out the release branch (the merge target) — this is the
+            # accumulated state that will become the release, not the feature branch.
             - name: Checkout release branch
               uses: actions/checkout@v4
               with:
-                  ref: ${{ github.head_ref }}
+                  ref: ${{ github.base_ref }}
                   fetch-depth: 0
 
             - name: Setup Node.js
@@ -101,20 +112,23 @@ jobs:
                   RC_VERSION="${{ steps.version.outputs.rc_version }}"
                   TAG="${{ steps.version.outputs.tag }}"
                   VERSION="${{ steps.version.outputs.version }}"
+                  HEAD_BRANCH="${{ github.head_ref }}"
 
                   NOTES=$(cat <<EOF
                   Pre-release candidate for **v${VERSION}**.
 
+                  Includes changes from PR #${{ github.event.pull_request.number }} (\`${HEAD_BRANCH}\`).
+
                   ## Install
                   \`\`\`sh
-                  # Latest RC:
+                  # Latest RC (dist-tag):
                   npm install react-flow-app@rc
 
-                  # Exact version:
+                  # Pinned to this exact build:
                   npm install react-flow-app@${RC_VERSION}
                   \`\`\`
 
-                  > ⚠️ This is a pre-release — do **not** use in production.
+                  > ⚠️ Pre-release — do **not** use in production.
                   EOF
                   )
 
@@ -122,16 +136,16 @@ jobs:
                     --title "Release Candidate ${RC_VERSION}" \
                     --notes "$NOTES" \
                     --prerelease \
-                    --target "${{ github.head_ref }}"
+                    --target "${{ github.base_ref }}"
 
             # ── 6. PR comment ───────────────────────────────────────────────────────
             - name: Comment on PR with RC info
               uses: actions/github-script@v7
               with:
                   script: |
-                      const rcVersion = '${{ steps.version.outputs.rc_version }}';
-                      const tag       = '${{ steps.version.outputs.tag }}';
-                      const runNumber = '${{ github.run_number }}';
+                      const rcVersion     = '${{ steps.version.outputs.rc_version }}';
+                      const tag           = '${{ steps.version.outputs.tag }}';
+                      const releaseBranch = '${{ steps.version.outputs.release_branch }}';
 
                       const body = [
                         '## 🚀 Release Candidate Published',
@@ -140,7 +154,7 @@ jobs:
                         `|---|---|`,
                         `| **npm version** | \`${rcVersion}\` |`,
                         `| **Git tag** | \`${tag}\` |`,
-                        `| **Run** | #${runNumber} |`,
+                        `| **Target release** | \`${releaseBranch}\` |`,
                         '',
                         '**Install:**',
                         '```sh',
@@ -152,6 +166,8 @@ jobs:
                         '```',
                         '',
                         '> ⚠️ Pre-release — do not use in production.',
+                        '> When ready, trigger the **Publish Release** workflow on',
+                        `> \`${releaseBranch}\` to cut the official release.`,
                       ].join('\n');
 
                       await github.rest.issues.createComment({

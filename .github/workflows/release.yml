@@ -1,12 +1,17 @@
 name: Release (legacy – master auto-publish)
 
-# ⚠️  DEPRECATED: This workflow publishes automatically on every push to
-# master/main using semantic-release. The preferred approach going forward
-# is to use release/* branches together with the release-rc and
-# release-publish workflows, which give explicit control over versioning.
+# ⚠️  DEPRECATED
 #
-# This workflow is kept for backwards compatibility during the transition
-# period and can be disabled once the release/* branch process is adopted.
+# This workflow auto-publishes on every push to master/main via semantic-release.
+# It is kept during the transition to the release/* branch model.
+#
+# The new approach:
+#   1. Create a release/* branch  (e.g. release/2.0.0)
+#   2. Merge features/fixes into it via PRs  → RC auto-published
+#   3. When ready, trigger "Publish Release" workflow manually → official publish
+#
+# This workflow can be disabled once all active releases use the new model.
+# To disable: Settings → Actions → Workflows → "Release (legacy)" → Disable
 
 on:
     workflow_dispatch:
