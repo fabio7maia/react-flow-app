@@ -6,8 +6,8 @@
 # generated files, or other unmanaged paths are staged.
 # The "|| true" is required because husky runs hooks with "sh -e" (exit on
 # error), so a grep with no matches (exit code 1) would abort the script.
-STAGED=$(git diff --cached --name-only | grep -E "^(src/|\.storybook/|biome\.json|package\.json|vitest\.config\.ts)" || true)
+STAGED=$(git diff --cached --name-only | grep -E "^packages/react-flow-app/(src/|\.storybook/|biome\.json|package\.json|vitest\.config\.ts)" || true)
 
 if [ -n "$STAGED" ]; then
-  pnpm run git:pre-commit
+  pnpm --filter react-flow-app run git:pre-commit
 fi
