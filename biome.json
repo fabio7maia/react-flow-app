@@ -6,8 +6,8 @@
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false,
-		"includes": ["src/**", ".storybook/**", "biome.json", "vitest.config.ts"]
+		"ignoreUnknown": true,
+		"includes": ["src/**", ".storybook/**", "biome.json", "package.json", "vitest.config.ts"]
 	},
 	"formatter": {
 		"enabled": true,
