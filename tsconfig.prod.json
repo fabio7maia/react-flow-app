@@ -10,7 +10,10 @@
 		"module": "commonjs",
 		"target": "es6",
 		"jsx": "react",
-		"typeRoots": ["./node_modules/@types", "./src/custom-typings"]
+		"typeRoots": [
+			"./node_modules/@types",
+			"./src/custom-typings"
+		]
 	},
 	"exclude": [
 		"dist",
@@ -19,6 +22,8 @@
 		"node_modules",
 		"src/**/storybook/**",
 		"src/**/*.tests.*",
-		"src/**/*.stories.*"
+		"src/**/*.stories.*",
+		"vitest.config.ts",
+		"src/setupTests.ts"
 	]
 }

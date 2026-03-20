@@ -11,19 +11,19 @@ function DefineFlowDemo() {
 	const screens = defineScreens({
 		login: {
 			actions: ["submit", "forgotPassword"] as const,
-			loader: () => Promise.resolve({ default: () => null as any }),
+			loader: () => Promise.resolve({ default: () => null }),
 		},
 		dashboard: {
 			actions: ["logout", "settings"] as const,
-			loader: () => Promise.resolve({ default: () => null as any }),
+			loader: () => Promise.resolve({ default: () => null }),
 		},
 		settings: {
 			actions: ["save", "cancel"] as const,
-			loader: () => Promise.resolve({ default: () => null as any }),
+			loader: () => Promise.resolve({ default: () => null }),
 		},
 		resetPassword: {
 			actions: ["submit"] as const,
-			loader: () => Promise.resolve({ default: () => null as any }),
+			loader: () => Promise.resolve({ default: () => null }),
 		},
 	});
 

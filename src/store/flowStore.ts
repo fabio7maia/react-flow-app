@@ -118,7 +118,12 @@ export class FlowStore {
 		};
 
 		this.emit();
-		this.emitEvent({ type: "mount", flowName, stepName: initialStep, meta: this.getScreenMeta(initialStep) });
+		this.emitEvent({
+			type: "mount",
+			flowName,
+			stepName: initialStep,
+			meta: this.getScreenMeta(initialStep),
+		});
 	}
 
 	/**

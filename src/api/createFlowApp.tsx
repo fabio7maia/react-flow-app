@@ -212,7 +212,7 @@ function StepTransition({
 		if (!compCache.current.has(stepId)) {
 			compCache.current.set(stepId, lazy(loader));
 		}
-		const Comp = compCache.current.get(stepId)!;
+		const Comp = compCache.current.get(stepId);
 
 		if (animType === "none") {
 			setSlots([{ id: stepId, Comp, phase: "active" }]);
