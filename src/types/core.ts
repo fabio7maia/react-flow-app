@@ -2,10 +2,34 @@ import type React from "react";
 
 // ─── Screen Types ────────────────────────────────────────────────────────────
 
+/**
+ * Metadata attached to a screen.
+ * Well-known fields are typed; any extra key is allowed for custom analytics.
+ *
+ * @example
+ * ```ts
+ * meta: {
+ *   url: '/checkout/payment',   // Google Analytics page_view path
+ *   title: 'Payment',           // document.title / GA page_title
+ *   analyticsCategory: 'funnel',
+ *   experiment: 'variant-b',
+ * }
+ * ```
+ */
+export type ScreenMeta = {
+	/** URL / path for this screen — used for analytics page_view tracking */
+	url?: string;
+	/** Human-readable title (e.g. for document.title or GA page_title) */
+	title?: string;
+	/** Any additional custom fields (analytics labels, feature flags, …) */
+	[key: string]: unknown;
+};
+
 export type ScreenConfig = {
 	actions: readonly string[];
 	loader: () => Promise<{ default: React.ComponentType<unknown> }>;
-	meta?: Record<string, unknown>;
+	/** Optional metadata propagated to every flow listener event for this screen */
+	meta?: ScreenMeta;
 };
 
 export type InferActions<TScreen extends ScreenConfig> = TScreen["actions"][number];
@@ -95,8 +119,28 @@ export type ListenEvent = {
 	type: Exclude<ListenType, "all">;
 	flowName: string;
 	stepName: string;
+	/** The action that triggered this event (only present for "dispatch" events) */
 	action?: string;
+	/** Payload passed to dispatch() — forwarded as-is for downstream propagation */
 	payload?: unknown;
+	/**
+	 * Metadata of the active screen at the time of the event.
+	 * Use this to forward analytics data (url, title, custom fields) to third-party
+	 * services such as Google Analytics without coupling screens to tracking code.
+	 *
+	 * @example
+	 * ```ts
+	 * useFlowListener('all', (event) => {
+	 *   if (event.meta?.url) {
+	 *     gtag('config', 'GA_ID', { page_path: event.meta.url });
+	 *   }
+	 *   if (event.type === 'dispatch') {
+	 *     gtag('event', event.action, { ...event.payload, ...event.meta });
+	 *   }
+	 * });
+	 * ```
+	 */
+	meta?: ScreenMeta;
 };
 
 export type ListenCallback = (event: ListenEvent) => void;

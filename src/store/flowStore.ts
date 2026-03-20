@@ -6,6 +6,7 @@ import type {
 	ListenEvent,
 	ListenType,
 	ScreenConfig,
+	ScreenMeta,
 	StepOptions,
 } from "../types/core";
 
@@ -33,6 +34,10 @@ export class FlowStore {
 	constructor(flows: FlowRegistry, screens: ScreenRegistry) {
 		this.flows = flows;
 		this.screens = screens;
+	}
+
+	private getScreenMeta(stepName: string): ScreenMeta | undefined {
+		return this.screens[stepName]?.meta;
 	}
 
 	// ─── useSyncExternalStore interface ────────────────────────────────────────
@@ -113,7 +118,7 @@ export class FlowStore {
 		};
 
 		this.emit();
-		this.emitEvent({ type: "mount", flowName, stepName: initialStep });
+		this.emitEvent({ type: "mount", flowName, stepName: initialStep, meta: this.getScreenMeta(initialStep) });
 	}
 
 	/**
@@ -169,6 +174,7 @@ export class FlowStore {
 			stepName: prevStep,
 			action,
 			payload,
+			meta: this.getScreenMeta(prevStep),
 		});
 	}
 
@@ -199,7 +205,7 @@ export class FlowStore {
 		};
 
 		this.emit();
-		this.emitEvent({ type: "mount", flowName, stepName });
+		this.emitEvent({ type: "mount", flowName, stepName, meta: this.getScreenMeta(stepName) });
 	}
 
 	/**
@@ -215,6 +221,7 @@ export class FlowStore {
 					type: "backExit",
 					flowName: this.state.activeFlowName,
 					stepName: this.state.activeStepName,
+					meta: this.getScreenMeta(this.state.activeStepName),
 				});
 			}
 			return;
@@ -237,6 +244,7 @@ export class FlowStore {
 			type: "back",
 			flowName: previousEntry.flowName,
 			stepName: previousEntry.stepName,
+			meta: this.getScreenMeta(previousEntry.stepName),
 		});
 	}
 
