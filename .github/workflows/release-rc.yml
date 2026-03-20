@@ -67,32 +67,37 @@ jobs:
                   ref: ${{ github.base_ref }}
                   fetch-depth: 0
 
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: latest
+
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: "20"
-                  cache: "npm"
+                  cache: "pnpm"
                   registry-url: "https://registry.npmjs.org"
 
             # ── 3. Quality gates ────────────────────────────────────────────────────
             - name: Install dependencies
-              run: npm ci --legacy-peer-deps
+              run: pnpm install --frozen-lockfile
 
             - name: Lint (Biome)
-              run: npm run lint
+              run: pnpm run lint
 
             - name: Test with coverage
-              run: npm run test:coverage
+              run: pnpm run test:coverage
 
             - name: Build
-              run: npm run build
+              run: pnpm run build
 
             # ── 4. Version & publish ────────────────────────────────────────────────
             - name: Stamp RC version in package.json
-              run: npm version ${{ steps.version.outputs.rc_version }} --no-git-tag-version
+              run: pnpm version ${{ steps.version.outputs.rc_version }} --no-git-tag-version
 
             - name: Publish to npm (dist-tag → rc)
-              run: npm publish --tag rc
+              run: pnpm publish --tag rc --no-git-checks
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

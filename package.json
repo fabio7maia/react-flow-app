@@ -11,12 +11,13 @@
 	"files": [
 		"dist/"
 	],
+	"packageManager": "pnpm@10.29.3",
 	"scripts": {
 		"build": "node scripts/pre-build.js && tsc --project tsconfig.prod.json && node scripts/copy-files.js",
-		"start": "npm run storybook",
+		"start": "pnpm storybook",
 		"storybook": "storybook dev -p 6006",
 		"storybook:build": "storybook build",
-		"storybook:serve": "npm run storybook:build && npx http-server ./storybook-static/",
+		"storybook:serve": "pnpm storybook:build && npx http-server ./storybook-static/",
 		"lint": "biome check src/",
 		"lint:fix": "biome check --write src/",
 		"format": "biome format --write src/",
@@ -25,9 +26,9 @@
 		"test:coverage": "vitest run --coverage",
 		"prepare": "husky install",
 		"git:pre-commit": "biome check --staged",
-		"git:pre-push": "npm run build && npm run test:coverage",
+		"git:pre-push": "pnpm run build && pnpm run test:coverage",
 		"docs:build": "typedoc",
-		"docs:serve": "npm run docs:build && npx serve docs"
+		"docs:serve": "pnpm docs:build && npx serve docs"
 	},
 	"peerDependencies": {
 		"react": "^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
@@ -54,19 +55,18 @@
 		"@testing-library/react": "^16.3.2",
 		"@testing-library/user-event": "^14.6.1",
 		"@types/jest": "^26.0.14",
-		"@types/node": "^14.0.23",
+		"@types/node": "^20.19.37",
 		"@types/react": "^19.1.0",
 		"@typescript-eslint/eslint-plugin": "^2.7.0",
 		"@typescript-eslint/parser": "^2.7.0",
 		"@vitest/coverage-v8": "^4.1.0",
-		"anysort": "^2.0.0",
 		"babel-eslint": "10.1.0",
 		"babel-jest": "^26.3.0",
 		"babel-loader": "^8.1.0",
 		"copy-dir": "^1.3.0",
 		"cspell": "^4.1.0",
-		"cspell-dict-en_us": "^1.3.7",
 		"cspell-dict-en-gb": "^1.2.6",
+		"cspell-dict-en_us": "^1.3.7",
 		"cspell-dict-lorem-ipsum": "^1.1.2",
 		"eslint": "^6.8.0",
 		"eslint-config-prettier": "^6.11.0",
@@ -88,7 +88,7 @@
 		"jest-watch-typeahead": "^0.6.0",
 		"jsdom": "^29.0.0",
 		"lint-staged": "^11.1.2",
-		"prettier": "^1.19.1",
+		"prettier": "^3.8.1",
 		"react": "^19.1.0",
 		"react-app-polyfill": "^3.0.0",
 		"react-dom": "^19.1.0",

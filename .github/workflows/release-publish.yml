@@ -85,25 +85,30 @@ jobs:
                   ref: ${{ steps.version.outputs.release_branch }}
                   fetch-depth: 0
 
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: latest
+
             - name: Setup Node.js
               uses: actions/setup-node@v4
               with:
                   node-version: "20"
-                  cache: "npm"
+                  cache: "pnpm"
                   registry-url: "https://registry.npmjs.org"
 
             # ── 3. Quality gates ────────────────────────────────────────────────────
             - name: Install dependencies
-              run: npm ci --legacy-peer-deps
+              run: pnpm install --frozen-lockfile
 
             - name: Lint (Biome)
-              run: npm run lint
+              run: pnpm run lint
 
             - name: Test with coverage
-              run: npm run test:coverage
+              run: pnpm run test:coverage
 
             - name: Build
-              run: npm run build
+              run: pnpm run build
 
             # ── 4. Verify tag does not already exist ────────────────────────────────
             - name: Check tag uniqueness
@@ -117,11 +122,11 @@ jobs:
 
             # ── 5. Stamp version & publish ──────────────────────────────────────────
             - name: Stamp version in package.json
-              run: npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+              run: pnpm version ${{ steps.version.outputs.version }} --no-git-tag-version
 
             - name: Publish to npm (dist-tag → latest)
               if: inputs.dry_run == false
-              run: npm publish --tag latest
+              run: pnpm publish --tag latest --no-git-checks
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

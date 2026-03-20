@@ -9,5 +9,5 @@
 STAGED=$(git diff --cached --name-only | grep -E "^(src/|\.storybook/|biome\.json|package\.json|vitest\.config\.ts)" || true)
 
 if [ -n "$STAGED" ]; then
-  yarn run git:pre-commit
+  pnpm run git:pre-commit
 fi
