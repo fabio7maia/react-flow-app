@@ -1,4 +1,4 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-yarn run git:pre-push
+pnpm --filter react-flow-app run git:pre-push

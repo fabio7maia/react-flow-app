@@ -1,0 +1,53 @@
+name: CI
+
+# Runs on every push and every PR to ensure quality gates pass.
+# This is the baseline safety net — it does NOT publish anything.
+#
+# Publishing is done by dedicated workflows:
+#   release-rc.yml      — RC on PRs targeting release/* branches
+#   release-publish.yml — Official release via manual workflow_dispatch
+
+on:
+    push:
+        paths-ignore:
+            - "*.md"
+            - "docs/**"
+    pull_request:
+        types: [opened, synchronize, reopened]
+
+# Cancel in-flight runs for the same branch/PR
+concurrency:
+    group: ci-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    ci:
+        name: Lint · Test · Build
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: latest
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "pnpm"
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Lint (Biome)
+              run: pnpm run lint
+
+            - name: Test with coverage
+              run: pnpm run test:coverage
+
+            - name: Build
+              run: pnpm run build

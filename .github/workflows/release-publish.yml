@@ -1,0 +1,257 @@
+name: Publish Release
+
+# Manually triggered to cut an official release from a release/* branch.
+#
+# Flow:
+#   1. Maintainer runs this workflow from the GitHub UI (Actions tab)
+#      and selects (or types) the target release branch, e.g. release/1.2.3
+#   2. Quality gates run against that branch (lint + test + build)
+#   3. Official version is published to npm (dist-tag → latest)
+#   4. Annotated Git tag v{VERSION} is created
+#   5. GitHub Release is created with auto-generated release notes
+#   6. The release branch is LOCKED — no further pushes are possible
+#
+# Multiple release lines can coexist:
+#   release/3.2.1  (active support)
+#   release/4.0.0  (current stable)  ← publish this one independently
+#
+# NOTE: 'administration: write' is required to lock the branch.
+# If your organisation restricts GITHUB_TOKEN permissions, replace
+# secrets.GITHUB_TOKEN in the "Lock release branch" step with a PAT
+# (e.g. secrets.GH_ADMIN_PAT) that has the 'repo' scope with admin access.
+
+on:
+    workflow_dispatch:
+        inputs:
+            release_branch:
+                description: "Release branch to publish (e.g. release/1.2.3)"
+                required: true
+                type: string
+            dry_run:
+                description: "Dry run — skip npm publish and branch lock (for testing)"
+                required: false
+                type: boolean
+                default: false
+
+jobs:
+    publish:
+        name: Publish official release to npm
+        runs-on: ubuntu-latest
+
+        permissions:
+            contents: write # create tags, releases
+            pull-requests: write # post comments
+            id-token: write # npm provenance attestation
+            administration: write # lock the release branch
+
+        steps:
+            # ── 1. Validate inputs ──────────────────────────────────────────────────
+            - name: Validate release branch & extract version
+              id: version
+              run: |
+                  INPUT="${{ inputs.release_branch }}"
+
+                  # Strip leading/trailing whitespace
+                  INPUT="$(echo "$INPUT" | xargs)"
+
+                  # Must start with release/
+                  if ! echo "$INPUT" | grep -qE '^release/'; then
+                    echo "❌ Input must be a release/* branch, got: '$INPUT'"
+                    exit 1
+                  fi
+
+                  VERSION="${INPUT#release/}"
+
+                  # Strict semver: MAJOR.MINOR.PATCH only (no pre-release suffix)
+                  if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+                    echo "❌ Branch '$INPUT' does not carry a valid semver: '$VERSION'"
+                    echo "   Expected format: release/MAJOR.MINOR.PATCH"
+                    exit 1
+                  fi
+
+                  echo "version=${VERSION}"       >> $GITHUB_OUTPUT
+                  echo "tag=v${VERSION}"           >> $GITHUB_OUTPUT
+                  echo "release_branch=${INPUT}"   >> $GITHUB_OUTPUT
+
+                  DRY="${{ inputs.dry_run }}"
+                  echo "dry_run=${DRY}" >> $GITHUB_OUTPUT
+
+                  echo "📦 Will publish: ${VERSION} (dry_run=${DRY})"
+
+            # ── 2. Setup ────────────────────────────────────────────────────────────
+            - name: Checkout release branch
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ steps.version.outputs.release_branch }}
+                  fetch-depth: 0
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
+              with:
+                  version: latest
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "pnpm"
+                  registry-url: "https://registry.npmjs.org"
+
+            # ── 3. Quality gates ────────────────────────────────────────────────────
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Lint (Biome)
+              run: pnpm run lint
+
+            - name: Test with coverage
+              run: pnpm run test:coverage
+
+            - name: Build
+              run: pnpm run build
+
+            # ── 4. Verify tag does not already exist ────────────────────────────────
+            - name: Check tag uniqueness
+              run: |
+                  TAG="${{ steps.version.outputs.tag }}"
+                  if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
+                    echo "❌ Tag '$TAG' already exists. Aborting to prevent a duplicate release."
+                    exit 1
+                  fi
+                  echo "✅ Tag '$TAG' is available."
+
+            # ── 5. Stamp version & publish ──────────────────────────────────────────
+            - name: Stamp version in package.json
+              run: pnpm version ${{ steps.version.outputs.version }} --no-git-tag-version
+
+            - name: Publish to npm (dist-tag → latest)
+              if: inputs.dry_run == false
+              run: pnpm publish --tag latest --no-git-checks
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+            - name: "[DRY RUN] Skip npm publish"
+              if: inputs.dry_run == true
+              run: echo "⏭️  Dry run — skipping npm publish"
+
+            # ── 6. Tag & GitHub release ─────────────────────────────────────────────
+            - name: Create annotated Git tag
+              if: inputs.dry_run == false
+              run: |
+                  git config user.name  "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git tag ${{ steps.version.outputs.tag }} \
+                    -m "Release ${{ steps.version.outputs.version }}"
+                  git push origin ${{ steps.version.outputs.tag }}
+
+            - name: Generate release notes
+              id: notes
+              if: inputs.dry_run == false
+              uses: actions/github-script@v7
+              with:
+                  result-encoding: string
+                  script: |
+                      try {
+                        const { data } = await github.rest.repos.generateReleaseNotes({
+                          owner:            context.repo.owner,
+                          repo:             context.repo.repo,
+                          tag_name:         '${{ steps.version.outputs.tag }}',
+                          target_commitish: '${{ steps.version.outputs.release_branch }}',
+                        });
+                        return data.body;
+                      } catch (e) {
+                        return `Release v${{ steps.version.outputs.version }}`;
+                      }
+
+            - name: Write release notes to file
+              if: inputs.dry_run == false
+              run: printf '%s' "$NOTES" > RELEASE_NOTES.md
+              env:
+                  NOTES: ${{ steps.notes.outputs.result }}
+
+            - name: Create GitHub release
+              if: inputs.dry_run == false
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  gh release create "${{ steps.version.outputs.tag }}" \
+                    --title "v${{ steps.version.outputs.version }}" \
+                    --notes-file RELEASE_NOTES.md \
+                    --target "${{ steps.version.outputs.release_branch }}"
+
+            # ── 7. Lock release branch ──────────────────────────────────────────────
+            # Prevents any further pushes to this branch (direct or via PRs).
+            # The branch becomes a permanent immutable snapshot of the release.
+            - name: Lock release branch
+              if: inputs.dry_run == false
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  RELEASE_BRANCH="${{ steps.version.outputs.release_branch }}"
+                  REPO="${{ github.repository }}"
+
+                  echo "🔒 Locking branch: ${RELEASE_BRANCH}"
+
+                  HTTP_STATUS=$(curl -s -o /tmp/lock_response.json -w "%{http_code}" \
+                    -X PUT \
+                    -H "Authorization: Bearer ${GH_TOKEN}" \
+                    -H "Accept: application/vnd.github+json" \
+                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                    "https://api.github.com/repos/${REPO}/branches/${RELEASE_BRANCH}/protection" \
+                    -d '{
+                      "required_status_checks": null,
+                      "enforce_admins": true,
+                      "required_pull_request_reviews": null,
+                      "restrictions": null,
+                      "lock_branch": true,
+                      "allow_force_pushes": false,
+                      "allow_deletions": false
+                    }')
+
+                  if [ "$HTTP_STATUS" -ne 200 ]; then
+                    echo "⚠️  Branch lock returned HTTP ${HTTP_STATUS}:"
+                    cat /tmp/lock_response.json
+                    echo ""
+                    echo "The release was published, but branch locking failed."
+                    echo "Lock the branch manually in: Settings → Branches → ${RELEASE_BRANCH}"
+                    # Do not fail the workflow — the npm publish already succeeded
+                  else
+                    echo "✅ Branch '${RELEASE_BRANCH}' is now locked."
+                  fi
+
+            - name: "[DRY RUN] Skip branch lock"
+              if: inputs.dry_run == true
+              run: echo "⏭️  Dry run — skipping branch lock"
+
+            # ── 8. Summary ──────────────────────────────────────────────────────────
+            - name: Write job summary
+              run: |
+                  VERSION="${{ steps.version.outputs.version }}"
+                  TAG="${{ steps.version.outputs.tag }}"
+                  BRANCH="${{ steps.version.outputs.release_branch }}"
+                  DRY="${{ inputs.dry_run }}"
+
+                  if [ "$DRY" = "true" ]; then
+                    STATUS="⏭️ Dry run completed — nothing was published or locked."
+                  else
+                    STATUS="✅ Release published and branch locked."
+                  fi
+
+                  cat >> $GITHUB_STEP_SUMMARY << EOF
+                  ## $STATUS
+
+                  | | |
+                  |---|---|
+                  | **Version** | \`${VERSION}\` |
+                  | **Git tag** | \`${TAG}\` |
+                  | **npm dist-tag** | \`latest\` |
+                  | **Branch** | \`${BRANCH}\` 🔒 |
+                  | **Dry run** | \`${DRY}\` |
+
+                  **Install:**
+                  \`\`\`sh
+                  npm install react-flow-app
+                  # or explicitly:
+                  npm install react-flow-app@${VERSION}
+                  \`\`\`
+                  EOF

@@ -1,28 +1,60 @@
-name: Release
+name: Release (legacy – master auto-publish)
+
+# ⚠️  DEPRECATED
+#
+# This workflow auto-publishes on every push to master/main via semantic-release.
+# It is kept during the transition to the release/* branch model.
+#
+# The new approach:
+#   1. Create a release/* branch  (e.g. release/2.0.0)
+#   2. Merge features/fixes into it via PRs  → RC auto-published
+#   3. When ready, trigger "Publish Release" workflow manually → official publish
+#
+# This workflow can be disabled once all active releases use the new model.
+# To disable: Settings → Actions → Workflows → "Release (legacy)" → Disable
+
 on:
     workflow_dispatch:
     push:
         branches:
             - main
+            - master
+
 jobs:
     release:
-        name: Release
+        name: Release (semantic-release)
         runs-on: ubuntu-latest
+
+        permissions:
+            contents: write
+            id-token: write
+
         steps:
             - name: Checkout
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
               with:
                   fetch-depth: 0
-            - name: Setup Node.js
-              uses: actions/setup-node@v1
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@v4
               with:
-                  node-version: '20.17.0'
+                  version: latest
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: "pnpm"
+
             - name: Install dependencies
-              run: yarn install --frozen-lockfile
+              run: pnpm install --frozen-lockfile
+
             - name: Run tests
-              run: yarn run test
-            - name: Run build
-              run: yarn run build
+              run: pnpm run test
+
+            - name: Build
+              run: pnpm run build
+
             - name: Release
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
