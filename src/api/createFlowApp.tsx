@@ -387,11 +387,33 @@ export function createFlowApp<
 		// Track navigation direction for slide transitions
 		const directionRef = useRef<"forward" | "back">("forward");
 
-		// Start initial flow once
+		// Start initial flow once, preferring a URL entrypoint when one matches.
+		//
+		// Resolution order:
+		//  1. window.location.pathname  (e.g. /test/startup)
+		//  2. window.location.hash      (e.g. #/test/startup or #test/startup)
+		//  3. initialFlow + initialStep (explicit prop fallback)
 		const startedRef = useRef(false);
 		useEffect(() => {
-			if (!startedRef.current && initialFlow) {
-				startedRef.current = true;
+			if (startedRef.current) return;
+			startedRef.current = true;
+
+			if (typeof window !== "undefined") {
+				const candidates = [
+					window.location.pathname,
+					// normalise hash: strip leading # and optional /
+					window.location.hash.replace(/^#\/?/, "/"),
+				];
+				for (const candidate of candidates) {
+					const resolved = store.resolveEntrypoint(candidate);
+					if (resolved) {
+						store.start({ flowName: resolved.flowName, stepName: resolved.stepName });
+						return;
+					}
+				}
+			}
+
+			if (initialFlow) {
 				store.start({ flowName: initialFlow, stepName: initialStep });
 			}
 		}, [initialFlow, initialStep]);

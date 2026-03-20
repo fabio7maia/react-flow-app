@@ -48,6 +48,24 @@ export type StepOptions = {
 	initialStep?: boolean;
 	/** URL segment for this step */
 	url?: string;
+	/**
+	 * Allow this step to be reached directly via URL on app load.
+	 *
+	 * The resolved URL is built from the flow's `baseUrl` + this step's `url`:
+	 *   `/{flow.baseUrl}/{step.url}`
+	 *
+	 * On mount, `FlowProvider` checks `window.location.pathname` (and hash as
+	 * fallback) against all entrypoints. The first match wins; if nothing
+	 * matches, the app falls back to the `initialStep` of `initialFlow`.
+	 *
+	 * @example
+	 * ```ts
+	 * // Flow: { name: 'test', baseUrl: 'test' }
+	 * // Step: startup → { url: 'startup', entrypoint: true }
+	 * // URL:  http://localhost/test/startup  → navigates directly here
+	 * ```
+	 */
+	entrypoint?: boolean;
 	/** Don't add this step to navigation history */
 	ignoreHistory?: boolean;
 	/** Clear history when reaching this step */

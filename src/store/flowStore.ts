@@ -274,6 +274,39 @@ export class FlowStore {
 		};
 	}
 
+	// ─── URL entrypoint resolution ────────────────────────────────────────────
+
+	/**
+	 * Resolve a URL path to the matching flow + step marked as `entrypoint: true`.
+	 *
+	 * Matching rule: `/{flow.baseUrl}/{step.url}` === normalised `url`.
+	 * When `baseUrl` is absent the pattern is `/{step.url}`.
+	 * When `step.url` is absent the step name itself is used as the segment.
+	 *
+	 * Returns `null` when no entrypoint matches.
+	 */
+	resolveEntrypoint(url: string): { flowName: string; stepName: string } | null {
+		// Normalise: ensure leading slash, strip trailing slash
+		const normalized = `/${url.replace(/^\/+/, "").replace(/\/+$/, "")}`;
+
+		for (const [flowName, flow] of Object.entries(this.flows)) {
+			const base = flow.baseUrl ? `/${flow.baseUrl.replace(/^\/+/, "").replace(/\/+$/, "")}` : "";
+
+			for (const [stepName, stepOpts] of Object.entries(flow.steps)) {
+				if (!stepOpts?.entrypoint) continue;
+
+				const segment = stepOpts.url ?? stepName;
+				const fullPath = `${base}/${segment.replace(/^\/+/, "")}`;
+
+				if (normalized === fullPath) {
+					return { flowName, stepName };
+				}
+			}
+		}
+
+		return null;
+	}
+
 	// ─── Getters ───────────────────────────────────────────────────────────────
 
 	getFlows(): FlowRegistry {
