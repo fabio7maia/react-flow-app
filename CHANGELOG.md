@@ -1,3 +1,15 @@
+# [2.18.0](https://github.com/fabio7maia/react-flow-app/compare/v2.17.0...v2.18.0) (2026-04-28)
+
+
+### Bug Fixes
+
+* remove scrollRestoration prop from FlowProvider in story template ([0495370](https://github.com/fabio7maia/react-flow-app/commit/0495370b22806bf4744188a6eabb3fc8b11e8806))
+
+
+### Features
+
+* implement scroll restoration feature in flow management ([e0f769e](https://github.com/fabio7maia/react-flow-app/commit/e0f769ed1fe89e0611ea07953a95fdb63443f964))
+
 # [2.17.0](https://github.com/fabio7maia/react-flow-app/compare/v2.16.1...v2.17.0) (2026-03-17)
 
 
