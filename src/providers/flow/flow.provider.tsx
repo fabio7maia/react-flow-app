@@ -19,13 +19,13 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 		withUrl: false,
 	},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	start: (flowName: string, stepName?: string, options?: TFlowActionOptions): void => { },
+	start: (flowName: string, stepName?: string, options?: TFlowActionOptions): void => {},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	back: (): void => { },
+	back: (): void => {},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	dispatch: (screen: TScreen, name: string, payload?: Record<string, any>): void => { },
+	dispatch: (screen: TScreen, name: string, payload?: Record<string, any>): void => {},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	refresh: (): void => { },
+	refresh: (): void => {},
 });
 
 export type FlowProviderLifeCycleHandlers<TFlows> = Partial<Record<keyof TFlows, () => void>>;
@@ -61,19 +61,25 @@ export const FlowProvider = <TFlows extends TDictionary>({
 	listen,
 	initialHistory,
 }: // eslint-disable-next-line sonarjs/cognitive-complexity
-	FlowProviderProps<TFlows>) => {
+FlowProviderProps<TFlows>) => {
 	const [_, setForceUpdate] = React.useState(0);
 	const currentFlowName = React.useRef<string>(initialFlowName as string);
 	const flow = React.useRef<Flow>(fm.getFlow(currentFlowName.current as string));
 	const logger = useLoggerFlow();
 	const initialized = React.useRef(false);
-	const { animation = DEFAULT_FLOW_MANAGER_OPTIONS.animation, withUrl = DEFAULT_FLOW_MANAGER_OPTIONS.withUrl } =
-		options || DEFAULT_FLOW_MANAGER_OPTIONS;
+	const {
+		animation = DEFAULT_FLOW_MANAGER_OPTIONS.animation,
+		withUrl = DEFAULT_FLOW_MANAGER_OPTIONS.withUrl,
+		scrollRestoration = DEFAULT_FLOW_MANAGER_OPTIONS.scrollRestoration,
+	} = options || DEFAULT_FLOW_MANAGER_OPTIONS;
 	const parsedOptions: TFlowManagerOptions = {
 		animation,
 		withUrl,
+		scrollRestoration,
 	};
 	const lastFlowName = React.useRef<string>(undefined);
+	const initialHistoryRef = React.useRef<string[]>(initialHistory || []);
+	const listenSubscriptions = React.useRef<Array<() => void>>([]);
 
 	const forceUpdate = React.useCallback(() => {
 		flow.current = fm.getFlow(currentFlowName.current);
@@ -100,6 +106,33 @@ export const FlowProvider = <TFlows extends TDictionary>({
 		[logger, withUrl]
 	);
 
+	const subscribeListenersForAllFlows = () => {
+		if (!listen) {
+			return;
+		}
+
+		Object.keys(fm.flows).forEach(flowName => {
+			const flow = fm.getFlow(flowName);
+
+			const cb = flow?.addListener(listen, 'all');
+
+			if (cb) {
+				listenSubscriptions.current.push(cb);
+			}
+		});
+	};
+
+	React.useState(() => {
+		subscribeListenersForAllFlows();
+	});
+
+	React.useEffect(() => {
+		return () => {
+			// unsubscribe listen for all flows when unmount provider
+			listenSubscriptions.current.forEach(unsubscribe => unsubscribe());
+		};
+	}, []);
+
 	const handleStart = React.useCallback(
 		(
 			flowName: string,
@@ -108,7 +141,7 @@ export const FlowProvider = <TFlows extends TDictionary>({
 			fromFlowName?: string,
 			ignoreFromFlow = false,
 			isFromBack = false
-		): void => {
+		): boolean => {
 			logger.log('FlowProvider > handleStart', { flowName });
 
 			const flow = fm.getFlow(flowName);
@@ -124,8 +157,15 @@ export const FlowProvider = <TFlows extends TDictionary>({
 				fromFlowData = { flowName: fromFlow.name, stepName: fromFlow.getCurrentStep()?.name };
 			}
 
+			const masterOptions = options || { clearHistory: false, history: [] };
+			if (initialHistoryRef.current.length > 0) {
+				masterOptions.history =
+					(masterOptions.history?.length || 0) > 0 ? masterOptions.history : initialHistoryRef.current;
+				initialHistoryRef.current = [];
+			}
+
 			const { changed, historyUrl, currentFlowName: actionFlowName } =
-				flow?.start(stepName, fromFlowData, options, isFromBack, initialHistory) || {};
+				flow?.start(stepName, fromFlowData, masterOptions, isFromBack, parsedOptions) || {};
 
 			if (changed) {
 				// when action flow name is different current flow name, call start again to another flow
@@ -141,60 +181,50 @@ export const FlowProvider = <TFlows extends TDictionary>({
 
 				forceUpdate();
 			}
+
+			return changed;
 		},
-		[fm, forceUpdate, initialHistory, logger, updateLocationUrl]
+		[fm, forceUpdate, logger, updateLocationUrl]
 	);
 
 	const handleBack = React.useCallback(() => {
-		const { changed, currentFlowName: actionFlowName, currentStepName, historyUrl } = flow.current?.back() || {};
+		const { changed, currentFlowName: actionFlowName, currentStepName, historyUrl, scrollPosition } =
+			flow.current?.back(parsedOptions) || {};
 
 		logger.log('FlowProvider > back', { changed, currentFlowName });
 
-		if (changed) {
-			listen?.({ currentStepName: '', flowName: currentFlowName.current, type: 'back', url: historyUrl });
-		}
+		const updateScrollPosition = () => {
+			setTimeout(() => {
+				if (scrollPosition !== undefined) {
+					window.scrollTo({ behavior: 'smooth', top: scrollPosition });
+				}
+			}, 300);
+		};
 
 		if (changed && actionFlowName !== currentFlowName.current) {
 			const { fromFlow } = fm.getFlow(actionFlowName);
 			const fromFlowName = fromFlow?.flowName;
 
-			handleStart(actionFlowName, currentStepName, undefined, fromFlowName, true, true);
+			const changed = handleStart(actionFlowName, currentStepName, undefined, fromFlowName, true, true);
+
+			if (changed) {
+				updateScrollPosition();
+			}
 		} else if (changed) {
 			updateLocationUrl(historyUrl);
 
 			forceUpdate();
+
+			updateScrollPosition();
 		}
-	}, [fm, forceUpdate, handleStart, listen, logger, updateLocationUrl]);
+	}, [fm, forceUpdate, handleStart, logger, updateLocationUrl]);
 
 	const handleDispatch = React.useCallback(
 		(screen: TScreen, name: string, payload?: Record<string, any>) => {
-			const {
-				changed,
-				currentFlowName: actionFlowName,
-				currentStepName,
-				historyUrl,
-				clearHistory,
-				ignoreHistory,
-			} = flow.current?.dispatch(screen, name, payload) || {};
+			const { changed, currentFlowName: actionFlowName, currentStepName, historyUrl, clearHistory } =
+				flow.current?.dispatch(screen, name, payload, parsedOptions) || {};
 
 			logger.log('FlowProvider > dispatch', { name, payload, changed });
-
-			if (changed) {
-				listen?.({
-					currentStepName: '',
-					flowName: actionFlowName || currentFlowName.current,
-					type: 'dispatch',
-					url: historyUrl,
-					dispatch: {
-						actionName: name,
-						payload,
-					},
-					options: {
-						clearHistory,
-						ignoreHistory,
-					},
-				});
-			}
 
 			if (actionFlowName && actionFlowName !== currentFlowName.current) {
 				// when clear history get fromFlowName of goto flow to keep history correct
@@ -213,7 +243,7 @@ export const FlowProvider = <TFlows extends TDictionary>({
 
 			updateLocationUrl(historyUrl);
 		},
-		[fm, forceUpdate, handleStart, listen, logger, updateLocationUrl]
+		[fm, forceUpdate, handleStart, logger, updateLocationUrl]
 	);
 
 	const handleRefresh = React.useCallback(() => {

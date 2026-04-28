@@ -44,11 +44,18 @@ export interface TFlowManagerOptions {
 	 * Default: true
 	 */
 	withUrl?: boolean;
+	/**
+	 * Allow to set scroll restoration when navigate to previous steps.
+	 *
+	 * Default: false
+	 */
+	scrollRestoration?: boolean;
 }
 
 export const DEFAULT_FLOW_MANAGER_OPTIONS: TFlowManagerOptions = {
 	animation: true,
 	withUrl: true,
+	scrollRestoration: false,
 };
 
 export type TFlowManagerContext = {
@@ -127,6 +134,7 @@ export type TFlowBaseActionMethodOutput = {
 	currentFlowName?: string;
 	currentStepName?: string;
 	historyUrl?: string;
+	scrollPosition?: number;
 };
 
 export type TFlowStartMethodOutput = TFlowBaseActionMethodOutput;

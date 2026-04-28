@@ -68,6 +68,10 @@ const template2: React.FC = () => (
 		options={{
 			animation: false,
 			withUrl: false,
+			scrollRestoration: true,
+		}}
+		listen={(input): void => {
+			console.log('[DEBUG] listen', input);
 		}}
 	>
 		<TopContainer />
