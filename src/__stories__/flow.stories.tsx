@@ -18,7 +18,7 @@ const meta: Meta = {
 
 export default meta;
 
-const template: React.FC = () => <FlowProvider fm={fm} initialFlowName="f2" scrollRestoration />;
+const template: React.FC = () => <FlowProvider fm={fm} initialFlowName="f2" />;
 
 export const Simple = template.bind({});
 
