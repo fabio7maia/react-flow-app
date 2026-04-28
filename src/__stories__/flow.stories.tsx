@@ -18,7 +18,7 @@ const meta: Meta = {
 
 export default meta;
 
-const template: React.FC = () => <FlowProvider fm={fm} initialFlowName="f2" />;
+const template: React.FC = () => <FlowProvider fm={fm} initialFlowName="f2" scrollRestoration />;
 
 export const Simple = template.bind({});
 
@@ -68,6 +68,10 @@ const template2: React.FC = () => (
 		options={{
 			animation: false,
 			withUrl: false,
+			scrollRestoration: true,
+		}}
+		listen={(input): void => {
+			console.log('[DEBUG] listen', input);
 		}}
 	>
 		<TopContainer />

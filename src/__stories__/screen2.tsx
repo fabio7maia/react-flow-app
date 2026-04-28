@@ -8,6 +8,7 @@ export const Screen2: React.FC = () => {
 	return (
 		<>
 			<h1>Screen 2</h1>
+			<div style={{ backgroundColor: 'lightgray', height: '1500px' }}>space</div>
 			<div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
 				<div>
 					<button onClick={(): void => dispatch('next')}>Next</button>
