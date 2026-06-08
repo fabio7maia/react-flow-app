@@ -5,6 +5,7 @@ import { Flow } from '../../models/flow';
 import {
 	DEFAULT_FLOW_MANAGER_OPTIONS,
 	TFlowActionOptions,
+	TFlowDispatchActionOptions,
 	TFlowListenCallbackInput,
 	TFlowManagerContext,
 	TFlowManagerOptions,
@@ -189,7 +190,7 @@ FlowProviderProps<TFlows>) => {
 
 	const handleBack = React.useCallback(() => {
 		const { changed, currentFlowName: actionFlowName, currentStepName, historyUrl, scrollPosition } =
-			flow.current?.back(parsedOptions) || {};
+			flow.current?.back() || {};
 
 		logger.log('FlowProvider > back', { changed, currentFlowName });
 
@@ -220,9 +221,9 @@ FlowProviderProps<TFlows>) => {
 	}, [fm, forceUpdate, handleStart, logger, updateLocationUrl]);
 
 	const handleDispatch = React.useCallback(
-		(screen: TScreen, name: string, payload?: Record<string, any>) => {
+		(screen: TScreen, name: string, payload?: Record<string, any>, options?: TFlowDispatchActionOptions) => {
 			const { changed, currentFlowName: actionFlowName, currentStepName, historyUrl, clearHistory } =
-				flow.current?.dispatch(screen, name, payload, parsedOptions) || {};
+				flow.current?.dispatch(screen, name, payload, parsedOptions, options) || {};
 
 			logger.log('FlowProvider > dispatch', { name, payload, changed });
 

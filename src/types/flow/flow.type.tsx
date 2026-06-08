@@ -31,6 +31,21 @@ export type TFlowActionOptions = {
 	history?: Array<string>;
 };
 
+export type TFlowDispatchActionOptions = TFlowActionOptions & {
+	/**
+	 * Set true to ignore current step saved in history when dispatching an action
+	 *
+	 * Default: false
+	 */
+	ignoreHistory?: boolean;
+	/**
+	 * Allow to set scroll restoration when navigate to previous steps.
+	 *
+	 * Default: false
+	 */
+	scrollRestoration?: boolean;
+};
+
 export interface TFlowManagerOptions {
 	/**
 	 * Allow customize and disable animation in lazy loading
@@ -64,7 +79,12 @@ export type TFlowManagerContext = {
 	options: TFlowManagerOptions;
 	start: (flowName: string, stepName?: string, options?: TFlowActionOptions) => void;
 	back: () => void;
-	dispatch: (screen: TScreen, name: string, payload?: TFlowActionPayload) => void;
+	dispatch: (
+		screen: TScreen,
+		name: string,
+		payload?: TFlowActionPayload,
+		options?: TFlowDispatchActionOptions
+	) => void;
 	refresh: () => void;
 };
 

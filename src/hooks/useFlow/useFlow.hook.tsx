@@ -1,6 +1,6 @@
 import React from 'react';
 import { flowManagerContext } from '../../providers';
-import { TFlowManagerStartMethodInput, TScreen } from '../../types';
+import { TFlowDispatchActionOptions, TFlowManagerStartMethodInput, TScreen } from '../../types';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-function
 const emptyFn = <TOutput extends any>(ret?: TOutput): TOutput => {
@@ -12,8 +12,12 @@ export const useFlow = <TScreenInner extends TScreen>(screen?: TScreenInner) => 
 	const flow = fm?.getFlow(currentFlowName);
 
 	const handleDispatch = React.useCallback(
-		(name: TScreenInner['actions'][number], payload?: Record<string, any>): void => {
-			dispatch(screen, name, payload);
+		(
+			name: TScreenInner['actions'][number],
+			payload?: Record<string, any>,
+			options?: TFlowDispatchActionOptions
+		): void => {
+			dispatch(screen, name, payload, options);
 		},
 		[dispatch, screen]
 	);

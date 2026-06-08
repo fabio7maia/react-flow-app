@@ -4,6 +4,7 @@ import { CoreHelper, LoggerHelper } from '../../helpers';
 import {
 	TFlowActionOptions,
 	TFlowBackMethodOutput,
+	TFlowDispatchActionOptions,
 	TFlowDispatchMethodOutput,
 	TFlowLastAction,
 	TFlowListen,
@@ -37,7 +38,7 @@ export class Flow {
 	initialStepName?: string;
 	lastRenderStepName?: string;
 	lastAction?: TFlowLastAction;
-	scrollRestorationPosition: Array<number>;
+	scrollRestorationPosition: Array<{ stepName: string; position: number }>;
 
 	constructor(name: string, baseUrl: string) {
 		this.name = name;
@@ -206,6 +207,19 @@ export class Flow {
 		return `/${baseUrl}/${currentStepUrl}`;
 	};
 
+	private getScrollRestorationPosition = (stepName: string): number | undefined => {
+		if (
+			this.scrollRestorationPosition.length > 0 &&
+			this.scrollRestorationPosition[this.scrollRestorationPosition.length - 1].stepName === stepName
+		) {
+			const scrollRestorationInfo = this.scrollRestorationPosition.pop();
+
+			return scrollRestorationInfo?.position;
+		}
+
+		return undefined;
+	};
+
 	// eslint-disable-next-line sonarjs/cognitive-complexity
 	render = (options: TFlowManagerOptions): React.ReactNode => {
 		const currentStepName = this.currentStepName;
@@ -300,7 +314,7 @@ export class Flow {
 			}
 
 			if (currentStepName === this.getPreviousStep()?.name) {
-				this.removeLastStepHistory(flowManagerOptions);
+				this.removeLastStepHistory(currentStepName);
 			}
 
 			return {
@@ -318,25 +332,18 @@ export class Flow {
 		this.callListeners('mount');
 	};
 
-	back = (flowManagerOptions?: TFlowManagerOptions): TFlowBackMethodOutput => {
+	back = (): TFlowBackMethodOutput => {
 		let backStepName = this.history.pop();
-		let scrollPosition: number | undefined = undefined;
-
-		if (flowManagerOptions?.scrollRestoration) {
-			scrollPosition = this.scrollRestorationPosition.pop();
-		}
 
 		// when backStepName is equal to currentStepName, try get another back step, to working properly because outside navigation
 		// ex: when last screen not doing anything and keep in the same screen. If the user click in back, it's necessary navigate to before step
 		if (backStepName === this.currentStepName) {
 			backStepName = this.history.pop();
-
-			if (flowManagerOptions?.scrollRestoration) {
-				scrollPosition = this.scrollRestorationPosition.pop();
-			}
 		}
 
 		if (backStepName) {
+			const scrollPosition = this.getScrollRestorationPosition(backStepName);
+
 			this.lastAction = 'back';
 			this.currentStepName = backStepName;
 
@@ -352,19 +359,18 @@ export class Flow {
 		} else if (this.fromFlow) {
 			this.callListeners('backExit');
 
-			return { changed: true, currentFlowName: this.fromFlow.flowName, scrollPosition };
+			return { changed: true, currentFlowName: this.fromFlow.flowName };
 		}
 
 		return { changed: false };
 	};
 
-	private removeLastStepHistory = (flowManagerOptions?: TFlowManagerOptions): void => {
+	private removeLastStepHistory = (stepName: string): void => {
 		if (this.history.length > 0) {
 			this.history.pop();
 
-			if (flowManagerOptions?.scrollRestoration) {
-				this.scrollRestorationPosition.pop();
-			}
+			// only call getScrollRestorationPosition to remove step because is duplicated
+			this.getScrollRestorationPosition(stepName);
 		}
 	};
 
@@ -375,8 +381,12 @@ export class Flow {
 		this.scrollRestorationPosition = [];
 	};
 
-	// eslint-disable-next-line sonarjs/cognitive-complexity
-	private treatHistory = (nextStepName: string, flowManagerOptions?: TFlowManagerOptions): void => {
+	private treatHistory = (
+		nextStepName: string,
+		flowManagerOptions?: TFlowManagerOptions,
+		options?: TFlowDispatchActionOptions
+		// eslint-disable-next-line sonarjs/cognitive-complexity
+	): void => {
 		if (this.currentStepName) {
 			const currentStep = this.steps[this.currentStepName];
 
@@ -390,11 +400,17 @@ export class Flow {
 				this.clearHistory();
 			}
 
-			if (!CoreHelper.getValueOrDefault(currentStep.options?.ignoreHistory, false)) {
+			if (
+				!CoreHelper.getValueOrDefault(currentStep.options?.ignoreHistory, false) &&
+				!CoreHelper.getValueOrDefault(options?.ignoreHistory, false)
+			) {
 				this.history.push(this.currentStepName);
 
-				if (flowManagerOptions?.scrollRestoration) {
-					this.scrollRestorationPosition.push(window.scrollY);
+				if (
+					flowManagerOptions?.scrollRestoration ||
+					CoreHelper.getValueOrDefault(options?.scrollRestoration, false)
+				) {
+					this.scrollRestorationPosition.push({ stepName: currentStep.name, position: window.scrollY });
 				}
 			}
 
@@ -408,12 +424,18 @@ export class Flow {
 					if (firstStepOccurrenceIndex >= 0) {
 						this.history = this.history.splice(0, firstStepOccurrenceIndex + 1);
 
-						if (flowManagerOptions?.scrollRestoration) {
+						if (
+							flowManagerOptions?.scrollRestoration ||
+							CoreHelper.getValueOrDefault(options?.scrollRestoration, false)
+						) {
 							this.scrollRestorationPosition = this.scrollRestorationPosition.splice(
 								0,
 								firstStepOccurrenceIndex + 1
 							);
-							this.scrollRestorationPosition[this.scrollRestorationPosition.length - 1] = window.scrollY;
+							this.scrollRestorationPosition[this.scrollRestorationPosition.length - 1] = {
+								stepName: currentStep.name,
+								position: window.scrollY,
+							};
 						}
 					}
 				}
@@ -430,12 +452,18 @@ export class Flow {
 					if (firstStepOccurrenceIndex >= 0) {
 						this.history = this.history.splice(0, firstStepOccurrenceIndex + 1);
 
-						if (flowManagerOptions?.scrollRestoration) {
+						if (
+							flowManagerOptions?.scrollRestoration ||
+							CoreHelper.getValueOrDefault(options?.scrollRestoration, false)
+						) {
 							this.scrollRestorationPosition = this.scrollRestorationPosition.splice(
 								0,
 								firstStepOccurrenceIndex + 1
 							);
-							this.scrollRestorationPosition[this.scrollRestorationPosition.length - 1] = window.scrollY;
+							this.scrollRestorationPosition[this.scrollRestorationPosition.length - 1] = {
+								stepName: currentStep.name,
+								position: window.scrollY,
+							};
 						}
 					}
 				}
@@ -447,7 +475,8 @@ export class Flow {
 		screen: TScreen,
 		actionName: string,
 		payload?: Record<string, any>,
-		flowManagerOptions?: TFlowManagerOptions
+		flowManagerOptions?: TFlowManagerOptions,
+		options?: TFlowDispatchActionOptions
 		// eslint-disable-next-line sonarjs/cognitive-complexity
 	): TFlowDispatchMethodOutput => {
 		this.logger('Flow > dispatch [start]', {
@@ -488,14 +517,14 @@ export class Flow {
 				changed = this.currentStepName !== nextStepNameOrFn;
 
 				if (changed) {
-					this.treatHistory(nextStepNameOrFn, flowManagerOptions);
+					this.treatHistory(nextStepNameOrFn, flowManagerOptions, options);
 				}
 
 				this.currentStepName = nextStepNameOrFn;
 			} else {
 				nextStepFnResult = nextStepNameOrFn() || {};
 
-				this.treatHistory(nextStepFnResult.stepName, flowManagerOptions);
+				this.treatHistory(nextStepFnResult.stepName, flowManagerOptions, options);
 
 				if (nextStepFnResult?.options?.history) {
 					this.history = nextStepFnResult?.options?.history;
