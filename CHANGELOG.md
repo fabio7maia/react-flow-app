@@ -1,3 +1,10 @@
+# [2.19.0](https://github.com/fabio7maia/react-flow-app/compare/v2.18.0...v2.19.0) (2026-06-08)
+
+
+### Features
+
+* added scroll restoration and ignoreHistory on dispatch action ([5e05378](https://github.com/fabio7maia/react-flow-app/commit/5e05378ab3db90fe1f0d409b906190dbfbbb8378))
+
 # [2.18.0](https://github.com/fabio7maia/react-flow-app/compare/v2.17.0...v2.18.0) (2026-04-28)
 
 
