@@ -63,21 +63,21 @@ f2.step('screen2')({
 // });
 
 f0.listen({
-	callback: input => {
+	callback: (input) => {
 		console.log('listen back', { input });
 	},
 	type: 'back',
 });
 
 f0.listen({
-	callback: input => {
+	callback: (input) => {
 		console.log('listen dispatch', { input });
 	},
 	type: 'dispatch',
 });
 
 f0.listen({
-	callback: input => {
+	callback: (input) => {
 		console.log('listen mount', { input });
 	},
 	type: 'mount',

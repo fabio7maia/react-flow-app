@@ -73,11 +73,14 @@ FlowProviderProps<TFlows>) => {
 		withUrl = DEFAULT_FLOW_MANAGER_OPTIONS.withUrl,
 		scrollRestoration = DEFAULT_FLOW_MANAGER_OPTIONS.scrollRestoration,
 	} = options || DEFAULT_FLOW_MANAGER_OPTIONS;
-	const parsedOptions: TFlowManagerOptions = {
-		animation,
-		withUrl,
-		scrollRestoration,
-	};
+	const parsedOptions = React.useMemo<TFlowManagerOptions>(
+		() => ({
+			animation,
+			withUrl,
+			scrollRestoration,
+		}),
+		[animation, withUrl, scrollRestoration]
+	);
 	const lastFlowName = React.useRef<string>(undefined);
 	const initialHistoryRef = React.useRef<string[]>(initialHistory || []);
 	const listenSubscriptions = React.useRef<Array<() => void>>([]);
@@ -87,10 +90,10 @@ FlowProviderProps<TFlows>) => {
 
 		if (document.startViewTransition) {
 			document.startViewTransition(() => {
-				setForceUpdate(val => val + 1);
+				setForceUpdate((val) => val + 1);
 			});
 		} else {
-			setForceUpdate(val => val + 1);
+			setForceUpdate((val) => val + 1);
 		}
 	}, [fm]);
 
@@ -112,7 +115,7 @@ FlowProviderProps<TFlows>) => {
 			return;
 		}
 
-		Object.keys(fm.flows).forEach(flowName => {
+		Object.keys(fm.flows).forEach((flowName) => {
 			const flow = fm.getFlow(flowName);
 
 			const cb = flow?.addListener(listen, 'all');
@@ -130,7 +133,7 @@ FlowProviderProps<TFlows>) => {
 	React.useEffect(() => {
 		return () => {
 			// unsubscribe listen for all flows when unmount provider
-			listenSubscriptions.current.forEach(unsubscribe => unsubscribe());
+			listenSubscriptions.current.forEach((unsubscribe) => unsubscribe());
 		};
 	}, []);
 
@@ -165,8 +168,11 @@ FlowProviderProps<TFlows>) => {
 				initialHistoryRef.current = [];
 			}
 
-			const { changed, historyUrl, currentFlowName: actionFlowName } =
-				flow?.start(stepName, fromFlowData, masterOptions, isFromBack, parsedOptions) || {};
+			const {
+				changed,
+				historyUrl,
+				currentFlowName: actionFlowName,
+			} = flow?.start(stepName, fromFlowData, masterOptions, isFromBack, parsedOptions) || {};
 
 			if (changed) {
 				// when action flow name is different current flow name, call start again to another flow
@@ -189,8 +195,13 @@ FlowProviderProps<TFlows>) => {
 	);
 
 	const handleBack = React.useCallback(() => {
-		const { changed, currentFlowName: actionFlowName, currentStepName, historyUrl, scrollPosition } =
-			flow.current?.back() || {};
+		const {
+			changed,
+			currentFlowName: actionFlowName,
+			currentStepName,
+			historyUrl,
+			scrollPosition,
+		} = flow.current?.back() || {};
 
 		logger.log('FlowProvider > back', { changed, currentFlowName });
 
@@ -222,8 +233,13 @@ FlowProviderProps<TFlows>) => {
 
 	const handleDispatch = React.useCallback(
 		(screen: TScreen, name: string, payload?: Record<string, any>, options?: TFlowDispatchActionOptions) => {
-			const { changed, currentFlowName: actionFlowName, currentStepName, historyUrl, clearHistory } =
-				flow.current?.dispatch(screen, name, payload, parsedOptions, options) || {};
+			const {
+				changed,
+				currentFlowName: actionFlowName,
+				currentStepName,
+				historyUrl,
+				clearHistory,
+			} = flow.current?.dispatch(screen, name, payload, parsedOptions, options) || {};
 
 			logger.log('FlowProvider > dispatch', { name, payload, changed });
 
@@ -266,7 +282,7 @@ FlowProviderProps<TFlows>) => {
 			refresh: handleRefresh,
 			options: parsedOptions,
 		}),
-		[fm, handleBack, handleDispatch, handleRefresh, handleStart, parsedOptions]
+		[_, fm, handleBack, handleDispatch, handleRefresh, handleStart, parsedOptions]
 	);
 
 	React.useEffect(() => {

@@ -16,29 +16,32 @@ export class LoggerHelper {
 		return allByType !== undefined
 			? allByType
 			: all !== undefined && typeof all === 'boolean'
-			? all
-			: valueByType !== undefined
-			? valueByType
-			: value;
+				? all
+				: valueByType !== undefined
+					? valueByType
+					: value;
 	};
 
-	private static treatLogger = (type: LoggerType) => (group: string) => (msg: string, ...args: any): void => {
-		if (!LoggerHelper.isGroupActive({ group, type })) {
-			return;
-		}
-
-		try {
-			// eslint-disable-next-line no-console
-			console[type].apply(msg, [new Date().toUTCString(), msg, ...args]);
-		} catch (err) {
-			if (!LoggerHelper.isGroupActive({ group, type: 'error' })) {
+	private static treatLogger =
+		(type: LoggerType) =>
+		(group: string) =>
+		(msg: string, ...args: any): void => {
+			if (!LoggerHelper.isGroupActive({ group, type })) {
 				return;
 			}
 
-			// eslint-disable-next-line no-console
-			console.error('LoggerHelper > treatLogger', err);
-		}
-	};
+			try {
+				// eslint-disable-next-line no-console
+				console[type].apply(msg, [new Date().toUTCString(), msg, ...args]);
+			} catch (err) {
+				if (!LoggerHelper.isGroupActive({ group, type: 'error' })) {
+					return;
+				}
+
+				// eslint-disable-next-line no-console
+				console.error('LoggerHelper > treatLogger', err);
+			}
+		};
 
 	static init = (groups: Record<string, boolean | Logger>): void => {
 		LoggerHelper._groups = {
