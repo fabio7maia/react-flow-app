@@ -10,7 +10,7 @@ const meta: Meta = {
 };
 export default meta;
 
-const template = props => (
+const template = (props) => (
 	<div style={{ height: '50px' }}>
 		<Placeholder {...props} />
 	</div>

@@ -125,6 +125,14 @@ export type TStepOptions = {
 	 * Default: false
 	 */
 	checkpoint?: boolean;
+	/**
+	 * When this step becomes active, keep the previously active step mounted underneath.
+	 * The previous step preserves its React instance, state, refs, and scroll position.
+	 * On back navigation, the previous step is restored without remounting.
+	 *
+	 * Default: false
+	 */
+	keepPreviousMounted?: boolean;
 };
 
 export type TFlowHistoryStatus = 'clear' | 'push' | 'ignore' | 'clearAndPush' | 'clearAndIgnore' | 'none';
@@ -155,6 +163,7 @@ export type TFlowBaseActionMethodOutput = {
 	currentStepName?: string;
 	historyUrl?: string;
 	scrollPosition?: number;
+	keepPreviousMounted?: boolean;
 };
 
 export type TFlowStartMethodOutput = TFlowBaseActionMethodOutput;

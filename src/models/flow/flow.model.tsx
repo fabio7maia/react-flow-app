@@ -26,6 +26,8 @@ import { Step } from '../step';
 // using cache steps to avoid issue with blank screen when doing back
 const _cachedSteps: Record<string, Record<string, LazyExoticComponent<any>>> = {};
 
+const _hiddenStyle: React.CSSProperties = { display: 'none' };
+
 export class Flow {
 	name: string;
 	baseUrl: string;
@@ -39,6 +41,9 @@ export class Flow {
 	lastRenderStepName?: string;
 	lastAction?: TFlowLastAction;
 	scrollRestorationPosition: Array<{ stepName: string; position: number }>;
+	mountedStepStack: Array<{ stepName: string; scrollPosition: number }>;
+	private _hasKeepPreviousMounted: boolean;
+	private _mountedStepElements: Record<string, React.ReactNode>;
 
 	constructor(name: string, baseUrl: string) {
 		this.name = name;
@@ -54,6 +59,13 @@ export class Flow {
 			mount: new Set(),
 		};
 		this.scrollRestorationPosition = [];
+		this.mountedStepStack = [];
+		this._hasKeepPreviousMounted = false;
+		this._mountedStepElements = {};
+	}
+
+	get usesKeepPreviousMounted(): boolean {
+		return this._hasKeepPreviousMounted;
 	}
 
 	private get stepsArray(): string[] {
@@ -103,9 +115,9 @@ export class Flow {
 			options,
 		};
 
-		this.listeners[type].forEach(fn => fn(data));
+		this.listeners[type].forEach((fn) => fn(data));
 
-		this.listeners['all'].forEach(fn => fn(data));
+		this.listeners['all'].forEach((fn) => fn(data));
 	};
 
 	private getCurrentStepExtraInfo = (): Step | undefined => {
@@ -141,7 +153,7 @@ export class Flow {
 			? {
 					flowName: this.name,
 					name: step.name,
-			  }
+				}
 			: undefined;
 	};
 
@@ -162,6 +174,10 @@ export class Flow {
 
 		if (!this.initialStepName && CoreHelper.getValueOrDefault(options.initialStep, false)) {
 			this.initialStepName = step.name;
+		}
+
+		if (options?.keepPreviousMounted) {
+			this._hasKeepPreviousMounted = true;
 		}
 
 		this.steps[name] = step;
@@ -220,10 +236,36 @@ export class Flow {
 		return undefined;
 	};
 
+	private renderSingleStep = (stepName: string, options: TFlowManagerOptions): React.ReactNode => {
+		if (!this.steps.hasOwnProperty(stepName)) {
+			return null;
+		}
+
+		const step = this.steps[stepName];
+		const { animation } = options;
+
+		let Screen: LazyExoticComponent<any> = null;
+
+		if (!_cachedSteps[this.name]?.[step.name]) {
+			Screen = step.loader();
+			_cachedSteps[this.name] = _cachedSteps[this.name] || {};
+			_cachedSteps[this.name][step.name] = Screen;
+		} else {
+			Screen = _cachedSteps[this.name][step.name];
+		}
+
+		const fallback = animation === false ? <></> : animation === true ? <Placeholder loading /> : animation;
+
+		return (
+			<React.Suspense fallback={fallback}>
+				<Screen />
+			</React.Suspense>
+		);
+	};
+
 	// eslint-disable-next-line sonarjs/cognitive-complexity
 	render = (options: TFlowManagerOptions): React.ReactNode => {
 		const currentStepName = this.currentStepName;
-		const { animation } = options;
 
 		this.logger('Flow > render [start]', { currentStepName });
 
@@ -247,25 +289,32 @@ export class Flow {
 				this.clearHistory();
 			}
 
-			let Screen: LazyExoticComponent<any> = null;
+			this.logger('Flow > render [end]', { currentStepName });
 
-			if (!_cachedSteps[this.name]?.[step.name]) {
-				Screen = step.loader();
-				_cachedSteps[this.name] = _cachedSteps[this.name] || {};
-				_cachedSteps[this.name][step.name] = Screen;
-			} else {
-				Screen = _cachedSteps[this.name][step.name];
+			if (this._hasKeepPreviousMounted) {
+				if (!this._mountedStepElements[currentStepName]) {
+					this._mountedStepElements[currentStepName] = this.renderSingleStep(currentStepName, options);
+				}
+
+				const allSteps: React.ReactNode[] = [];
+
+				for (const entry of this.mountedStepStack) {
+					if (!this._mountedStepElements[entry.stepName]) {
+						this._mountedStepElements[entry.stepName] = this.renderSingleStep(entry.stepName, options);
+					}
+					allSteps.push(
+						<div key={entry.stepName} style={_hiddenStyle}>
+							{this._mountedStepElements[entry.stepName]}
+						</div>
+					);
+				}
+
+				allSteps.push(<div key={currentStepName}>{this._mountedStepElements[currentStepName]}</div>);
+
+				return <>{allSteps}</>;
 			}
 
-			this.logger('Flow > render [start]', { currentStepName, Screen });
-
-			const fallback = animation === false ? <></> : animation === true ? <Placeholder loading /> : animation;
-
-			return (
-				<React.Suspense fallback={fallback}>
-					<Screen />
-				</React.Suspense>
-			);
+			return this.renderSingleStep(currentStepName, options);
 		}
 
 		return null;
@@ -282,6 +331,8 @@ export class Flow {
 		this.logger('start', { stepName, fromFlow, options });
 
 		this.lastAction = undefined;
+		this.mountedStepStack = [];
+		this._mountedStepElements = {};
 		this.fromFlow = this.name !== fromFlow?.flowName ? fromFlow : undefined;
 		const currentStepName = stepName || this.currentStepName || this.initialStepName || this.firstStepName;
 		const { clearHistory = false, history = [] } = options || {};
@@ -342,7 +393,15 @@ export class Flow {
 		}
 
 		if (backStepName) {
-			const scrollPosition = this.getScrollRestorationPosition(backStepName);
+			let scrollPosition = this.getScrollRestorationPosition(backStepName);
+
+			const currentStep = this.steps[this.currentStepName];
+			if (currentStep?.options?.keepPreviousMounted && this.mountedStepStack.length > 0) {
+				const stackEntry = this.mountedStepStack.pop();
+				if (scrollPosition === undefined && stackEntry) {
+					scrollPosition = stackEntry.scrollPosition;
+				}
+			}
 
 			this.lastAction = 'back';
 			this.currentStepName = backStepName;
@@ -357,6 +416,9 @@ export class Flow {
 				scrollPosition,
 			};
 		} else if (this.fromFlow) {
+			this.mountedStepStack = [];
+			this._mountedStepElements = {};
+
 			this.callListeners('backExit');
 
 			return { changed: true, currentFlowName: this.fromFlow.flowName };
@@ -379,6 +441,22 @@ export class Flow {
 		this.fromFlow = undefined;
 		_cachedSteps[this.name] = {};
 		this.scrollRestorationPosition = [];
+		this.mountedStepStack = [];
+		this._mountedStepElements = {};
+	};
+
+	private handleKeepPreviousMounted = (nextStepName: string): void => {
+		const nextStep = this.steps[nextStepName];
+
+		if (nextStep?.options?.keepPreviousMounted && this.currentStepName) {
+			this.mountedStepStack.push({
+				stepName: this.currentStepName,
+				scrollPosition: window.scrollY,
+			});
+		} else if (this.mountedStepStack.length > 0) {
+			this.mountedStepStack = [];
+			this._mountedStepElements = {};
+		}
 	};
 
 	private treatHistory = (
@@ -416,10 +494,10 @@ export class Flow {
 
 			// check allow cyclic for current step
 			if (!CoreHelper.getValueOrDefault(currentStep.options?.allowCyclicHistory, false)) {
-				const numberOfStepOccurrences = this.history.filter(x => x === this.currentStepName).length;
+				const numberOfStepOccurrences = this.history.filter((x) => x === this.currentStepName).length;
 
 				if (numberOfStepOccurrences > 0) {
-					const firstStepOccurrenceIndex = this.history.findIndex(x => x === this.currentStepName);
+					const firstStepOccurrenceIndex = this.history.findIndex((x) => x === this.currentStepName);
 
 					if (firstStepOccurrenceIndex >= 0) {
 						this.history = this.history.splice(0, firstStepOccurrenceIndex + 1);
@@ -444,10 +522,10 @@ export class Flow {
 			// check allow cyclic for next step
 			const nextStep = this.steps[nextStepName];
 			if (nextStep && !CoreHelper.getValueOrDefault(nextStep.options?.allowCyclicHistory, false)) {
-				const numberOfStepOccurrences = this.history.filter(x => x === nextStepName).length;
+				const numberOfStepOccurrences = this.history.filter((x) => x === nextStepName).length;
 
 				if (numberOfStepOccurrences > 0) {
-					const firstStepOccurrenceIndex = this.history.findIndex(x => x === nextStepName);
+					const firstStepOccurrenceIndex = this.history.findIndex((x) => x === nextStepName);
 
 					if (firstStepOccurrenceIndex >= 0) {
 						this.history = this.history.splice(0, firstStepOccurrenceIndex + 1);
@@ -518,6 +596,7 @@ export class Flow {
 
 				if (changed) {
 					this.treatHistory(nextStepNameOrFn, flowManagerOptions, options);
+					this.handleKeepPreviousMounted(nextStepNameOrFn);
 				}
 
 				this.currentStepName = nextStepNameOrFn;
@@ -525,6 +604,10 @@ export class Flow {
 				nextStepFnResult = nextStepNameOrFn() || {};
 
 				this.treatHistory(nextStepFnResult.stepName, flowManagerOptions, options);
+
+				if (nextStepFnResult.stepName) {
+					this.handleKeepPreviousMounted(nextStepFnResult.stepName);
+				}
 
 				if (nextStepFnResult?.options?.history) {
 					this.history = nextStepFnResult?.options?.history;
@@ -572,6 +655,7 @@ export class Flow {
 			historyUrl: this.buildUrl(),
 			clearHistory,
 			ignoreHistory,
+			keepPreviousMounted: this.steps[this.currentStepName]?.options?.keepPreviousMounted || false,
 		};
 	};
 }

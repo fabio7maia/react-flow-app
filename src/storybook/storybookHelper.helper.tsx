@@ -10,7 +10,7 @@ export class StorybookHelper {
 		const stories = {};
 
 		if (args) {
-			Object.keys(args).forEach(elem => {
+			Object.keys(args).forEach((elem) => {
 				stories[elem] = template.bind({});
 				stories[elem].args = args[elem];
 			});

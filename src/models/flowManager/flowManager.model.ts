@@ -15,7 +15,7 @@ export class FlowManager<
 	TScreensInner extends TScreens,
 	TFlowName extends string,
 	TFlowStep extends keyof TScreensInner,
-	TAnotherObjects extends Record<string, { actions: any }>
+	TAnotherObjects extends Record<string, { actions: any }>,
 > {
 	private _instance;
 	flows: Record<TFlowName, Flow>;
@@ -65,120 +65,120 @@ export class FlowManager<
 	};
 
 	// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-	steps = ({ name: flowName, baseUrl }: TFlowCreatorInput<TFlowName>) => <TStepName extends keyof TScreensInner>(
-		steps: Partial<Record<TStepName, TStepOptions>>
-	) => {
-		this.checkFlowExists(flowName);
+	steps =
+		({ name: flowName, baseUrl }: TFlowCreatorInput<TFlowName>) =>
+		<TStepName extends keyof TScreensInner>(steps: Partial<Record<TStepName, TStepOptions>>) => {
+			this.checkFlowExists(flowName);
 
-		const flow = this.getFlow(flowName);
+			const flow = this.getFlow(flowName);
 
-		Object.keys(steps).forEach(step => {
-			const screen = this.screens[step];
+			Object.keys(steps).forEach((step) => {
+				const screen = this.screens[step];
 
-			this.log('steps', {
-				screens: this.screens,
-				screen,
-				step,
+				this.log('steps', {
+					screens: this.screens,
+					screen,
+					step,
+				});
+
+				flow.addStep(screen, step, (steps as any)[step]);
 			});
 
-			flow.addStep(screen, step, (steps as any)[step]);
-		});
+			this.log('flow', { flow });
 
-		this.log('flow', { flow });
+			return {
+				step: <TCurrentStepName extends keyof typeof steps>(name: TCurrentStepName) => {
+					const screen = this.screens[name];
+					type ScreenActions = (typeof screen)['actions'][number];
 
-		return {
-			step: <TCurrentStepName extends keyof typeof steps>(name: TCurrentStepName) => {
-				const screen = this.screens[name];
-				type ScreenActions = typeof screen['actions'][number];
+					return (
+						screenActions: Record<
+							ScreenActions,
+							keyof typeof steps | (() => TFlowScreenActionCallbackResult | void)
+						>
+					): void => {
+						Object.keys(screenActions).forEach((action) => {
+							const gotoScreen = (screenActions as any)[action];
 
-				return (
-					screenActions: Record<
-						ScreenActions,
-						keyof typeof steps | (() => TFlowScreenActionCallbackResult | void)
-					>
-				): void => {
-					Object.keys(screenActions).forEach(action => {
-						const gotoScreen = (screenActions as any)[action];
+							this.log('step', {
+								screens: this.screens,
+								steps,
+								name,
+								gotoScreen,
+								screenActions,
+							});
 
-						this.log('step', {
-							screens: this.screens,
-							steps,
-							name,
-							gotoScreen,
-							screenActions,
+							flow.addAction(name as any, action, gotoScreen);
 						});
 
-						flow.addAction(name as any, action, gotoScreen);
-					});
+						this.log('flow final', {
+							flow,
+						});
+					};
+				},
+				anotherObject: <TCurrentStepName extends keyof TAnotherObjects>(name: TCurrentStepName) => {
+					const anotherObject = this.anotherObjects[name];
+					type AnotherObjectsActions = (typeof anotherObject)['actions'][number];
 
-					this.log('flow final', {
-						flow,
-					});
-				};
-			},
-			anotherObject: <TCurrentStepName extends keyof TAnotherObjects>(name: TCurrentStepName) => {
-				const anotherObject = this.anotherObjects[name];
-				type AnotherObjectsActions = typeof anotherObject['actions'][number];
+					return (
+						actions: Record<
+							AnotherObjectsActions,
+							keyof typeof steps | (() => TFlowScreenActionCallbackResult | void)
+						>
+					): void => {
+						Object.keys(actions).forEach((action) => {
+							const gotoScreen = (actions as any)[action];
 
-				return (
-					actions: Record<
-						AnotherObjectsActions,
-						keyof typeof steps | (() => TFlowScreenActionCallbackResult | void)
-					>
-				): void => {
-					Object.keys(actions).forEach(action => {
-						const gotoScreen = (actions as any)[action];
+							this.log('anotherObject', {
+								screens: this.screens,
+								steps,
+								name,
+								gotoScreen,
+								actions,
+							});
 
-						this.log('anotherObject', {
-							screens: this.screens,
-							steps,
-							name,
-							gotoScreen,
-							actions,
+							flow.addAction(name as any, action, gotoScreen, true);
 						});
 
-						flow.addAction(name as any, action, gotoScreen, true);
-					});
-
-					this.log('flow final', {
-						flow,
-					});
-				};
-			},
-			// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-			listen: (input: TFlowListenCallback | { callback: TFlowListenCallback; type: TFlowListen }) => {
-				if (typeof input === 'function') {
-					const params: any = input;
-					return flow.addListener(params, 'all');
-				} else {
-					const params: any = input;
-					return flow.addListener(params.callback, params.type);
-				}
-			},
-			start: <TStepName extends keyof typeof steps>(
-				stepName?: TStepName,
-				options?: TFlowActionOptions
-			): TFlowManagerStartMethodOutput => {
-				return {
-					flowName,
-					stepName: stepName as any,
-					options,
-				};
-			},
-			navigateTo: <TStepName extends keyof typeof steps>(
-				stepName?: TStepName,
-				options?: TFlowActionOptions
-				// eslint-disable-next-line sonarjs/no-identical-functions
-			): TFlowScreenActionCallbackResult => {
-				return {
-					flowName,
-					stepName: stepName as any,
-					options,
-				};
-			},
-			name: () => flowName,
+						this.log('flow final', {
+							flow,
+						});
+					};
+				},
+				// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+				listen: (input: TFlowListenCallback | { callback: TFlowListenCallback; type: TFlowListen }) => {
+					if (typeof input === 'function') {
+						const params: any = input;
+						return flow.addListener(params, 'all');
+					} else {
+						const params: any = input;
+						return flow.addListener(params.callback, params.type);
+					}
+				},
+				start: <TStepName extends keyof typeof steps>(
+					stepName?: TStepName,
+					options?: TFlowActionOptions
+				): TFlowManagerStartMethodOutput => {
+					return {
+						flowName,
+						stepName: stepName as any,
+						options,
+					};
+				},
+				navigateTo: <TStepName extends keyof typeof steps>(
+					stepName?: TStepName,
+					options?: TFlowActionOptions
+					// eslint-disable-next-line sonarjs/no-identical-functions
+				): TFlowScreenActionCallbackResult => {
+					return {
+						flowName,
+						stepName: stepName as any,
+						options,
+					};
+				},
+				name: () => flowName,
+			};
 		};
-	};
 
 	/**
 	 * Allow clear history for all flows when not passed specific flow (flowName param) or clear only for specific flow
@@ -196,7 +196,7 @@ export class FlowManager<
 
 			flow?.clearHistory();
 		} else {
-			Object.keys(this.flows).forEach(flow => {
+			Object.keys(this.flows).forEach((flow) => {
 				this.log('clearAllHistory', {
 					flow,
 				});
