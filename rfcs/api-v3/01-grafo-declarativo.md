@@ -27,112 +27,69 @@ A peça central é que **as transições são dados, não funções**. A lógica
 
 Cenário usado nas 3 abordagens: **checkout** (`cart → payment → success | failure`) com salto cross-flow para **auth** (`login`) quando o utilizador não tem sessão.
 
-### 1. Ecrãs
+### Organização em ficheiros
+
+Cada ecrã é declarado no seu ficheiro, cada flow no seu, e a app junta os flows num ponto único:
+
+```
+src/
+  screens/
+    payment/
+      payment.screen.ts     ← definição: ações, payloads, meta, loader (leve)
+      Payment.tsx           ← componente (carregado em lazy)
+    cart/
+      cart.screen.ts
+      Cart.tsx
+    ...
+  flows/
+    checkout.flow.ts        ← passos + transições do checkout
+    auth.flow.ts
+  app.flow.ts               ← composição: createFlowApp + Register
+```
+
+### Regras de desenho
+
+1. **A definição do ecrã (`*.screen.ts`) fica separada do componente.** O flow importa a definição (dados + `import()`), não o componente. Assim os flows conhecem as ações sem carregar código de UI, e o code-splitting mantém-se.
+2. **O ecrã declara o que o utilizador pode fazer; o flow declara para onde isso leva.** Ações, payloads e metadados vivem no ecrã. Passos, regras de histórico e transições vivem no flow. O mesmo ecrã pode ser usado em vários flows, ou duas vezes no mesmo flow com nomes de passo diferentes.
+3. **Os saltos entre flows referem o destino por nome** (`goto('auth', 'login')`), sem importar o outro flow. Isto evita imports circulares (o auth pode voltar ao checkout). A validação de tipos é feita contra o registo global (`Register`) declarado na composição. A viabilidade desta regra (risco de referência circular de tipos, TS7022) está a ser validada no spike `spikes/api-v3-types`.
+
+### 1. Ecrãs (um ficheiro por ecrã)
 
 ```ts
-// screens.ts
-import { defineScreens } from 'react-flow-app';
+// screens/payment/payment.screen.ts
+import { defineScreen, payload } from 'react-flow-app';
 
-export const screens = defineScreens({
-	cart: {
-		actions: ['checkout'],
-		loader: () => import('./screens/Cart'),
-	},
-	payment: {
-		actions: ['pay', 'cancel'],
-		loader: () => import('./screens/Payment'),
-	},
-	success: { actions: ['finish'], loader: () => import('./screens/Success') },
-	failure: { actions: ['retry'], loader: () => import('./screens/Failure') },
-	login: { actions: ['loggedIn'], loader: () => import('./screens/Login') },
+export const paymentScreen = defineScreen({
+	name: 'payment',
+	actions: { pay: payload<{ ok: boolean }>(), cancel: null }, // null = ação sem payload
+	meta: { title: 'Pagamento' },
+	loader: () => import('./Payment'),
 });
 ```
 
-`defineScreens` usa um `const` type parameter (TS ≥ 5.0), por isso não é preciso `as const` nas actions.
-
-### 2. Flows
-
 ```ts
-// flows.ts
-import { defineFlows, branch, goto } from 'react-flow-app';
-import { screens } from './screens';
-
-export const flows = defineFlows(screens, (flow) => ({
-	auth: flow({
-		baseUrl: 'auth',
-		steps: {
-			login: { initial: true, meta: { title: 'Login' } },
-		},
-		transitions: {
-			// "exit" volta ao flow de origem (equivalente ao fromFlow da v2)
-			login: { loggedIn: goto.exit() },
-		},
-	}),
-
-	checkout: flow({
-		baseUrl: 'checkout',
-		steps: {
-			cart: { initial: true, entrypoint: true, meta: { title: 'Carrinho' } },
-			payment: { url: 'pay/:orderId', meta: { title: 'Pagamento' } },
-			success: { clearHistory: true },
-			failure: { ignoreHistory: true },
-		},
-		transitions: {
-			cart: {
-				// Ramo declarado: o diagrama mostra as 2 arestas sem executar nada
-				checkout: branch(['payment', goto('auth', 'login')], (ctx, payload: { loggedIn: boolean }) =>
-					payload.loggedIn ? 'payment' : goto('auth', 'login'),
-				),
-			},
-			payment: {
-				pay: branch(['success', 'failure'], (_, p: { ok: boolean }) => (p.ok ? 'success' : 'failure')),
-				cancel: 'cart',
-			},
-			failure: { retry: 'payment' },
-			success: { finish: goto('home', 'dashboard') },
-			//          ^ erro de tipo se 'home' ou 'dashboard' não existirem
-		},
-	}),
-}));
-```
-
-Garantias de tipos:
-
-- `transitions.<step>` só aceita passos declarados em `steps` desse flow.
-- As chaves de cada passo são as `actions` do ecrã. Se faltar uma ação, o compilador avisa (opção `strictActions`).
-- Os alvos são `'passo-do-flow' | goto(flow, passo) | goto.exit()`, todos tipados.
-- O `branch(targets, resolver)` obriga o resolver a devolver um dos `targets`.
-
-### 3. App e ecrãs
-
-```tsx
-// app.tsx
-import { createFlowApp } from 'react-flow-app';
-import { flows } from './flows';
-
-export const { FlowProvider, useFlow, useFlowSelector, useFlowEvents } = createFlowApp(flows, {
-	url: { mode: 'hash' }, // 'hash' | 'path' | false — usa replaceState/pushState + popstate
-	transitions: 'view-transition', // usa document.startViewTransition quando existir
-	scrollRestoration: true,
+// screens/cart/cart.screen.ts
+export const cartScreen = defineScreen({
+	name: 'cart',
+	actions: { checkout: payload<{ loggedIn: boolean }>() },
+	meta: { title: 'Carrinho' },
+	loader: () => import('./Cart'),
 });
-
-export function App() {
-	useFlowEvents('dispatch', (e) => analytics.track(e.action, { ...e.payload, step: e.step }));
-	useFlowEvents('enter', (e) => analytics.page(e.meta?.title, e.url));
-
-	return <FlowProvider initial={{ flow: 'checkout' }} fallback={<Spinner />} />;
-}
 ```
 
+`defineScreen` usa `const` type parameters (TS ≥ 5.0), por isso não é preciso `as const`.
+
 ```tsx
-// screens/Payment.tsx
+// screens/payment/Payment.tsx
+import { useFlow } from 'react-flow-app';
+import { paymentScreen } from './payment.screen';
+
 export default function Payment() {
-	const { dispatch, back, canGoBack } = useFlow('payment'); // string literal tipada
-	const orderId = useFlowSelector((s) => s.params.orderId); // re-render só quando muda
-
+	const { dispatch, back, canGoBack } = useFlow(paymentScreen);
 	return (
 		<>
 			<button onClick={() => dispatch('pay', { ok: true })}>Pagar</button>
+			{/*                     ^ só 'pay' | 'cancel'; o payload de 'pay' é obrigatório */}
 			<button onClick={() => dispatch('cancel')}>Cancelar</button>
 			{canGoBack && <button onClick={back}>Voltar</button>}
 		</>
@@ -140,15 +97,108 @@ export default function Payment() {
 }
 ```
 
-`useFlow('payment')` sabe que o ecrã `payment` tem as actions `pay | cancel`, e o payload de `pay` vem do tipo do resolver do `branch`.
+A tipagem do `dispatch` vem diretamente da definição do ecrã. Não depende de nenhum flow nem do registo global.
+
+### 2. Flows (um ficheiro por flow)
+
+```ts
+// flows/checkout.flow.ts
+import { defineFlow, branch, goto } from 'react-flow-app';
+import { cartScreen } from '../screens/cart/cart.screen';
+import { paymentScreen } from '../screens/payment/payment.screen';
+import { successScreen } from '../screens/success/success.screen';
+import { failureScreen } from '../screens/failure/failure.screen';
+
+export const checkoutFlow = defineFlow({
+	name: 'checkout',
+	baseUrl: 'checkout',
+	steps: {
+		cart: { screen: cartScreen, initial: true, entrypoint: true },
+		payment: { screen: paymentScreen, url: 'pay/:orderId' },
+		success: { screen: successScreen, clearHistory: true },
+		failure: { screen: failureScreen, ignoreHistory: true },
+	},
+	transitions: {
+		cart: {
+			// Ramo declarado: o diagrama mostra as 2 arestas sem executar nada.
+			// O payload `p` é inferido da ação `checkout` do cartScreen.
+			checkout: branch(['payment', goto('auth', 'login')], (_, p) =>
+				p.loggedIn ? 'payment' : goto('auth', 'login'),
+			),
+		},
+		payment: {
+			pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure')),
+			cancel: 'cart',
+		},
+		failure: { retry: 'payment' },
+		success: { finish: goto('home', 'dashboard') },
+		//                   ^ erro de tipo se 'home' ou 'dashboard' não existirem no registo
+	},
+});
+```
+
+```ts
+// flows/auth.flow.ts
+export const authFlow = defineFlow({
+	name: 'auth',
+	baseUrl: 'auth',
+	steps: { login: { screen: loginScreen, initial: true } },
+	transitions: {
+		login: { loggedIn: goto.exit() }, // volta ao flow de origem (equivalente ao fromFlow da v2)
+	},
+});
+```
+
+Garantias de tipos:
+
+- `steps.<passo>.screen` liga o passo a um ecrã. O nome do passo não tem de ser igual ao nome do ecrã.
+- `transitions.<passo>` só aceita passos declarados em `steps` desse flow.
+- As chaves de cada passo são as ações do ecrã ligado a esse passo.
+- Os alvos são `'passo-do-flow' | goto(flow, passo) | goto.exit()`, todos tipados.
+- O `branch(targets, resolver)` obriga o resolver a devolver um dos `targets` e infere o payload da ação.
+
+### 3. Composição da app
+
+```ts
+// app.flow.ts
+import { createFlowApp } from 'react-flow-app';
+import { checkoutFlow } from './flows/checkout.flow';
+import { authFlow } from './flows/auth.flow';
+import { homeFlow } from './flows/home.flow';
+
+export const flowApp = createFlowApp([checkoutFlow, authFlow, homeFlow], {
+	url: { mode: 'hash' }, // 'hash' | 'path' | false — usa replaceState/pushState + popstate
+	transitions: 'view-transition', // usa document.startViewTransition quando existir
+	scrollRestoration: true,
+});
+
+declare module 'react-flow-app' {
+	interface Register {
+		app: typeof flowApp; // ativa intellisense global: goto(), useFlowEvents(), start()…
+	}
+}
+```
+
+```tsx
+// App.tsx
+import { FlowProvider, useFlowEvents } from 'react-flow-app';
+import { flowApp } from './app.flow';
+
+export function App() {
+	useFlowEvents('action', (e) => analytics.track(e.action, { ...e.payload, step: e.step }));
+	useFlowEvents('step:enter', (e) => analytics.page(e.meta?.title, e.url));
+
+	return <FlowProvider app={flowApp} initial={{ flow: 'checkout' }} fallback={<Spinner />} />;
+}
+```
 
 ### 4. Diagrama
 
 ```ts
 import { toGraph, toMermaid } from 'react-flow-app/diagram';
-import { flows } from './flows';
+import { flowApp } from './app.flow';
 
-const graph = toGraph(flows); // puro: { nodes, edges }, cada aresta tem action, kind: 'direct' | 'branch' | 'cross-flow' | 'exit'
+const graph = toGraph(flowApp); // puro: { nodes, edges }, cada aresta tem action, kind: 'direct' | 'branch' | 'cross-flow' | 'exit'
 console.log(toMermaid(graph));
 ```
 
@@ -176,13 +226,13 @@ Para visualização interativa, um pacote opcional `@react-flow-app/devtools` re
 import { validateFlows } from 'react-flow-app/diagram';
 
 test('flows são válidos', () => {
-	expect(validateFlows(flows)).toEqual([]);
+	expect(validateFlows(flowApp)).toEqual([]);
 	// Deteta: passos inalcançáveis, actions sem transição, flows sem passo inicial,
 	// entrypoints com URLs duplicados, ciclos sem saída, goto.exit() em flows que nunca são abertos por outro.
 });
 ```
 
-Isto pode correr também como CLI (`npx react-flow-app check src/flows.ts`) em CI. Produz o Mermaid para colar no PR, ou um diff do grafo entre a branch e a `main`.
+Isto pode correr também como CLI (`npx react-flow-app check src/app.flow.ts`) em CI. Produz o Mermaid para colar no PR, ou um diff do grafo entre a branch e a `main`.
 
 ### 6. Testes
 
@@ -192,7 +242,7 @@ Isto pode correr também como CLI (`npx react-flow-app check src/flows.ts`) em C
 import { createFlowEngine } from 'react-flow-app/core';
 
 it('failure não fica no histórico', () => {
-	const engine = createFlowEngine(flows, { initial: { flow: 'checkout' } });
+	const engine = createFlowEngine(flowApp, { initial: { flow: 'checkout' } });
 	engine.dispatch('checkout', { loggedIn: true });
 	engine.dispatch('pay', { ok: false });
 	engine.back();
@@ -205,7 +255,7 @@ it('failure não fica no histórico', () => {
 ```ts
 import { getPaths } from 'react-flow-app/testing';
 
-describe.each(getPaths(flows, { from: 'checkout.cart', strategy: 'shortest' }))('caminho %s', (path) => {
+describe.each(getPaths(flowApp, { from: 'checkout.cart', strategy: 'shortest' }))('caminho %s', (path) => {
 	it('é navegável', async () => {
 		const ui = renderFlow(App); // helper de @testing-library
 		for (const step of path.steps) await ui.dispatch(step.action, step.samplePayload);
@@ -223,7 +273,7 @@ describe.each(getPaths(flows, { from: 'checkout.cart', strategy: 'shortest' }))(
 A lib é dona do motor e por isso emite o [contrato de eventos](./00-comparativo.md#contrato-de-eventos-prioridades-1-e-2) completo. Todas as navegações (dispatch, back, start, entrada por URL) passam pelo motor, logo nenhuma escapa à captura.
 
 ```ts
-export const app = createFlowApp(flows, {
+export const flowApp = createFlowApp([checkoutFlow, authFlow, homeFlow], {
 	middleware: [
 		analytics(ga4Adapter({ measurementId: 'G-XXX' })),
 		// Integração própria: um único sítio, totalmente tipado
@@ -238,60 +288,40 @@ export const app = createFlowApp(flows, {
 });
 
 // Ou fora do React (ex.: num módulo de telemetria)
-app.engine.on('step:enter', (e) => sentry.addBreadcrumb({ message: `${e.flow}.${e.step}`, data: e.meta }));
+flowApp.engine.on('step:enter', (e) => sentry.addBreadcrumb({ message: `${e.flow}.${e.step}`, data: e.meta }));
 ```
 
 ### 3. Diagrama multi-fluxo
 
-`toGraph(flows)` devolve todos os flows num único grafo. As arestas cross-flow (`goto`) e de saída (`goto.exit()`) vêm marcadas. Daí geram-se:
+`toGraph(flowApp)` devolve todos os flows num único grafo. As arestas cross-flow (`goto`) e de saída (`goto.exit()`) vêm marcadas. Daí geram-se:
 - Mermaid para docs e PRs;
 - o grafo interativo com xyflow + elk;
-- um `toXStateMachine(flows)` para abrir no Stately visualizer, sem ter o XState como dependência de runtime.
+- um `toXStateMachine(flowApp)` para abrir no Stately visualizer, sem ter o XState como dependência de runtime.
 
 ### 4. Testes automáticos e agilidade
 
 ```ts
 import { createFlowTester, getPaths, transitionCoverage } from 'react-flow-app/testing';
 
-const t = createFlowTester(flows, { start: 'checkout' }); // Node puro, sem DOM
+const t = createFlowTester(flowApp, { start: 'checkout' }); // Node puro, sem DOM
 t.dispatch('checkout', { loggedIn: true }).dispatch('pay', { ok: false });
 t.expectStep('checkout.failure');
 t.expectEvents(['action:checkout', 'step:enter:payment', 'action:pay', 'step:enter:failure']);
 
 // Um teste por caminho do grafo + relatório de arestas não cobertas
-test.each(getPaths(flows, { strategy: 'simple' }))('%s', (path) => createFlowTester(flows).run(path).expectReached());
+test.each(getPaths(flowApp, { strategy: 'simple' }))('%s', (path) => createFlowTester(flowApp).run(path).expectReached());
 afterAll(() => expect(transitionCoverage()).toBeGreaterThanOrEqual(0.9));
 ```
 
 ### 5. Tipagem ponta a ponta
 
-Os payloads são declarados por ação no ecrã, e os flows são registados uma única vez:
-
-```ts
-import { defineScreens, payload } from 'react-flow-app';
-
-export const screens = defineScreens({
-	payment: {
-		actions: { pay: payload<{ ok: boolean }>(), cancel: null }, // null = sem payload
-		loader: () => import('./screens/Payment'),
-	},
-});
-
-declare module 'react-flow-app' {
-	interface Register {
-		flows: typeof flows;
-		meta: { title: string; funnel?: 'checkout' | 'onboarding' };
-	}
-}
-```
-
-A forma em array (`actions: ['checkout']`, usada nos exemplos acima) continua válida para ecrãs cujas ações não têm payload.
+Os payloads são declarados por ação no ficheiro do ecrã (`payload<T>()`), e a app é registada uma única vez na composição (`Register { app: typeof flowApp }`). A forma em array (`actions: ['finish']`) continua válida para ecrãs cujas ações não têm payload.
 
 A partir daí, sem genéricos manuais:
 
 | Onde | O intellisense sugere / valida |
 |---|---|
-| `useFlow('payment')` | só nomes de ecrãs existentes |
+| `useFlow(paymentScreen)` | a definição importada do ficheiro do ecrã |
 | `dispatch('pay', …)` | só `pay` ou `cancel`; o payload de `pay` é obrigatório e é `{ ok: boolean }` |
 | `transitions.payment.pay` | só passos do flow, `goto(flow, passo)` válidos, ou `branch` com alvos válidos |
 | `useFlowEvents('step:enter', e => …)` | `e.flow`, `e.step` e `e.meta` como unions/tipos concretos |
@@ -303,10 +333,10 @@ Os payloads também validados em runtime (opcional, `schema: z.object(...)` em v
 
 | v2 | Abordagem A |
 |---|---|
-| `fm.flow().steps()` + `f.step()()` | `defineFlows(screens, flow => …)` |
+| `fm.flow().steps()` + `f.step()()` | `defineScreen` (um ficheiro por ecrã) + `defineFlow` (um ficheiro por flow) + `createFlowApp([...])` |
 | `TStepOptions` (`ignoreHistory`, `clearHistory`, `allowCyclicHistory`, `checkpoint`, `url`) | Mantidas com a **mesma semântica**, cobertas por testes de caracterização |
 | Ação como função (`() => f0.navigateTo('x')`) | `branch([...alvos], resolver)` ou `effect(fn)` para efeitos sem navegação |
-| `anotherObjects` (modais) | `defineScreens({ modal: { actions, kind: 'overlay' } })` — participa no grafo sem ser passo |
+| `anotherObjects` (modais) | `defineScreen({ name: 'modal', actions, kind: 'overlay' })` — participa no grafo sem ser passo |
 | `listen` / `f.listen()` / `onFlowMount` | `useFlowEvents(type, cb)` + `engine.on(type, cb)` com filtro por flow |
 | `initialHistory`, `scrollRestoration`, `ignoreHistory` no dispatch | Opções de `start`/`dispatch` |
 | `fromFlow` + `backExit` | `goto.exit()` + evento `exit` |
