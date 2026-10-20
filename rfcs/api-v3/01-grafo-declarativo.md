@@ -216,6 +216,89 @@ describe.each(getPaths(flows, { from: 'checkout.cart', strategy: 'shortest' }))(
 
 **Testes de tipos** (`expectTypeOf` do Vitest) para garantir que alvos inválidos não compilam.
 
+## Como responde às prioridades
+
+### 1 e 2. Navegação por eventos e integração com terceiros
+
+A lib é dona do motor e por isso emite o [contrato de eventos](./00-comparativo.md#contrato-de-eventos-prioridades-1-e-2) completo. Todas as navegações (dispatch, back, start, entrada por URL) passam pelo motor, logo nenhuma escapa à captura.
+
+```ts
+export const app = createFlowApp(flows, {
+	middleware: [
+		analytics(ga4Adapter({ measurementId: 'G-XXX' })),
+		// Integração própria: um único sítio, totalmente tipado
+		(ctx, next) => {
+			if (ctx.event.type === 'action' && ctx.event.action === 'pay') {
+				//                                                  ^ intellisense: todas as actions de todos os flows
+				datadog.addAction('checkout_pay', { ok: ctx.event.payload.ok }); // payload inferido: { ok: boolean }
+			}
+			return next();
+		},
+	],
+});
+
+// Ou fora do React (ex.: num módulo de telemetria)
+app.engine.on('step:enter', (e) => sentry.addBreadcrumb({ message: `${e.flow}.${e.step}`, data: e.meta }));
+```
+
+### 3. Diagrama multi-fluxo
+
+`toGraph(flows)` devolve todos os flows num único grafo. As arestas cross-flow (`goto`) e de saída (`goto.exit()`) vêm marcadas. Daí geram-se:
+- Mermaid para docs e PRs;
+- o grafo interativo com xyflow + elk;
+- um `toXStateMachine(flows)` para abrir no Stately visualizer, sem ter o XState como dependência de runtime.
+
+### 4. Testes automáticos e agilidade
+
+```ts
+import { createFlowTester, getPaths, transitionCoverage } from 'react-flow-app/testing';
+
+const t = createFlowTester(flows, { start: 'checkout' }); // Node puro, sem DOM
+t.dispatch('checkout', { loggedIn: true }).dispatch('pay', { ok: false });
+t.expectStep('checkout.failure');
+t.expectEvents(['action:checkout', 'step:enter:payment', 'action:pay', 'step:enter:failure']);
+
+// Um teste por caminho do grafo + relatório de arestas não cobertas
+test.each(getPaths(flows, { strategy: 'simple' }))('%s', (path) => createFlowTester(flows).run(path).expectReached());
+afterAll(() => expect(transitionCoverage()).toBeGreaterThanOrEqual(0.9));
+```
+
+### 5. Tipagem ponta a ponta
+
+Os payloads são declarados por ação no ecrã, e os flows são registados uma única vez:
+
+```ts
+import { defineScreens, payload } from 'react-flow-app';
+
+export const screens = defineScreens({
+	payment: {
+		actions: { pay: payload<{ ok: boolean }>(), cancel: null }, // null = sem payload
+		loader: () => import('./screens/Payment'),
+	},
+});
+
+declare module 'react-flow-app' {
+	interface Register {
+		flows: typeof flows;
+		meta: { title: string; funnel?: 'checkout' | 'onboarding' };
+	}
+}
+```
+
+A forma em array (`actions: ['checkout']`, usada nos exemplos acima) continua válida para ecrãs cujas ações não têm payload.
+
+A partir daí, sem genéricos manuais:
+
+| Onde | O intellisense sugere / valida |
+|---|---|
+| `useFlow('payment')` | só nomes de ecrãs existentes |
+| `dispatch('pay', …)` | só `pay` ou `cancel`; o payload de `pay` é obrigatório e é `{ ok: boolean }` |
+| `transitions.payment.pay` | só passos do flow, `goto(flow, passo)` válidos, ou `branch` com alvos válidos |
+| `useFlowEvents('step:enter', e => …)` | `e.flow`, `e.step` e `e.meta` como unions/tipos concretos |
+| `start({ flow, step })` | `step` restringido aos passos desse `flow` |
+
+Os payloads também validados em runtime (opcional, `schema: z.object(...)` em vez de `payload<T>()`) tornam-se úteis para analytics: só eventos com payload válido chegam aos terceiros.
+
 ## Mapeamento das funcionalidades da v2
 
 | v2 | Abordagem A |

@@ -166,6 +166,18 @@ it('deep link para success redireciona para cart', async () => {
 
 - A geração de caminhos (`getPaths(flows)`) funciona como na abordagem A, porque o grafo é declarativo.
 
+## Como responde às prioridades
+
+| Prioridade | Avaliação |
+|---|---|
+| 1. Navegação por eventos | **Parcial.** O `dispatch(action)` existe, mas o router permite navegar por fora dele (`<Link>`, URL escrito à mão, back/forward do browser). O evento deixa de ser a fonte única de verdade, e é preciso disciplina, ou uma regra de lint, para não usar `<Link>` dentro de flows. |
+| 2. Captura e integração com terceiros | **Parcial.** As navegações por `dispatch` geram eventos ricos (`action`, payload). As navegações diretas do router só geram "mudou de rota", sem ação nem payload, por isso os funis de analytics ficam com buracos. |
+| 3. Diagrama multi-fluxo | **Boa.** O grafo é declarativo como em A, e pode incluir as rotas fora de flows, o que dá um mapa completo da app. |
+| 4. Testes automáticos | **Média.** A geração de caminhos funciona sobre o grafo, mas executar os testes exige um router com memory history e render. São mais lentos e com mais setup do que um motor em Node puro. |
+| 5. Tipagem ponta a ponta | **Boa nas rotas e params** (o TanStack Router é referência neste ponto). Os payloads das ações e os metadados ficam na camada da lib, com duplicação parcial entre rota e passo. |
+
+Mitigação possível para as prioridades 1 e 2: interceptar todas as navegações no `router.subscribe('onBeforeNavigate')` e classificar como `source: 'link' | 'url' | 'browser'` as que não vieram de `dispatch`. Ficam pelo menos capturadas, ainda que sem a ação de domínio.
+
 ## Mapeamento das funcionalidades da v2
 
 | v2 | Abordagem C |

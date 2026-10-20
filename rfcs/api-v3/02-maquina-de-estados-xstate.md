@@ -225,6 +225,28 @@ describe.each(paths.map((p) => [JSON.stringify(p.state.value), p]))('chega a %s'
 });
 ```
 
+## Como responde às prioridades
+
+| Prioridade | Avaliação |
+|---|---|
+| 1. Navegação por eventos | **Boa.** Os eventos são a primitiva nativa do XState (`send({ type })`). O vocabulário muda de `dispatch(action)` para `send(event)`. |
+| 2. Captura e integração com terceiros | **Boa, com tradução.** O `inspect` e o `actor.subscribe` capturam tudo, mas em formato genérico (`@xstate.event`, snapshots). A lib tem de derivar os eventos de domínio (`step:enter`, `action`, `flow:exit`) comparando snapshots e manter esse mapeamento estável entre versões do XState. |
+| 3. Diagrama multi-fluxo | **Muito boa para visualizar e inspecionar** (Stately). Fraca para o back dinâmico, que não é uma transição declarada e por isso não aparece no diagrama. Muitos flows numa única máquina raiz tornam o diagrama pesado. |
+| 4. Testes automáticos | **A melhor das três.** O `xstate/graph` gera caminhos e há model-based testing oficial. Os testes com `createActor` correm em Node puro. |
+| 5. Tipagem ponta a ponta | **Parcial.** `setup({ types })` tipa eventos, context e guards. Os alvos (`'#app.auth.login'`) são strings validadas em runtime, e a ligação ecrã ↔ estado ↔ actions tem de ser gerada pelo builder da lib para não duplicar tipos. |
+
+Exemplo de captura para analytics:
+
+```ts
+createFlowApp(appMachine, {
+	onEvent: (e) => {
+		// e já foi traduzido pela lib a partir do inspect do XState
+		if (e.type === 'step:enter') gtag('event', 'page_view', { page_path: e.url, page_title: e.meta.title });
+		if (e.type === 'action') gtag('event', e.action, e.payload);
+	},
+});
+```
+
 ## Mapeamento das funcionalidades da v2
 
 | v2 | Abordagem B |

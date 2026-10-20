@@ -15,38 +15,100 @@
 | **B** — Flows como máquinas de estados (XState v5) | [02-maquina-de-estados-xstate.md](./02-maquina-de-estados-xstate.md) |
 | **C** — Camada de flows sobre um router (TanStack / React Router) | [03-camada-sobre-router.md](./03-camada-sobre-router.md) |
 
-## Objetivos usados na avaliação
+## Prioridades (confirmadas pelo maintainer)
 
-1. **API mais simples** para o dev que usa a lib.
-2. **Mapeamento de ecrãs em diagrama**, fiável e sem efeitos secundários.
-3. **Melhores testes**, tanto da lib como das apps que a usam.
-4. **Melhor controlo do desenvolvimento**: validação estática, CI e deteção de erros cedo.
+Por ordem de importância:
 
-Critérios adicionais de arquitetura: manutenção e suporte, escalabilidade (muitos flows/ecrãs), fidelidade às funcionalidades da v2, bundle e dependências, e custo de migração.
+1. **Navegação por eventos.** A ação do utilizador (`dispatch('pay')`) é a primitiva de navegação, e não o URL.
+2. **Capturar todas as navegações e integrar com ferramentas terceiras** (analytics, logging, monitorização), com um único ponto de integração.
+3. **Diagrama com os vários fluxos**, incluindo as ligações entre flows.
+4. **Testes automáticos sobre os fluxos criados** e mais agilidade nos testes (rápidos, sem browser).
+5. **Tipagem ponta a ponta com intellisense**: ecrãs, ações, payloads, destinos, eventos e metadados, sem genéricos escritos à mão.
+
+Critérios secundários: simplicidade da API, fidelidade à semântica de histórico da v2, manutenção, URL/SSR, custo de migração e dependências.
 
 ## Matriz de avaliação
 
-Escala de 1 (fraco) a 5 (forte).
+Escala de 1 (fraco) a 5 (forte). Os pesos seguem as prioridades acima: 3 nas prioridades 1–5 e 1–2 nos critérios secundários.
 
 | Critério | Peso | A — Grafo declarativo | B — XState | C — Sobre router |
 |---|:-:|:-:|:-:|:-:|
-| API simples (caso comum: wizard/flow linear) | 3 | **5** | 2 | 3 |
-| API para regras complexas (guards, async, paralelo) | 1 | 3 | **5** | 3 |
-| Diagrama fiável e sem execução de código | 3 | **5** | **5** | 4 |
-| Diagrama interativo / devtools "de graça" | 1 | 2 | **5** | 3 |
-| Testabilidade (core puro, rápido, determinístico) | 2 | **5** | **5** | 3 |
-| Geração de caminhos / model-based testing | 2 | 4 (próprio) | **5** (`xstate/graph`) | 4 (próprio) |
-| Segurança de tipos nos destinos (erro de compilação) | 2 | **5** | 3 (runtime) | **5** |
-| Fidelidade à semântica de histórico da v2 | 3 | **5** | 3 | 2 |
-| URL / deep link / back do browser / SSR | 2 | 3 | 3 | **5** |
-| Manutenção para a equipa da lib (menos código próprio) | 2 | 2 | **4** | 3 |
-| Dependências / bundle | 1 | **5** (0 deps) | 2 (~14 kB gz) | 3 (router é peer) |
-| Plataformas (RN, sem router, flows embebidos) | 1 | **5** | **5** | 2 |
-| Custo de migração a partir da v2 | 2 | **4** | 2 | 1 |
-| Identidade/diferenciação da lib | 1 | **5** | 2 | 4 |
-| **Total ponderado** (máx. 130) | | **111** | **93** | **84** |
+| **1. Navegação por eventos** (ação como primitiva única) | 3 | **5** | 4 | 3 ¹ |
+| **2. Captura de navegações + integração terceiros** | 3 | **5** | 4 ² | 3 ¹ |
+| **3. Diagrama multi-fluxo** (sem executar código, com cross-flow) | 3 | **5** | 4 ³ | 4 |
+| **4a. Testes gerados a partir dos fluxos** | 3 | 4 | **5** | 3 |
+| **4b. Agilidade dos testes** (Node puro, sem DOM/router) | 2 | **5** | **5** | 2 |
+| **5. Tipagem ponta a ponta / intellisense** | 3 | **5** | 3 ⁴ | 4 ⁵ |
+| Fidelidade à semântica de histórico da v2 | 2 | **5** | 3 | 2 |
+| Simplicidade da API (caso comum) | 2 | **5** | 2 | 3 |
+| Manutenção (menos código próprio) | 1 | 2 | **4** | 3 |
+| URL / deep link / SSR | 1 | 3 | 3 | **5** |
+| Custo de migração a partir da v2 | 1 | **4** | 2 | 1 |
+| Dependências / bundle | 1 | **5** | 2 | 3 |
+| **Total ponderado** (máx. 125) | | **116** | **91** | **77** |
 
-> Os pesos refletem os 4 objetivos (API simples, diagrama, testes, controlo) e a preservação do que torna a lib útil hoje: a semântica de histórico. Com outros pesos o resultado muda. Por exemplo, se o URL e o SSR forem prioridade máxima, a abordagem C sobe bastante.
+1. Em C a navegação também acontece por fora dos eventos (`<Link>`, URL escrito à mão, back do browser). Os eventos deixam de ser a fonte única de verdade, e o analytics recebe "mudou de rota" em vez de "o utilizador fez `pay`".
+2. O `inspect` do XState captura tudo, mas em formato genérico (`@xstate.event`, `@xstate.snapshot`). É preciso uma camada para traduzir para eventos de domínio (`step:enter`, `action`).
+3. O diagrama do Stately é excelente para uma máquina, mas muitos flows numa única máquina raiz fica pesado. O back dinâmico também não se representa.
+4. Eventos e guards são tipados, mas os alvos (`'#app.auth.login'`) só são validados em runtime. A ligação ecrã ↔ estado é manual.
+5. Rotas e params são muito bem tipados pelo router, mas há duplicação entre rota e passo, e os payloads das ações não fazem parte do modelo do router.
+
+> Com estas prioridades a diferença aumenta a favor de A. As prioridades 1, 2 e 5 dependem de a lib ser dona do modelo de eventos e dos tipos, e é isso que B e C delegam.
+
+## Contrato de eventos (prioridades 1 e 2)
+
+Seja qual for a abordagem, o modelo de eventos deve ser desenhado como um **contrato público e estável**, porque é o que as integrações de terceiros vão consumir.
+
+```ts
+type FlowEvent =
+	| { type: 'flow:start'; flow; step; source: 'initial' | 'url' | 'api' }
+	| { type: 'action'; flow; step; action; payload } // o utilizador fez algo
+	| { type: 'step:leave'; flow; step; reason: 'dispatch' | 'back' | 'start' }
+	| { type: 'step:enter'; flow; step; from?: { flow; step }; direction: 'forward' | 'back' }
+	| { type: 'flow:exit'; flow; to?: { flow; step } } // equivalente ao backExit da v2
+	| { type: 'navigation:blocked'; flow; step; action; reason } // guard/middleware cancelou
+	| { type: 'action:unhandled'; flow; step; action }; // ação sem transição (útil em dev/CI)
+
+// Campos comuns a todos: navigationId (correlação), timestamp, url?, meta (tipada), history.length
+```
+
+Garantias que fazem parte do contrato:
+
+- **Ordem determinística:** `action → step:leave → step:enter`. O PR #63 emitia `mount` antes de `dispatch`, o que baralha funis de analytics.
+- **Um `navigationId` por navegação**, para correlacionar os eventos e medir o tempo entre `action` e `step:enter` (inclui o lazy loading).
+- **Isolamento de erros:** uma integração que lança exceção não parte a navegação nem as outras integrações.
+- **Metadados tipados por passo** (não por ecrã), com o tipo declarado uma vez pela app:
+
+```ts
+declare module 'react-flow-app' {
+	interface Register {
+		flows: typeof flows; // ativa intellisense global em useFlow, useFlowEvents, start…
+		meta: { title: string; gaPath?: string; funnel?: 'checkout' | 'onboarding' };
+	}
+}
+```
+
+- **Middleware** para casos que vão além de observar:
+
+```ts
+createFlowApp(flows, {
+	middleware: [
+		analytics(ga4Adapter({ measurementId: 'G-XXX' })), // adaptador oficial: page_view em step:enter, event em action
+		logger({ collapsed: true }),
+		(ctx, next) => (ctx.action === 'pay' && !ctx.payload.ok ? ctx.redirect('failure') : next()),
+	],
+});
+```
+
+## Testes (prioridade 4)
+
+A abordagem recomendada deve trazer um pacote `react-flow-app/testing`:
+
+- **`createFlowTester(flows)`** corre o motor em Node puro, grava os eventos e expõe asserções (`expectStep`, `expectEvents`). Os testes correm em milissegundos.
+- **`getPaths(flows, { strategy: 'shortest' | 'simple' })`** gera um teste por caminho no grafo.
+- **Cobertura de transições:** um relatório de quais arestas do grafo foram exercidas pelos testes, que pode falhar o CI abaixo de um limiar. Responde à pergunta "que navegações não estão testadas?".
+- **Snapshot do grafo:** `expect(toMermaid(flows)).toMatchSnapshot()`. Qualquer alteração aos fluxos aparece no diff do PR como diagrama.
+- **`validateFlows(flows)`** como teste/CLI: passos inalcançáveis, ações sem transição, entrypoints duplicados, flows sem saída.
 
 ## Comparação lado a lado — o mesmo caso de uso
 
@@ -98,7 +160,7 @@ Escala de 1 (fraco) a 5 (forte).
 
 **Avançar com a abordagem A como base**, desenhada para não fechar portas a B e C:
 
-1. **Core headless com grafo declarativo** (A). É o melhor resultado nos 4 objetivos e mantém a semântica da v2.
+1. **Core headless com grafo declarativo** (A). É o melhor resultado nas 5 prioridades e mantém a semântica da v2. A lib é dona do contrato de eventos e dos tipos, que são o centro das prioridades 1, 2 e 5.
 2. **Exportador `toXStateMachine(flows)`** (barato, só leitura). Abre o grafo no Stately visualizer/inspector e permite usar `xstate/graph` para gerar caminhos, sem tornar o XState uma dependência de runtime. Fica com o melhor de B para diagrama e testes.
 3. **Adaptadores de router opcionais numa fase posterior** (C). O core expõe uma interface `HistoryAdapter` (`memory` | `hash` | `browser` | `tanstack-router` | `react-router`). Quem quiser URLs reais e SSR liga um adaptador. Quem tem flows embebidos ou React Native usa `memory`.
 
@@ -106,7 +168,8 @@ Escala de 1 (fraco) a 5 (forte).
 
 - [ ] **Testes de caracterização da v2 na `main`.** Cobrir `ignoreHistory`, `clearHistory`, `allowCyclicHistory`, `checkpoint`, `fromFlow`/`backExit`, ordem dos eventos, `scrollRestoration` e `initialHistory`. São o contrato de compatibilidade.
 - [ ] **Separar as mudanças de tooling** (pnpm, Vitest, Biome) num PR próprio, sem alterações de comportamento.
-- [ ] **Escrever um spike de tipos**: `defineFlows` + `branch` + `goto`, com testes `expectTypeOf` e um benchmark de `tsc` com 50 flows / 300 ecrãs.
+- [ ] **Escrever um spike de tipos**: `defineFlows` + `branch` + `goto` + `Register`, com testes `expectTypeOf` e um benchmark de `tsc` com 50 flows / 300 ecrãs.
+- [ ] **Fechar o contrato de eventos** (tipos, ordem, campos comuns) antes de qualquer implementação, e validá-lo com um adaptador real de analytics (GA4 ou Segment).
 
 ### Plano incremental proposto
 
@@ -114,10 +177,11 @@ Escala de 1 (fraco) a 5 (forte).
 2. Testes de caracterização da v2.
 3. Core headless (A) a passar esses testes + adaptador `fromV2()`.
 4. Binding React: store por Provider, `useFlowSelector`, View Transitions, a11y opcional.
-5. `toGraph`, `toMermaid`, `validateFlows`, CLI `check` e `getPaths`.
-6. `toXStateMachine` + devtools com xyflow/elk.
-7. Guia de migração v2 → v3 e versão `3.0.0-rc`.
-8. (Opcional) adaptadores de router.
+5. `react-flow-app/testing` (`createFlowTester`, `getPaths`, cobertura de transições), `toGraph`, `toMermaid`, `validateFlows` e CLI `check`.
+6. Middleware + adaptadores oficiais de analytics (GA4, Segment) + `logger`.
+7. `toXStateMachine` + devtools com xyflow/elk.
+8. Guia de migração v2 → v3 e versão `3.0.0-rc`.
+9. (Opcional) adaptadores de router.
 
 ## Questões em aberto
 
