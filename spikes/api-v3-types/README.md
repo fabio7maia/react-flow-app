@@ -33,6 +33,8 @@ lib/                        protótipo da lib ('react-flow-app' via tsconfig pat
   app.ts                    createFlowApp, contrato de eventos
   engine.ts                 motor headless (start, dispatch, back, eventos, cobertura)
   graph.ts                  toGraph, toMermaid, validateFlows, getPaths
+  url.ts                    URL de cada passo (/baseUrl/url, :params) e deep links (puro)
+  adapters.ts               browserHistory (URL + back/forward do browser), scrollRestoration
   react.tsx                 FlowProvider, useFlow, useFlowSelector, useFlowEvents
 example/
   screens/<ecrã>/<ecrã>.screen.ts   definição (ações, payloads, meta, loader)
@@ -44,6 +46,8 @@ tests/
   types.test-d.ts           28 asserções de tipos (20 erros esperados + 8 igualdades de tipo)
   engine.test.ts            24 testes de runtime
   parity.test.ts            41 cenários de paridade com a v2 (mesmos IDs da caracterização)
+  adapters.test.ts          15 testes de URL, deep links, back/forward do browser e scroll
+  fake-browser.ts           browser falso em memória (popstate assíncrono, como nos browsers reais)
 scripts/                    test, completions, bench
 ```
 
@@ -66,8 +70,9 @@ scripts/                    test, completions, bench
 | Semântica de histórico (ignoreHistory, clearHistory, ciclos, exit, back entre flows) | ✅ 7 testes |
 | Engine por instância (sem singleton) | ✅ |
 | Type-check com 300 ecrãs | ✅ 1,3–1,7 s (depois da descoberta 3) |
-| Paridade com a v2 (41 cenários de caracterização) | ✅ 34 iguais ou equivalentes, 3 divergências intencionais, 4 fora do âmbito (ver abaixo) |
+| Paridade com a v2 (41 cenários de caracterização) | ✅ 37 iguais ou equivalentes, 4 divergências intencionais, 0 pendentes (ver abaixo) |
 | Overlays (v2: anotherObjects) e retoma de flows (v2: `navigateTo()` sem passo) | ✅ |
+| URL nos eventos, deep links com parâmetros, botão back do browser, scroll restoration | ✅ 15 testes (ver descoberta 5) |
 
 ### Benchmark de type-check
 
@@ -119,16 +124,36 @@ A primeira versão gerava um membro por flow × passo × tipo de evento × açã
 
 O grafo mostra as duas arestas de `pay` (`success` e `failure`), mas para percorrer um caminho é preciso um payload que leve o resolver a escolher cada uma. No spike, isso é um mapa `aresta → payload` no teste. Na lib, deve ser uma opção do `branch` (ex.: `branch(targets, resolve, { samples: { success: { ok: true }, failure: { ok: false } } })`), validada pelo `validateFlows`.
 
+### 5. URL e browser ficam fora do core, como adaptadores
+
+O engine continua sem DOM (serve React Native e testes em Node). URL e scroll são adaptadores opcionais (`FlowAdapter`), ligados pelo `FlowProvider`: `<FlowProvider adapters={[browserHistory(), scrollRestoration()]} />`. Sem adaptadores, o engine não toca no browser (U02). O URL de cada passo é calculado no core (`url.ts`, puro), por isso os eventos levam sempre `url`, mesmo sem browser (útil para page views).
+
+Política do `browserHistory` (a v2 só fazia `replaceState`, por isso o botão back do browser não navegava o flow):
+
+| Situação | Comportamento |
+|---|---|
+| Avançar para um passo novo | `pushState`: o back do browser passa a funcionar |
+| Sair de um passo `ignoreHistory`, cortar um ciclo, `clearHistory` | `replaceState`: o back do browser não volta a esse passo |
+| Back do browser (`popstate`) | `engine.back()`. Os parâmetros do passo são repostos |
+| Back do browser sem histórico no engine (ex.: depois de `clearHistory`) | O browser sai da app. Prender o utilizador num ciclo de back seria hostil |
+| Back pela UI ou `goto.exit()` | `history.go(-1)`, para manter as pilhas alinhadas |
+| Forward do browser | Não navega (o engine não tem "forward"); o URL do passo atual é reposto |
+| Deep link para um passo `entrypoint` | Abre nesse passo, com os parâmetros extraídos do URL |
+| Deep link para outro passo | Redireciona para o passo inicial desse flow |
+
+É "best effort" em casos extremos: depois de cortes de histórico, a pilha do browser pode ter entradas a mais do que o engine. O adaptador lida com isso porque cada entrada guarda um índice crescente e o URL é sempre corrigido no `popstate`. Mesmo assim, deve ser validado com testes e2e em browsers reais (Playwright) antes da versão final.
+
+A scroll restoration guarda a posição ao avançar e repõe-na ao voltar quando o ecrã está de facto montado (um componente dentro do mesmo `Suspense` chama `screenReady()`), em vez dos 300 ms fixos da v2.
+
 ## Paridade com a v2
 
 Os 41 cenários dos testes de caracterização da v2 (`src/__tests__/characterization`, branch `test/v2-characterization`) foram reescritos com a API v3 em `tests/parity.test.ts`, com os mesmos IDs.
 
 | Estado | Nº | Cenários |
 |---|---|---|
-| **Igual** | 19 | C01–C04, C06, H01–H04, H06–H08, H11, H12, X02, X03, X05, X06, E03 |
-| **Equivalente** (outra API ou nome de evento) | 15 | C08 (`effect()`), C09, C10, H05, H09, H10 (`start(..., { history / clearHistory })`), X01 (`goto`), X04 (`flow:exit`), X07 (`goto(flow)` sem passo), X09 (overlays), E01, E02, E04, E06, E07 |
-| **Diverge** (intencional) | 3 | C05: a v3 emite `action:unhandled`. C07: a v3 emite `back:empty`. Em ambos, a navegação é igual e só se acrescenta um evento. X08: o overlay funciona sem configuração extra (na v2, um anotherObject sem `name` era ignorado, o que é um bug) |
-| **Fora do âmbito** | 4 | E05, U01–U03 (URL e scroll) |
+| **Igual** | 21 | C01–C04, C06, H01–H04, H06–H08, H11, H12, X02, X03, X05, X06, E03, E05, U02 |
+| **Equivalente** (outra API ou nome de evento) | 16 | C08 (`effect()`), C09, C10, H05, H09, H10 (`start(..., { history / clearHistory })`), X01 (`goto`), X04 (`flow:exit`), X07 (`goto(flow)` sem passo), X09 (overlays), E01, E02, E04, E06, E07, U03 (scroll quando o ecrã está montado) |
+| **Diverge** (intencional) | 4 | C05: a v3 emite `action:unhandled`. C07: a v3 emite `back:empty`. Em ambos, a navegação é igual e só se acrescenta um evento. X08: o overlay funciona sem configuração extra (na v2, um anotherObject sem `name` era ignorado, o que é um bug). U01: `pushState` em vez de só `replaceState`, por isso o back do browser passa a navegar o flow |
 
 Lacunas fechadas no engine por causa da paridade:
 - `effect()` para ações só com efeito (C08);
@@ -136,7 +161,8 @@ Lacunas fechadas no engine por causa da paridade:
 - `clearHistory()` imperativo (H12);
 - `flow:exit` emitido sempre que o flow ativo muda, com `reason: 'goto' | 'back' | 'exit' | 'start'` (X04, E07);
 - retoma de flows: `goto(flow)` e `start(flow)` sem passo voltam ao último passo desse flow (X07);
-- overlays: `defineFlow({ overlays: { help } })`, com transições no mesmo `transitions()`. O dispatch identifica a origem pelo nome do ecrã (`useFlow(helpScreen)`), e o overlay tem nó próprio no grafo (`{{@help}}` no Mermaid) e entra no `validateFlows` (X08, X09).
+- overlays: `defineFlow({ overlays: { help } })`, com transições no mesmo `transitions()`. O dispatch identifica a origem pelo nome do ecrã (`useFlow(helpScreen)`), e o overlay tem nó próprio no grafo (`{{@help}}` no Mermaid) e entra no `validateFlows` (X08, X09);
+- URL nos eventos, parâmetros de URL no estado e no histórico, e os adaptadores `browserHistory` e `scrollRestoration` (E05, U01–U03).
 
 Notas:
 - **H05:** na v2, o passo atual pode aparecer no próprio histórico depois de um ciclo (`['a']` estando em `a`). Na v3 o histórico fica `[]`. A navegação observável é a mesma (o back não navega).
@@ -145,8 +171,10 @@ Notas:
 
 ## Fora do âmbito do spike
 
-- Sincronização com o URL, View Transitions, scroll restoration e `checkpoint`.
-- Render React em runtime: a camada React está só verificada em tipos.
+- View Transitions e `checkpoint`.
+- Render React em runtime: a camada React (incluindo a ligação dos adaptadores e o `screenReady`) está só verificada em tipos.
+- Testes do `browserHistory` em browsers reais: os testes usam um browser falso em memória.
+- Parâmetros de URL tipados a partir do padrão (`'pay/:orderId'` → `{ orderId: string }`): em runtime funcionam, nos tipos ainda são `Record<string, string>`.
 - Os tempos do `completions.mjs` são a frio (inclui reanalisar o ficheiro de sonda). No editor, as respostas incrementais são mais rápidas.
 
 ## Próximos passos
@@ -154,6 +182,8 @@ Notas:
 1. Incorporar as descobertas 1–4 no RFC A (feito no mesmo commit deste spike).
 2. ~~Testes de caracterização da v2 e paridade~~ (feito: ver acima).
 3. ~~Overlays e retoma de flows~~ (feito).
-4. URL e scroll restoration, para fechar os cenários pendentes E05 e U01–U03.
-5. Otimizar `ActionPayloads` (instanciações) e repetir o benchmark com 1000 ecrãs.
-6. Decidir a API de `samples` no `branch` e o formato final dos eventos (contrato público).
+4. ~~URL, browser e scroll restoration~~ (feito: paridade 41/41).
+5. Parâmetros de URL tipados a partir do padrão, e testes e2e do `browserHistory` (Playwright).
+6. Render React em runtime (jsdom ou browser) para validar a ligação dos adaptadores e o `screenReady`.
+7. Otimizar `ActionPayloads` (instanciações) e repetir o benchmark com 1000 ecrãs.
+8. Decidir a API de `samples` no `branch` e o formato final dos eventos (contrato público).

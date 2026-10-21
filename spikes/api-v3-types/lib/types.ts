@@ -70,7 +70,12 @@ export type StepsInput = { readonly [step: string]: StepInput };
  */
 export type OverlaysInput = { readonly [overlay: string]: ScreenDef<string, any> };
 
-export type HistoryEntry = { readonly flow: string; readonly step: string };
+export type HistoryEntry = {
+	readonly flow: string;
+	readonly step: string;
+	/** Parâmetros de URL do passo (ex.: `pay/:orderId`), repostos ao voltar atrás. */
+	readonly params?: Readonly<Record<string, string>>;
+};
 
 export type GotoRef<F extends string = string, S extends string = string> = {
 	readonly kind: 'goto';

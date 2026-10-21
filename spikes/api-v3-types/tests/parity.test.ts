@@ -6,11 +6,11 @@
  *   [igual]       mesmo resultado observável
  *   [equivalente] mesmo resultado com outra API/nome de evento
  *   [diverge]     resultado diferente, por decisão (o comentário diz o que a v2 faz)
- * Cenários sem equivalente no spike aparecem como skip, com o motivo.
  */
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+	browserHistory,
 	createFlowApp,
 	createFlowEngine,
 	defineFlow,
@@ -19,7 +19,9 @@ import {
 	type FlowDef,
 	type FlowEvent,
 	type GotoRef,
+	scrollRestoration,
 } from 'react-flow-app';
+import { createFakeBrowser } from './fake-browser';
 
 const loader = () => Promise.resolve({ default: null });
 const screen = <const A extends readonly string[]>(name: string, actions: A) =>
@@ -50,8 +52,6 @@ const run = (flows: readonly FlowDef[], initial: { flow: string; step?: string; 
 		history: () => engine.getSnapshot().history.map(entry => entry.step),
 	};
 };
-
-const pending = (id: string, reason: string): void => it(`${id} · ${reason}`, { skip: reason });
 
 describe('paridade · navegação básica', () => {
 	it('C01 [igual] sem initial, começa no primeiro passo declarado', () => {
@@ -406,7 +406,19 @@ describe('paridade · eventos', () => {
 		assert.deepEqual(t.events, ['step:leave(back)@f.b', 'step:enter@f.a']);
 	});
 
-	pending('E05', 'url nos eventos: sincronização com URL fora do âmbito do spike');
+	it('E05 [igual] o url do evento é /baseUrl/url-do-passo (ou o nome do passo)', () => {
+		const f = defineFlow({ name: 'f', baseUrl: '/shop/', steps: { a: { screen: a, url: 'start' }, b: { screen: b } } });
+		f.transitions({ a: { next: 'b' } });
+		const engine = createFlowEngine(createFlowApp([f]));
+		const urls: string[] = [];
+		engine.on('*', (event: FlowEvent) => {
+			if (event.type === 'step:enter' || event.type === 'action') urls.push(event.url);
+		});
+		engine.start('f' as never);
+		engine.dispatch('next');
+		// v2 (mount, dispatch, mount): ['/shop/start', '/shop/start', '/shop/b']
+		assert.deepEqual(urls, ['/shop/start', '/shop/start', '/shop/b']);
+	});
 
 	it('E06 [equivalente] listen do Provider → integrations da app (todos os flows)', () => {
 		const main = defineFlow({ name: 'main', steps: { a: { screen: a } } });
@@ -435,7 +447,45 @@ describe('paridade · eventos', () => {
 });
 
 describe('paridade · URL', () => {
-	pending('U01', 'withUrl com replaceState: fora do âmbito do spike');
-	pending('U02', 'withUrl: false: fora do âmbito do spike');
-	pending('U03', 'scrollRestoration: fora do âmbito do spike');
+	const shop = () => {
+		const f = defineFlow({ name: 'f', baseUrl: 'shop', steps: { a: { screen: a }, b: { screen: b, url: 'pay' } } });
+		f.transitions({ a: { next: 'b' } });
+		return createFlowApp([f]);
+	};
+
+	it('U01 [diverge] escreve #/baseUrl/passo, mas com pushState: o back do browser passa a funcionar (a v2 só fazia replaceState)', () => {
+		const fake = createFakeBrowser();
+		const engine = createFlowEngine(shop(), { initial: { flow: 'f' } as never });
+		browserHistory({ browser: fake.browser }).attach(engine as never);
+
+		engine.dispatch('next');
+
+		assert.equal(fake.url(), '/#/shop/pay');
+		assert.deepEqual(fake.calls, ['replace', 'push']);
+	});
+
+	it('U02 [igual] sem adaptador de URL, o engine não toca no browser', () => {
+		const fake = createFakeBrowser({ hash: '#/unchanged' });
+		const engine = createFlowEngine(shop(), { initial: { flow: 'f' } as never });
+
+		engine.dispatch('next');
+
+		assert.equal(fake.url(), '/#/unchanged');
+		assert.deepEqual(fake.calls, []);
+	});
+
+	it('U03 [equivalente] scrollRestoration repõe a posição no back, quando o ecrã está montado (a v2 esperava 300 ms fixos)', () => {
+		let scroll = 0;
+		const writes: number[] = [];
+		const adapter = scrollRestoration({ get: () => scroll, set: top => writes.push((scroll = top)) });
+		const engine = createFlowEngine(shop(), { initial: { flow: 'f' } as never });
+		adapter.attach(engine as never);
+
+		scroll = 640;
+		engine.dispatch('next');
+		engine.back();
+		adapter.screenReady?.();
+
+		assert.equal(writes[writes.length - 1], 640);
+	});
 });

@@ -172,9 +172,7 @@ import { authFlow } from './flows/auth.flow';
 import { homeFlow } from './flows/home.flow';
 
 export const flowApp = createFlowApp([checkoutFlow, authFlow, homeFlow], {
-	url: { mode: 'hash' }, // 'hash' | 'path' | false — usa replaceState/pushState + popstate
 	transitions: 'view-transition', // usa document.startViewTransition quando existir
-	scrollRestoration: true,
 });
 
 declare module 'react-flow-app' {
@@ -186,14 +184,22 @@ declare module 'react-flow-app' {
 
 ```tsx
 // App.tsx
-import { FlowProvider, useFlowEvents } from 'react-flow-app';
+import { browserHistory, FlowProvider, scrollRestoration, useFlowEvents } from 'react-flow-app';
 import { flowApp } from './app.flow';
 
 export function App() {
 	useFlowEvents('action', (e) => analytics.track(e.action, { ...e.payload, step: e.step }));
 	useFlowEvents('step:enter', (e) => analytics.page(e.meta?.title, e.url));
 
-	return <FlowProvider app={flowApp} initial={{ flow: 'checkout' }} fallback={<Spinner />} />;
+	// URL e scroll são adaptadores opcionais: o core não depende do DOM (React Native, testes em Node).
+	return (
+		<FlowProvider
+			app={flowApp}
+			initial={{ flow: 'checkout' }}
+			adapters={[browserHistory({ mode: 'hash' }), scrollRestoration()]}
+			fallback={<Spinner />}
+		/>
+	);
 }
 ```
 
@@ -347,7 +353,8 @@ Os payloads também validados em runtime (opcional, `schema: z.object(...)` em v
 | `anotherObjects` (modais) | `defineFlow({ ..., overlays: { help: helpScreen } })` + `flow.transitions({ help: { ... } })`. O overlay é um nó do grafo e entra na validação, mas não é passo (não entra no histórico). O `useFlow(helpScreen)` identifica a origem pelo nome do ecrã |
 | `navigateTo()` sem passo (retoma o flow) | `goto(flow)` / `start(flow)` sem passo: último passo desse flow, ou o inicial |
 | `listen` / `f.listen()` / `onFlowMount` | `useFlowEvents(type, cb)` + `engine.on(type, cb)` com filtro por flow |
-| `initialHistory`, `scrollRestoration`, `ignoreHistory` no dispatch | Opções de `start`/`dispatch` |
+| `initialHistory`, `ignoreHistory` no dispatch | Opções de `start`/`dispatch` |
+| `withUrl`, `scrollRestoration` | Adaptadores `browserHistory()` e `scrollRestoration()` no `FlowProvider`. O back do browser passa a navegar o flow (`pushState` + `popstate`); a v2 só fazia `replaceState` |
 | `fromFlow` + `backExit` | `goto.exit()` + evento `exit` |
 
 ## Prós

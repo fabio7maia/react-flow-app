@@ -9,7 +9,12 @@ import type { RegisteredMeta, ScreenActions } from './types';
 // `flow` e `step` são unions simples (não correlacionadas entre si); o payload
 // continua correlacionado com a ação, que é o que importa para integrações.
 
-type EventBase = { readonly navigationId: number; readonly timestamp: number };
+type EventBase = {
+	readonly navigationId: number;
+	readonly timestamp: number;
+	/** URL do passo (`/baseUrl/url`), como nos listeners da v2. Útil para page views. */
+	readonly url: string;
+};
 
 type FlowNameOf<F> = F extends FlowDef<infer N> ? N : never;
 type StepNameOfAny<F> = F extends FlowDef<string, infer S> ? keyof S & string : never;

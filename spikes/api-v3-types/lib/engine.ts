@@ -2,6 +2,7 @@ import type { FlowApp, FlowEvent, FlowEventType } from './app';
 import type { FlowDef, StepNameOf } from './flow';
 import { edgeKey, targetKey, toGraph } from './graph';
 import type { AnyTransition, HistoryEntry, StepInput } from './types';
+import { buildUrl, type FlowParams } from './url';
 
 export type FlowSnapshot = {
 	readonly flow: string | null;
@@ -10,6 +11,8 @@ export type FlowSnapshot = {
 	readonly history: readonly HistoryEntry[];
 	/** Passos que abriram flows (para `goto.exit()`). */
 	readonly callers: readonly HistoryEntry[];
+	/** Parâmetros de URL do passo atual. */
+	readonly params: FlowParams;
 };
 
 /** Opções de histórico de uma navegação imperativa (equivalentes às da v2). */
@@ -20,6 +23,8 @@ export type NavigationOptions = {
 	clearHistory?: boolean;
 	/** Substituir o histórico (v2: `history` / `initialHistory`). Strings = passos do flow de destino. */
 	history?: ReadonlyArray<string | HistoryEntry>;
+	/** Parâmetros de URL do passo de destino (ex.: `{ orderId: '42' }` para `pay/:orderId`). */
+	params?: FlowParams;
 };
 
 type Flows<A> = A extends FlowApp<infer F> ? F[number] : FlowDef;
@@ -36,9 +41,15 @@ export type FlowEngine<A extends FlowApp = FlowApp> = {
 		options?: Omit<NavigationOptions, 'ignoreHistory'>
 	): void;
 	/** `from`: nome do ecrã que fez o dispatch (para ações de overlays). O `useFlow` preenche-o. */
-	dispatch(action: string, payload?: unknown, options?: Pick<NavigationOptions, 'ignoreHistory'> & { from?: string }): void;
+	dispatch(
+		action: string,
+		payload?: unknown,
+		options?: Pick<NavigationOptions, 'ignoreHistory' | 'params'> & { from?: string }
+	): void;
 	back(): void;
 	clearHistory(): void;
+	/** URL de um passo (por omissão com os parâmetros atuais). */
+	urlOf(entry: HistoryEntry, params?: FlowParams): string;
 	/** Cobertura de transições exercidas por esta instância (para testes). */
 	coverage(): { ratio: number; covered: string[]; missing: string[] };
 };
@@ -48,9 +59,16 @@ const same = (a: HistoryEntry, b: HistoryEntry): boolean => a.flow === b.flow &&
 // eslint-disable-next-line sonarjs/cognitive-complexity
 export function createFlowEngine<A extends FlowApp>(
 	app: A,
-	options: { initial?: { flow: Flows<A>['name']; step?: string; history?: ReadonlyArray<string | HistoryEntry> } } = {}
+	options: {
+		initial?: {
+			flow: Flows<A>['name'];
+			step?: string;
+			history?: ReadonlyArray<string | HistoryEntry>;
+			params?: FlowParams;
+		};
+	} = {}
 ): FlowEngine<A> {
-	let state: FlowSnapshot = { flow: null, step: null, history: [], callers: [] };
+	let state: FlowSnapshot = { flow: null, step: null, history: [], callers: [], params: {} };
 	let navigationId = 0;
 	const subscribers = new Set<() => void>();
 	const listeners = new Map<string, Set<(event: any) => void>>();
@@ -76,7 +94,9 @@ export function createFlowEngine<A extends FlowApp>(
 	};
 
 	const emit = (event: Record<string, unknown>): void => {
-		const full = { ...event, navigationId, timestamp: Date.now() };
+		const entry = { flow: event.flow as string, step: event.step as string };
+		const url = app.getFlow(entry.flow)?.steps[entry.step] ? buildUrl(app, entry, state.params) : '';
+		const full = { ...event, navigationId, timestamp: Date.now(), url };
 		const targets: Array<(event: never) => void> = [
 			...(listeners.get(event.type as string) ?? []),
 			...(listeners.get('*') ?? []),
@@ -136,12 +156,13 @@ export function createFlowEngine<A extends FlowApp>(
 		source: 'api' | 'goto',
 		navigation: NavigationOptions = {}
 	): void => {
-		const from = current();
+		const origin = current();
+		const from = origin && { ...origin, params: state.params };
 		let history = [...state.history];
 		let callers = [...state.callers];
 
 		if (from) {
-			leave(from, target, reason);
+			leave(origin as HistoryEntry, target, reason);
 			if (!stepOf(from).ignoreHistory && !navigation.ignoreHistory) {
 				history.push(from);
 			}
@@ -165,7 +186,7 @@ export function createFlowEngine<A extends FlowApp>(
 			history = toEntries(target.flow, navigation.history);
 		}
 
-		enter(target, { history, callers }, { from, direction: 'forward', source });
+		enter(target, { history, callers, params: navigation.params ?? {} }, { from: origin, direction: 'forward', source });
 	};
 
 	const exitFlow = (): void => {
@@ -179,7 +200,11 @@ export function createFlowEngine<A extends FlowApp>(
 		leave(from, caller, 'exit');
 		const index = state.history.map(entry => same(entry, caller)).lastIndexOf(true);
 		const history = index >= 0 ? state.history.slice(0, index) : state.history;
-		enter(caller, { history, callers: state.callers.slice(0, -1) }, { from, direction: 'back', source: 'back' });
+		enter(
+			{ flow: caller.flow, step: caller.step },
+			{ history, callers: state.callers.slice(0, -1), params: caller.params ?? {} },
+			{ from, direction: 'back', source: 'back' }
+		);
 	};
 
 	const resolve = (
@@ -237,7 +262,11 @@ export function createFlowEngine<A extends FlowApp>(
 				forward(target, 'start', 'api', navigation);
 			} else {
 				const history = navigation.history ? toEntries(flow.name, navigation.history) : [];
-				enter(target, { history, callers: [] }, { from: null, direction: 'forward', source: 'initial' });
+				enter(
+					target,
+					{ history, callers: [], params: navigation.params ?? {} },
+					{ from: null, direction: 'forward', source: 'initial' }
+				);
 			}
 		},
 		dispatch(action, payload, navigation) {
@@ -286,16 +315,20 @@ export function createFlowEngine<A extends FlowApp>(
 			const callers = state.callers;
 			const last = callers[callers.length - 1];
 			enter(
-				previous,
+				{ flow: previous.flow, step: previous.step },
 				{
 					history: state.history.slice(0, -1),
 					callers: last && same(last, previous) ? callers.slice(0, -1) : callers,
+					params: previous.params ?? {},
 				},
 				{ from, direction: 'back', source: 'back' }
 			);
 		},
 		clearHistory() {
 			commit({ ...state, history: [], callers: [] });
+		},
+		urlOf(entry, params) {
+			return buildUrl(app, entry, params ?? state.params);
 		},
 		coverage() {
 			const all = [...new Set(toGraph(app).edges.map(edge => edge.key))];
@@ -309,7 +342,8 @@ export function createFlowEngine<A extends FlowApp>(
 	};
 
 	if (options.initial) {
-		engine.start(options.initial.flow, options.initial.step as never, { history: options.initial.history });
+		const { flow, step, history, params } = options.initial;
+		engine.start(flow, step as never, { history, params });
 	}
 
 	return engine;

@@ -12,6 +12,7 @@ import {
 	useSyncExternalStore,
 } from 'react';
 import type { FlowEventType, RegisteredEvent } from './app';
+import type { FlowAdapter } from './adapters';
 import { createFlowEngine, type FlowEngine, type FlowSnapshot } from './engine';
 import type { RegisteredApp, RegisteredFlowName } from './flow';
 import type { ActionName, DispatchArgs, ScreenActions, ScreenDef } from './types';
@@ -43,26 +44,52 @@ function useEngine(): FlowEngine {
 	return engine;
 }
 
-/** Cada Provider tem o seu próprio engine (sem singletons partilhados). */
+/** Corre depois de o ecrã (lazy) estar de facto montado: o Suspense só o monta com o ecrã resolvido. */
+function ScreenReady({ stepKey, onReady }: { stepKey: string; onReady: () => void }): null {
+	useEffect(onReady, [stepKey]);
+	return null;
+}
+
+/**
+ * Cada Provider tem o seu próprio engine (sem singletons partilhados).
+ * Os adaptadores (URL, scroll…) são opcionais: sem eles, o engine não toca no DOM.
+ */
 export function FlowProvider({
 	app,
 	initial,
+	adapters = [],
 	fallback = null,
 }: {
 	app: RegisteredApp;
 	initial: { flow: RegisteredFlowName; step?: string };
+	adapters?: FlowAdapter[];
 	fallback?: ReactNode;
 }) {
-	const [engine] = useState(() => createFlowEngine(app as never, { initial: initial as never }));
+	const [engine] = useState(() => {
+		// Um deep link (adaptador) tem prioridade sobre o passo inicial declarado.
+		const fromPlatform = adapters.map(adapter => adapter.initial?.(app as never)).find(Boolean);
+		return createFlowEngine(app as never, { initial: (fromPlatform ?? initial) as never });
+	});
 	const snapshot = useSyncExternalStore(engine.subscribe, engine.getSnapshot, engine.getSnapshot);
 	const screen = snapshot.flow && snapshot.step ? app.getFlow(snapshot.flow)?.steps[snapshot.step]?.screen : undefined;
 	const Screen = screen ? lazyFor(screen) : null;
+
+	useEffect(() => {
+		const detach = adapters.map(adapter => adapter.attach(engine as FlowEngine));
+		return () => detach.forEach(fn => fn());
+		// Os adaptadores ligam-se uma vez por engine.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [engine]);
 
 	return (
 		<EngineContext.Provider value={engine as FlowEngine}>
 			{Screen && (
 				<Suspense fallback={fallback}>
 					<Screen />
+					<ScreenReady
+						stepKey={`${snapshot.flow}.${snapshot.step}#${snapshot.history.length}`}
+						onReady={() => adapters.forEach(adapter => adapter.screenReady?.())}
+					/>
 				</Suspense>
 			)}
 		</EngineContext.Provider>
