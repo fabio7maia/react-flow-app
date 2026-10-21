@@ -16,15 +16,32 @@ e que mantém o comportamento da v2 (paridade com os testes de caracterização)
 
 ## Como correr
 
-Usa as dependências da raiz do repo (TypeScript 5.8, React 19, jsdom, esbuild). O único pacote próprio é o `playwright-core`, para o e2e (`npm install` nesta pasta; usa os browsers que o Playwright já tem em cache, não descarrega nenhum).
+Usa as dependências da raiz do repo (TypeScript 5.8, React 19, jsdom, esbuild). O único pacote próprio é o `playwright-core`, para o e2e (`npm install` nesta pasta; os browsers instalam-se com `npx playwright-core install chromium firefox webkit`).
 
 ```bash
 npm run typecheck      # tipos + testes de tipos
-npm test               # 107 testes em Node: engine, contrato de eventos, paridade com a v2, adaptadores, analytics, render React (jsdom)
+npm test               # 117 testes em Node: engine, contrato de eventos, paridade com a v2, adaptadores, analytics, check, render React (jsdom)
 npm run completions    # intellisense real (language service do TypeScript)
+npm run check          # protótipo de `react-flow-app check` (ver abaixo)
 npm run bench -- 50 6  # benchmark de type-check: 50 flows × 6 passos
-npm run e2e            # 7 cenários × 2 browsers reais (Chromium do Playwright + Chrome do sistema)
+npm run e2e            # 8 cenários em browsers reais (por omissão: Chromium do Playwright + Chrome do sistema)
+E2E_BROWSERS=chromium,firefox,webkit npm run e2e
 ```
+
+O CI (`.github/workflows/spike-api-v3.yml`) corre tudo isto em PRs para a branch `v3` que mexam no spike, com o e2e em Chromium, Firefox e WebKit. O resumo do `check` face à branch base aparece no sumário do job.
+
+### `check`: validação, diagrama e diff face à base
+
+```bash
+npm run check                         # valida; falha com erros ou com o snapshot desatualizado
+npm run check -- --write              # atualiza example/flows.graph.json e example/FLOWS.md
+npm run check -- --base origin/v3     # + resumo das alterações face à base, em markdown para o PR
+npm run check -- --strict             # avisos (ex.: branch sem samples) também falham
+```
+
+O snapshot do grafo (`flows.graph.json`, ordenado e sem payloads de exemplo) e o diagrama (`FLOWS.md`, que o GitHub renderiza) ficam no repo. O CI falha se estiverem desatualizados, como num lockfile, por isso o diff de qualquer PR que mude a navegação mostra a mudança no grafo. Com `--base`, o `check` compara com o snapshot da branch base (`git show`, sem compilar o código da base) e gera um resumo com:
+- passos e transições novos, removidos ou alterados;
+- um Mermaid com o que mudou em destaque (verde: novo; vermelho tracejado: removido; amarelo: passo alterado).
 
 ## Estrutura
 
@@ -36,6 +53,7 @@ lib/                        protótipo da lib ('react-flow-app' via tsconfig pat
   app.ts                    createFlowApp, contrato de eventos
   engine.ts                 motor headless (start, dispatch, back, eventos, cobertura)
   graph.ts                  toGraph, toMermaid, validateFlows, getPaths
+  check.ts                  check, diffGraphs, toMermaidDiff, diffToMarkdown, snapshot do grafo
   url.ts                    URL de cada passo (/baseUrl/url, :params tipados) e deep links (puro)
   adapters.ts               browserHistory (URL + back/forward do browser), scrollRestoration
   analytics.ts              analytics(sink) genérico + ga4() e segment() sobre o contrato de eventos
@@ -46,6 +64,7 @@ example/
   flows/<flow>.flow.ts              passos + transições
   app.flow.ts                       composição + Register
   analytics.ts                      o que vai para o analytics (page views, funis, ações opt-in)
+  flows.graph.json, FLOWS.md        snapshot do grafo e diagrama, gerados pelo check (o diff do PR mostra-os)
   App.tsx, main.tsx                 Provider + adaptadores; entrada do browser (e2e)
 tests/
   types.test-d.ts           41 asserções de tipos (27 erros esperados + 14 igualdades de tipo)
@@ -54,10 +73,11 @@ tests/
   parity.test.ts            41 cenários de paridade com a v2 (mesmos IDs da caracterização)
   adapters.test.ts          15 testes de URL, deep links, back/forward do browser e scroll
   analytics.test.ts         GA4, Segment, ações opt-in, consentimento, SDK em baixo
+  check.test.ts             diff do grafo, Mermaid com destaques, snapshot desatualizado, --strict, CLI
   react.test.tsx            9 testes de render React real (jsdom, popstate real)
   fake-browser.ts, dom.ts   browser falso em memória; DOM jsdom para o React
-e2e/browser.e2e.mjs         7 cenários em browsers reais (Playwright)
-scripts/                    test, completions, bench, e2e
+e2e/browser.e2e.mjs         8 cenários em browsers reais (Playwright)
+scripts/                    build, test, completions, check, bench, e2e
 ```
 
 ## Resultados
@@ -82,7 +102,8 @@ scripts/                    test, completions, bench, e2e
 | Overlays (v2: anotherObjects) e retoma de flows (v2: `navigateTo()` sem passo) | ✅ |
 | URL nos eventos, deep links, botão back do browser, scroll restoration | ✅ (ver descoberta 5) |
 | Render React real (lazy, Suspense, adaptadores, primeiro page view) | ✅ 9 testes; apanhou 2 bugs (ver descoberta 6) |
-| Browsers reais (Chromium + Chrome) | ✅ 14/14, incluindo code-splitting real |
+| `check`: validação, snapshot do grafo no repo, diff e diagrama face à branch base | ✅ Em CI (ver "Como correr") |
+| Browsers reais (Chromium, Firefox, WebKit, Chrome) | ✅ 29/29 + 3 saltados (um cenário só se aplica ao Firefox); o Firefox apanhou um bug (ver descoberta 10) |
 | Paridade com a v2 (41 cenários de caracterização) | ✅ 41/41: 21 iguais, 16 equivalentes, 4 divergências intencionais |
 | Type-check com 1000 ecrãs | ✅ ~4,0 s, crescimento aproximadamente linear (ver descoberta 7) |
 
@@ -217,6 +238,12 @@ Regra para a lib: nenhum tipo derivado do `Register` ao nível do módulo, fora 
 
 O analytics é um **adaptador do Provider, não uma integração da app**. As integrações são tipadas pelo próprio `createFlowApp`, e usar ali tipos do `Register` criava um ciclo (o `Register` depende do `flowApp`).
 
+### 10. O Firefox apanhou um bug que o Chromium do Playwright escondia
+
+Depois de uma compra (`clearHistory`), o back do browser deve sair da app, porque o engine já não tem para onde voltar. O adaptador fazia `history.go(-n)` para a entrada anterior à app. Quando a app é a primeira página do separador (por exemplo, um link aberto num separador novo), não existe essa entrada. O `go()` fica fora dos limites e o browser ignora-o sem erro: o URL ficava no carrinho e o ecrã na compra concluída.
+
+O Chromium do Playwright abre cada separador com um `about:blank` antes da app, por isso o problema não aparecia lá. Agora o adaptador guarda, no estado de cada entrada, quantas entradas havia antes da app no primeiro carregamento. Se não houver nenhuma, fica no passo atual e repõe o URL. O e2e cobre os dois casos: sair para uma página anterior real, em todos os browsers, e o separador novo, onde o browser o permite (Firefox).
+
 ## Paridade com a v2
 
 Os 41 cenários dos testes de caracterização da v2 (`src/__tests__/characterization`, branch `test/v2-characterization`) foram reescritos com a API v3 em `tests/parity.test.ts`, com os mesmos IDs.
@@ -235,13 +262,10 @@ Notas:
 ## Fora do âmbito do spike
 
 - View Transitions e `checkpoint`.
-- Firefox e WebKit no e2e: os builds em cache são de versões antigas do Playwright e testá-los exige descarregar novos (`npx playwright-core install firefox webkit`, cerca de 200 MB).
 - SSR completo (hidratação do estado do flow).
 - Os tempos do `completions.mjs` são a frio (inclui reanalisar o ficheiro de sonda). No editor, as respostas incrementais são mais rápidas.
 
 ## Próximos passos
 
-1. Decidir se o spike passa a protótipo da lib (pacote `packages/` ou `src/v3`) e com que estrutura de build (ESM + tipos).
-2. Firefox e WebKit no e2e, e e2e em CI.
-3. CLI `react-flow-app check`: `validateFlows` + Mermaid + diff do grafo face à branch base.
-4. Guards/middleware (bloquear ou redirecionar uma navegação) e o evento `navigation:blocked`, se forem precisos além do redirecionar num listener.
+1. Decidir se o spike passa a protótipo da lib (pacote `packages/` ou `src/v3`) e com que estrutura de build (ESM + tipos). A CLI `check` precisa de carregar o ficheiro da app em TS (jiti/tsx); no spike usa o `.out` compilado.
+2. Guards/middleware (bloquear ou redirecionar uma navegação) e o evento `navigation:blocked`, se forem precisos além do redirecionar num listener.

@@ -20,6 +20,7 @@ export type BrowserLike = {
 	location: { pathname: string; hash: string };
 	history: {
 		readonly state: unknown;
+		readonly length: number;
 		pushState(state: unknown, title: string, url: string): void;
 		replaceState(state: unknown, title: string, url: string): void;
 		go(delta: number): void;
@@ -28,7 +29,8 @@ export type BrowserLike = {
 	removeEventListener(type: 'popstate', listener: () => void): void;
 };
 
-type EntryState = { rfa: true; index: number };
+/** `before`: entradas de outros sites antes da primeira entrada da app (0 = primeira página do separador). */
+type EntryState = { rfa: true; index: number; before: number };
 
 const isOurs = (state: unknown): state is EntryState =>
 	typeof state === 'object' && state !== null && (state as EntryState).rfa === true;
@@ -37,7 +39,8 @@ const isOurs = (state: unknown): state is EntryState =>
  * URL + botão back/forward do browser.
  *
  * - avançar → `pushState`; sair de um passo `ignoreHistory`, cortar um ciclo ou `clearHistory` → `replaceState`
- * - back do browser (`popstate`) → `engine.back()`; sem histórico no engine → sai da app (não prende o utilizador)
+ * - back do browser (`popstate`) → `engine.back()`; sem histórico no engine → sai da app (não prende o utilizador),
+ *   ou, se a app for a primeira página do separador (sem para onde sair), fica no passo atual e repõe o URL
  * - back pela UI → `history.go(-1)`, para manter o browser alinhado
  * - forward do browser → não navega (o engine não tem "forward"); o URL é reposto
  */
@@ -58,6 +61,8 @@ export function browserHistory(
 		attach(engine) {
 			const b = browser();
 			let index = 0;
+			// Num carregamento novo, a app está no fim do histórico: o que está antes é de outros sites.
+			const before = isOurs(b.history.state) ? b.history.state.before ?? 0 : b.history.length - 1;
 			let ignoredPops = 0;
 			let handlingPop = false;
 			let depth = engine.getSnapshot().history.length;
@@ -68,7 +73,7 @@ export function browserHistory(
 			};
 			const write = (method: 'pushState' | 'replaceState'): void => {
 				if (method === 'pushState') index++;
-				b.history[method]({ rfa: true, index } satisfies EntryState, '', urlNow());
+				b.history[method]({ rfa: true, index, before } satisfies EntryState, '', urlNow());
 			};
 
 			if (isOurs(b.history.state)) index = b.history.state.index;
@@ -101,14 +106,19 @@ export function browserHistory(
 
 				if (state.index < index) {
 					index = state.index;
-					const before = engine.getSnapshot();
+					const snapshot = engine.getSnapshot();
 					handlingPop = true;
 					engine.back();
 					handlingPop = false;
-					if (engine.getSnapshot() === before) {
+					if (engine.getSnapshot() !== snapshot) return;
+					if (before > 0) {
 						// Nada para onde voltar no engine: deixa o browser sair da app.
 						ignoredPops++;
 						b.history.go(-(state.index + 1));
+					} else {
+						// Sem página anterior, um go() para fora da app seria ignorado (Firefox) e o URL
+						// ficava dessincronizado do ecrã. Fica no passo atual, com o URL dele.
+						write('replaceState');
 					}
 				} else {
 					// Forward do browser: sem equivalente no engine; repõe o URL do passo atual.

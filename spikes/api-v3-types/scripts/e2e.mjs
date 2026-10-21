@@ -31,6 +31,9 @@ writeFileSync(
 		'<body><div id="root"></div><script type="module" src="/main.js"></script></body></html>'
 );
 
+// Uma página de "outro site" para os testes de sair da app pelo back do browser.
+writeFileSync(join(out, 'previous.html'), '<!doctype html><html><head><meta charset="utf-8"><title>Antes</title></head><body><p>Página anterior</p></body></html>');
+
 const types = { '.html': 'text/html', '.js': 'text/javascript' };
 const server = createServer((request, response) => {
 	const path = join(out, decodeURIComponent(new URL(request.url, 'http://x').pathname));

@@ -246,7 +246,14 @@ test('flows são válidos', () => {
 });
 ```
 
-Isto pode correr também como CLI (`npx react-flow-app check src/app.flow.ts`) em CI. Produz o Mermaid para colar no PR, ou um diff do grafo entre a branch e a `main`.
+Isto também corre como CLI em CI (`npx react-flow-app check src/app.flow.ts`). O protótipo está no spike (`npm run check`):
+
+- **Snapshot do grafo no repo.** `flows.graph.json` (ordenado, sem payloads de exemplo) e `FLOWS.md` (Mermaid, que o GitHub renderiza). O CI falha se estiverem desatualizados, como num lockfile, por isso o diff de um PR que muda a navegação mostra a mudança no grafo.
+- **Diff face à branch base.** `--base origin/v3` lê o snapshot da base com `git show`, sem compilar o código da base. Gera um resumo em markdown para o PR, com:
+  - passos novos, removidos ou alterados (ecrã, initial, entrypoint, ações);
+  - transições novas e removidas;
+  - um Mermaid com o que mudou em destaque.
+- **`--strict`.** Os avisos também falham (ex.: `branch` sem `samples`, que deixa os testes gerados sem caminho).
 
 ### 6. Testes
 

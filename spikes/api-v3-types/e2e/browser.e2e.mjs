@@ -2,17 +2,27 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { after, before, describe, it } from 'node:test';
-import { chromium } from 'playwright-core';
+import { chromium, firefox, webkit } from 'playwright-core';
 
 const BASE = process.env.BASE_URL;
 const SYSTEM_CHROME = '/usr/bin/google-chrome';
 
-const targets = [
-	{ name: 'Chromium (Playwright)', launch: () => chromium.launch() },
-	...(existsSync(SYSTEM_CHROME)
-		? [{ name: 'Google Chrome (sistema)', launch: () => chromium.launch({ executablePath: SYSTEM_CHROME }) }]
-		: []),
+const available = {
+	chromium: { name: 'Chromium (Playwright)', launch: () => chromium.launch() },
+	firefox: { name: 'Firefox (Playwright)', launch: () => firefox.launch() },
+	webkit: { name: 'WebKit (Playwright)', launch: () => webkit.launch() },
+	chrome: { name: 'Google Chrome (sistema)', launch: () => chromium.launch({ executablePath: SYSTEM_CHROME }) },
+};
+
+// E2E_BROWSERS=chromium,firefox,webkit (CI). Por omissão: Chromium + o Chrome do sistema, se existir.
+const selected = process.env.E2E_BROWSERS?.split(',').map(name => name.trim()) ?? [
+	'chromium',
+	...(existsSync(SYSTEM_CHROME) ? ['chrome'] : []),
 ];
+const targets = selected.map(name => {
+	if (!available[name]) throw new Error(`Browser desconhecido em E2E_BROWSERS: ${name}`);
+	return available[name];
+});
 
 const heading = page => page.textContent('h1');
 const waitHeading = (page, text) =>
@@ -40,8 +50,10 @@ for (const target of targets) {
 			await browser.close();
 		});
 
-		const open = async (hash = '') => {
+		/** `fromPrevious`: abre primeiro outra página, para haver para onde sair com o back. */
+		const open = async (hash = '', { fromPrevious = false } = {}) => {
 			const page = await browser.newPage();
+			if (fromPrevious) await page.goto(`${BASE}/previous.html`);
 			const scripts = [];
 			page.on('request', request => {
 				if (request.resourceType() === 'script') scripts.push(new URL(request.url()).pathname);
@@ -99,13 +111,31 @@ for (const target of targets) {
 		});
 
 		it('depois de clearHistory (compra concluída), o back do browser sai da app', async () => {
-			const { page } = await open();
+			const { page } = await open('', { fromPrevious: true });
 			await click(page, 'Ver carrinho', 'Carrinho');
 			await click(page, 'Finalizar compra', 'Pagamento da encomenda 42');
 			await click(page, 'Pagar', 'Compra concluída');
 
 			await page.goBack();
-			await page.waitForURL('about:blank', { timeout: 5000 });
+			await page.waitForURL(`${BASE}/previous.html`, { timeout: 5000 });
+			await page.close();
+		});
+
+		it('app como primeira página do separador: depois de clearHistory, o back fica no passo atual com o URL certo', async t => {
+			const { page } = await open();
+			if ((await page.evaluate(() => history.length)) > 1) {
+				// O Chromium do Playwright abre o separador com um about:blank antes da app.
+				t.skip('este browser tem uma entrada antes da app');
+				await page.close();
+				return;
+			}
+			await click(page, 'Ver carrinho', 'Carrinho');
+			await click(page, 'Finalizar compra', 'Pagamento da encomenda 42');
+			await click(page, 'Pagar', 'Compra concluída');
+
+			await page.goBack();
+			await page.waitForFunction(() => location.hash === '#/checkout/success', null, { timeout: 5000 });
+			assert.equal(await heading(page), 'Compra concluída');
 			await page.close();
 		});
 

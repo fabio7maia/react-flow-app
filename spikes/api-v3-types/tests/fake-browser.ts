@@ -6,8 +6,12 @@ type Entry = { state: unknown; pathname: string; hash: string };
  * Browser falso em memória para testar o adaptador sem DOM. Imita o essencial:
  * pilha de entradas, push/replace síncronos e `go()` assíncrono com `popstate`
  * (como nos browsers reais). Recuar para antes da primeira entrada = sair da app.
+ *
+ * `previousPages`: entradas de outros sites antes da app (por omissão 1). Com 0, a app é a
+ * primeira página do separador e um `go()` para antes dela é ignorado, como no Firefox.
  */
-export function createFakeBrowser(initial: { pathname?: string; hash?: string } = {}) {
+export function createFakeBrowser(initial: { pathname?: string; hash?: string; previousPages?: number } = {}) {
+	const previousPages = initial.previousPages ?? 1;
 	const entries: Entry[] = [{ state: null, pathname: initial.pathname ?? '/', hash: initial.hash ?? '' }];
 	let index = 0;
 	let left = false;
@@ -34,6 +38,9 @@ export function createFakeBrowser(initial: { pathname?: string; hash?: string } 
 			get state() {
 				return entries[index].state;
 			},
+			get length() {
+				return previousPages + entries.length;
+			},
 			pushState(state, _title, url) {
 				calls.push('push');
 				entries.splice(index + 1);
@@ -47,6 +54,8 @@ export function createFakeBrowser(initial: { pathname?: string; hash?: string } 
 			go(delta) {
 				const target = index + delta;
 				queueMicrotask(() => {
+					// Fora dos limites: os browsers ignoram (spec do History API).
+					if (target < -previousPages) return;
 					if (target < 0) {
 						left = true;
 						return;

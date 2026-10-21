@@ -7,7 +7,8 @@
 		"test": "node scripts/test.mjs",
 		"completions": "node scripts/completions.mjs",
 		"bench": "node scripts/bench.mjs",
-		"e2e": "node scripts/e2e.mjs"
+		"e2e": "node scripts/e2e.mjs",
+		"check": "node scripts/check.mjs"
 	},
 	"devDependencies": {
 		"playwright-core": "1.64.1"

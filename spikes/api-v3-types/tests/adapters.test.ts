@@ -144,6 +144,20 @@ describe('browserHistory', () => {
 		assert.equal(fake.hasLeft(), true);
 	});
 
+	it('app aberta num separador novo (sem página anterior): o back fica no passo atual e repõe o URL', async () => {
+		// Apanhado pelo e2e em Firefox: o go() para fora da app é ignorado e o URL ficava no carrinho.
+		const fake = createFakeBrowser({ previousPages: 0 });
+		const { engine, at } = setup(browserHistory({ browser: fake.browser }), { flow: 'checkout' });
+		engine.dispatch('checkout', { loggedIn: true });
+		engine.dispatch('pay', { ok: true });
+
+		await fake.back();
+
+		assert.equal(at(), 'checkout.success');
+		assert.equal(fake.hasLeft(), false);
+		assert.equal(fake.url(), '/#/checkout/success');
+	});
+
 	it('o forward do browser não navega e repõe o URL do passo atual', async () => {
 		const fake = createFakeBrowser();
 		const { engine, at } = setup(browserHistory({ browser: fake.browser }), { flow: 'home' });
