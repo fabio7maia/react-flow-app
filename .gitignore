@@ -41,3 +41,6 @@ test-report.xml
 !/src/packages/core/src/components/**/*
 
 /docs
+# spikes
+spikes/**/.out
+spikes/**/.bench

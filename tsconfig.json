@@ -12,5 +12,5 @@
 		"jsx": "react",
 		"typeRoots": ["./node_modules/@types", "./src/custom-typings"]
 	},
-	"exclude": ["dist", "node_modules"]
+	"exclude": ["dist", "node_modules", "spikes"]
 }

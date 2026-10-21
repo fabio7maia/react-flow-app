@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+		"strict": true,
+		"target": "es2022",
+		"lib": ["es2022", "dom"],
+		"module": "commonjs",
+		"moduleResolution": "node10",
+		"jsx": "react-jsx",
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"outDir": ".out",
+		"rootDir": ".",
+		"types": ["node", "react"],
+		"paths": { "react-flow-app": ["./lib/index.ts"] }
+	},
+	"include": ["lib", "example", "tests"]
+}

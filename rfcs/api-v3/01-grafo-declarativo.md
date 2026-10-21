@@ -51,7 +51,9 @@ src/
 
 1. **A definição do ecrã (`*.screen.ts`) fica separada do componente.** O flow importa a definição (dados + `import()`), não o componente. Assim os flows conhecem as ações sem carregar código de UI, e o code-splitting mantém-se.
 2. **O ecrã declara o que o utilizador pode fazer; o flow declara para onde isso leva.** Ações, payloads e metadados vivem no ecrã. Passos, regras de histórico e transições vivem no flow. O mesmo ecrã pode ser usado em vários flows, ou duas vezes no mesmo flow com nomes de passo diferentes.
-3. **Os saltos entre flows referem o destino por nome** (`goto('auth', 'login')`), sem importar o outro flow. Isto evita imports circulares (o auth pode voltar ao checkout). A validação de tipos é feita contra o registo global (`Register`) declarado na composição. A viabilidade desta regra (risco de referência circular de tipos, TS7022) está a ser validada no spike `spikes/api-v3-types`.
+3. **Os saltos entre flows referem o destino por nome** (`goto('auth', 'login')`), sem importar o outro flow. Isto evita imports circulares (o auth pode voltar ao checkout). A validação de tipos é feita contra o registo global (`Register`) declarado na composição.
+4. **As transições são declaradas num statement separado do `defineFlow`** (`checkoutFlow.transitions({...})`). O [spike](../../spikes/api-v3-types/README.md) mostrou que, dentro do `defineFlow`, o `goto` validado pelo `Register` cria uma referência circular de tipos (TS7022). Separadas, o tipo do flow depende só dos `steps` e o ciclo desaparece. É a mesma forma da v2 (`f0.step('x')({...})`).
+5. **O `loader` não exige `ComponentType` no tipo** (`default: unknown`, verificado em runtime). Exigir `ComponentType` obriga o TS a inferir o retorno do componente, que usa `useFlow(screen)`, e isso volta a criar um ciclo.
 
 ### 1. Ecrãs (um ficheiro por ecrã)
 
@@ -118,22 +120,24 @@ export const checkoutFlow = defineFlow({
 		success: { screen: successScreen, clearHistory: true },
 		failure: { screen: failureScreen, ignoreHistory: true },
 	},
-	transitions: {
-		cart: {
-			// Ramo declarado: o diagrama mostra as 2 arestas sem executar nada.
-			// O payload `p` é inferido da ação `checkout` do cartScreen.
-			checkout: branch(['payment', goto('auth', 'login')], (_, p) =>
-				p.loggedIn ? 'payment' : goto('auth', 'login'),
-			),
-		},
-		payment: {
-			pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure')),
-			cancel: 'cart',
-		},
-		failure: { retry: 'payment' },
-		success: { finish: goto('home', 'dashboard') },
-		//                   ^ erro de tipo se 'home' ou 'dashboard' não existirem no registo
+});
+
+// Statement separado: evita a referência circular de tipos com o Register (ver regra 4).
+checkoutFlow.transitions({
+	cart: {
+		// Ramo declarado: o diagrama mostra as 2 arestas sem executar nada.
+		// O payload `p` é inferido da ação `checkout` do cartScreen.
+		checkout: branch(['payment', goto('auth', 'login')], (_, p) =>
+			p.loggedIn ? 'payment' : goto('auth', 'login'),
+		),
 	},
+	payment: {
+		pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure')),
+		cancel: 'cart',
+	},
+	failure: { retry: 'payment' },
+	success: { finish: goto('home', 'dashboard') },
+	//                   ^ erro de tipo se 'home' ou 'dashboard' não existirem no registo
 });
 ```
 
@@ -143,9 +147,10 @@ export const authFlow = defineFlow({
 	name: 'auth',
 	baseUrl: 'auth',
 	steps: { login: { screen: loginScreen, initial: true } },
-	transitions: {
-		login: { loggedIn: goto.exit() }, // volta ao flow de origem (equivalente ao fromFlow da v2)
-	},
+});
+
+authFlow.transitions({
+	login: { loggedIn: goto.exit() }, // volta ao flow de origem (equivalente ao fromFlow da v2)
 });
 ```
 
@@ -153,7 +158,7 @@ Garantias de tipos:
 
 - `steps.<passo>.screen` liga o passo a um ecrã. O nome do passo não tem de ser igual ao nome do ecrã.
 - `transitions.<passo>` só aceita passos declarados em `steps` desse flow.
-- As chaves de cada passo são as ações do ecrã ligado a esse passo.
+- As chaves de cada passo são as ações do ecrã ligado a esse passo. Ações sem transição não são erro de compilação (as transições estão num statement à parte), mas são detetadas pelo `validateFlows`.
 - Os alvos são `'passo-do-flow' | goto(flow, passo) | goto.exit()`, todos tipados.
 - O `branch(targets, resolver)` obriga o resolver a devolver um dos `targets` e infere o payload da ação.
 
@@ -325,7 +330,10 @@ A partir daí, sem genéricos manuais:
 | `dispatch('pay', …)` | só `pay` ou `cancel`; o payload de `pay` é obrigatório e é `{ ok: boolean }` |
 | `transitions.payment.pay` | só passos do flow, `goto(flow, passo)` válidos, ou `branch` com alvos válidos |
 | `useFlowEvents('step:enter', e => …)` | `e.flow`, `e.step` e `e.meta` como unions/tipos concretos |
+| `useFlowEvents('action', e => …)` | `e.action === 'pay'` estreita `e.payload` para `{ ok: boolean }` |
 | `start({ flow, step })` | `step` restringido aos passos desse `flow` |
+
+Por razões de performance do type-check, a union de eventos tem um membro por nome de ação, e não por flow × passo × ação. O payload fica correlacionado com a ação, mas `e.flow` e `e.step` não se estreitam um ao outro. Com o produto cartesiano, o check de uma app com 300 ecrãs passava de 1,3 s para 8,6 s (ver o [spike](../../spikes/api-v3-types/README.md#3-a-union-de-eventos-não-pode-ser-um-produto-cartesiano)).
 
 Os payloads também validados em runtime (opcional, `schema: z.object(...)` em vez de `payload<T>()`) tornam-se úteis para analytics: só eventos com payload válido chegam aos terceiros.
 
@@ -363,7 +371,8 @@ Os payloads também validados em runtime (opcional, `schema: z.object(...)` em v
 | Risco | Mitigação |
 |---|---|
 | Semântica de histórico divergir da v2 (como aconteceu no PR #63) | Escrever primeiro testes de caracterização contra a `main` e corrê-los no core novo |
-| Tipos lentos | Benchmarks `tsc --extendedDiagnostics` num fixture com 50 flows / 300 ecrãs |
+| Tipos lentos | Medido no spike: 1,3 s de check com 300 ecrãs e 2,5 s com 600, crescimento linear. O benchmark (`spikes/api-v3-types/scripts/bench.mjs`) deve correr em CI |
+| Referências circulares de tipos | Regras 4 e 5 (transições separadas, `loader` sem `ComponentType`), cobertas por testes de tipos |
 | Scope creep (guards, paralelismo, async) | Fora de scope explícito. Se for preciso, ver abordagem B |
 
 ## Esforço estimado
