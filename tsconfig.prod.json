@@ -13,6 +13,7 @@
 		"typeRoots": ["./node_modules/@types", "./src/custom-typings"]
 	},
 	"exclude": [
+		"spikes",
 		"dist",
 		"**/__tests__/**",
 		"**/__stories__/**",

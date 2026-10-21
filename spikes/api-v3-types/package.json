@@ -1,0 +1,16 @@
+{
+	"name": "react-flow-app-spike-api-v3",
+	"private": true,
+	"description": "Spike da API v3 (descartável). Usa as dependências da raiz do repo; aqui só o que é exclusivo do spike.",
+	"scripts": {
+		"typecheck": "../../node_modules/.bin/tsc -p tsconfig.json --noEmit",
+		"test": "node scripts/test.mjs",
+		"completions": "node scripts/completions.mjs",
+		"bench": "node scripts/bench.mjs",
+		"e2e": "node scripts/e2e.mjs",
+		"check": "node scripts/check.mjs"
+	},
+	"devDependencies": {
+		"playwright-core": "1.64.1"
+	}
+}

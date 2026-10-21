@@ -1,0 +1,74 @@
+name: Spike API v3
+on:
+    pull_request:
+        branches:
+            - v3
+        paths:
+            - 'spikes/api-v3-types/**'
+            - '.github/workflows/spike-api-v3.yml'
+    workflow_dispatch:
+permissions:
+    contents: read
+concurrency:
+    group: spike-api-v3-${{ github.ref }}
+    cancel-in-progress: true
+defaults:
+    run:
+        working-directory: spikes/api-v3-types
+jobs:
+    checks:
+        name: Tipos, testes, intellisense e flows
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  # O check compara o snapshot do grafo com o da branch base (git show).
+                  fetch-depth: 0
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+                  cache: yarn
+            - name: Dependências da raiz (TypeScript, React, jsdom, esbuild)
+              working-directory: .
+              run: yarn install --frozen-lockfile
+            - name: Dependências do spike
+              run: npm ci
+            - name: Tipos e testes de tipos
+              run: npm run typecheck
+            - name: Testes (engine, contrato de eventos, paridade, adaptadores, analytics, check, React)
+              run: npm test
+            - name: Intellisense
+              run: npm run completions
+            - name: Flows (validação, snapshot e diff face à base)
+              run: npm run check -- --no-build --base origin/${{ github.base_ref || 'v3' }} --report flows-report.md
+            - name: Resumo dos flows
+              if: always()
+              run: if [ -f flows-report.md ]; then cat flows-report.md >> "$GITHUB_STEP_SUMMARY"; fi
+    e2e:
+        name: E2E (${{ matrix.browser }})
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                browser: [chromium, firefox, webkit]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+                  cache: yarn
+            - name: Dependências da raiz
+              working-directory: .
+              run: yarn install --frozen-lockfile
+            - name: Dependências do spike
+              run: npm ci
+            - name: Browser
+              run: npx playwright-core install --with-deps ${{ matrix.browser }}
+            - name: E2E
+              run: npm run e2e
+              env:
+                  E2E_BROWSERS: ${{ matrix.browser }}
