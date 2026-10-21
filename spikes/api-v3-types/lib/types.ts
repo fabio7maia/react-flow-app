@@ -38,10 +38,18 @@ export type ScreenActions<S> = S extends ScreenDef<string, infer A> ? ActionMap<
 
 export type ActionName<S> = keyof ScreenActions<S> & string;
 
+/** Opções de navegação de um dispatch (v2: opções do dispatch). */
+export type DispatchOptions = {
+	/** Não guardar o passo atual no histórico. */
+	ignoreHistory?: boolean;
+	/** Parâmetros de URL do passo de destino. */
+	params?: Readonly<Record<string, string>>;
+};
+
 /** Payload opcional quando a ação não tem payload, obrigatório caso contrário. */
 export type DispatchArgs<M, K extends keyof M> = undefined extends M[K]
-	? [action: K, payload?: M[K]]
-	: [action: K, payload: M[K]];
+	? [action: K, payload?: M[K], options?: DispatchOptions]
+	: [action: K, payload: M[K], options?: DispatchOptions];
 
 // ─── Passos e transições ──────────────────────────────────────────────────────
 

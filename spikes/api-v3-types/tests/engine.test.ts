@@ -46,6 +46,18 @@ describe('contrato de eventos', () => {
 		]);
 	});
 
+	it('deferStartEvents retém os eventos do arranque até releaseStartEvents()', () => {
+		const engine = createFlowEngine(flowApp, { initial: { flow: 'home' }, deferStartEvents: true });
+		assert.equal(at(engine), 'home.dashboard');
+		const events = record(engine);
+		assert.deepEqual(events, []);
+
+		engine.releaseStartEvents();
+		engine.releaseStartEvents();
+
+		assert.deepEqual(events, ['flow:start@home.dashboard#1', 'step:enter@home.dashboard#1']);
+	});
+
 	it('emite action:unhandled para ações sem transição', () => {
 		const engine = createFlowEngine(flowApp, { initial: { flow: 'checkout' } });
 		const events = record(engine);

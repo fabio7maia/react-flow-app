@@ -60,16 +60,19 @@ export function FlowProvider({
 	initial,
 	adapters = [],
 	fallback = null,
+	children,
 }: {
 	app: RegisteredApp;
 	initial: { flow: RegisteredFlowName; step?: string };
 	adapters?: FlowAdapter[];
 	fallback?: ReactNode;
+	/** Renderizado dentro do contexto do flow, depois do ecrã (ex.: analytics, layout). */
+	children?: ReactNode;
 }) {
 	const [engine] = useState(() => {
 		// Um deep link (adaptador) tem prioridade sobre o passo inicial declarado.
 		const fromPlatform = adapters.map(adapter => adapter.initial?.(app as never)).find(Boolean);
-		return createFlowEngine(app as never, { initial: (fromPlatform ?? initial) as never });
+		return createFlowEngine(app as never, { initial: (fromPlatform ?? initial) as never, deferStartEvents: true });
 	});
 	const snapshot = useSyncExternalStore(engine.subscribe, engine.getSnapshot, engine.getSnapshot);
 	const screen = snapshot.flow && snapshot.step ? app.getFlow(snapshot.flow)?.steps[snapshot.step]?.screen : undefined;
@@ -77,6 +80,8 @@ export function FlowProvider({
 
 	useEffect(() => {
 		const detach = adapters.map(adapter => adapter.attach(engine as FlowEngine));
+		// Os efeitos dos filhos (ex.: useFlowEvents) já correram: agora ninguém perde o arranque.
+		engine.releaseStartEvents();
 		return () => detach.forEach(fn => fn());
 		// Os adaptadores ligam-se uma vez por engine.
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,6 +98,7 @@ export function FlowProvider({
 					/>
 				</Suspense>
 			)}
+			{children}
 		</EngineContext.Provider>
 	);
 }
@@ -120,8 +126,8 @@ export function useFlow<S extends ScreenDef>(screen: S) {
 	const canGoBack = useFlowSelector(snapshot => snapshot.history.length > 0);
 
 	return {
-		dispatch: <K extends ActionName<S>>(...[action, payload]: DispatchArgs<ScreenActions<S>, K>): void =>
-			engine.dispatch(action, payload, { from: screen.name }),
+		dispatch: <K extends ActionName<S>>(...[action, payload, options]: DispatchArgs<ScreenActions<S>, K>): void =>
+			engine.dispatch(action, payload, { ...options, from: screen.name }),
 		back: (): void => engine.back(),
 		canGoBack,
 	};

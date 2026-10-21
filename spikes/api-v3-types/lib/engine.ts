@@ -56,6 +56,8 @@ export type FlowEngine<A extends FlowApp = FlowApp> = {
 		entry: { flow: N; step: S },
 		params?: StepParams<Extract<Flows<A>, { name: N }>, S>
 	): string;
+	/** Emite os eventos do arranque retidos com `deferStartEvents` (ver o FlowProvider). */
+	releaseStartEvents(): void;
 	/** Cobertura de transições exercidas por esta instância (para testes). */
 	coverage(): { ratio: number; covered: string[]; missing: string[] };
 };
@@ -72,6 +74,12 @@ export function createFlowEngine<A extends FlowApp>(
 			history?: ReadonlyArray<string | HistoryEntry>;
 			params?: FlowParams;
 		};
+		/**
+		 * Retém os eventos do arranque até `releaseStartEvents()`. O estado inicial fica
+		 * disponível logo (primeiro render síncrono), mas os listeners registados nos efeitos
+		 * dos componentes (ex.: analytics) já não perdem o primeiro `step:enter`.
+		 */
+		deferStartEvents?: boolean;
 	} = {}
 ): FlowEngine<A> {
 	let state: FlowSnapshot = { flow: null, step: null, history: [], callers: [], params: {} };
@@ -79,6 +87,7 @@ export function createFlowEngine<A extends FlowApp>(
 	const subscribers = new Set<() => void>();
 	const listeners = new Map<string, Set<(event: any) => void>>();
 	const traversed = new Set<string>();
+	let held: Array<Record<string, unknown>> | null = options.deferStartEvents ? [] : null;
 	/** Último passo de cada flow, para retomar com `goto(flow)` / `start(flow)` sem passo (v2: X07). */
 	const lastStep = new Map<string, string>();
 
@@ -103,8 +112,16 @@ export function createFlowEngine<A extends FlowApp>(
 		const entry = { flow: event.flow as string, step: event.step as string };
 		const url = app.getFlow(entry.flow)?.steps[entry.step] ? buildUrl(app, entry, state.params) : '';
 		const full = { ...event, navigationId, timestamp: Date.now(), url };
+		if (held) {
+			held.push(full);
+			return;
+		}
+		deliver(full);
+	};
+
+	const deliver = (full: Record<string, unknown>): void => {
 		const targets: Array<(event: never) => void> = [
-			...(listeners.get(event.type as string) ?? []),
+			...(listeners.get(full.type as string) ?? []),
 			...(listeners.get('*') ?? []),
 			...(app.options.integrations ?? []),
 		];
@@ -332,6 +349,11 @@ export function createFlowEngine<A extends FlowApp>(
 		},
 		clearHistory() {
 			commit({ ...state, history: [], callers: [] });
+		},
+		releaseStartEvents() {
+			const queue = held ?? [];
+			held = null;
+			queue.forEach(deliver);
 		},
 		urlOf(entry, params) {
 			return buildUrl(app, entry, (params as FlowParams | undefined) ?? state.params);
