@@ -19,7 +19,7 @@ export type GraphEdge = {
 	from: string;
 	to: string;
 	action: string;
-	kind: 'direct' | 'branch' | 'cross-flow' | 'exit';
+	kind: 'direct' | 'branch' | 'cross-flow' | 'exit' | 'effect';
 };
 
 export type FlowGraph = { nodes: GraphNode[]; edges: GraphEdge[] };
@@ -42,6 +42,7 @@ export const targetKey = (target: AnyTransition): string => {
 	if (typeof target === 'string') return target;
 	if (target.kind === 'goto') return `${target.flow}.${target.step}`;
 	if (target.kind === 'exit') return 'exit';
+	if (target.kind === 'effect') return 'effect';
 	return 'branch';
 };
 
@@ -86,6 +87,8 @@ export function toGraph(app: FlowApp): FlowGraph {
 						edges.push({ id: key, key, from, to: nodeId(target.flow, target.step), action, kind: 'cross-flow' });
 					} else if (target.kind === 'exit') {
 						exits.push({ from, flow: flow.name, action, key });
+					} else if (target.kind === 'effect') {
+						edges.push({ id: key, key, from, to: from, action, kind: 'effect' });
 					}
 				}
 			}
@@ -123,7 +126,7 @@ export function toMermaid(graph: FlowGraph, direction: 'LR' | 'TB' = 'LR'): stri
 
 	for (const edge of graph.edges) {
 		const arrow = edge.kind === 'cross-flow' || edge.kind === 'exit' ? '-.->' : '-->';
-		const label = edge.kind === 'exit' ? `${edge.action} ↩` : edge.action;
+		const label = edge.kind === 'exit' ? `${edge.action} ↩` : edge.kind === 'effect' ? `${edge.action} ⚙` : edge.action;
 		lines.push(`  ${id(edge.from)} ${arrow}|${label}| ${id(edge.to)}`);
 	}
 

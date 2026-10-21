@@ -86,9 +86,15 @@ export type BranchRef<T = unknown, P = unknown> = {
 	readonly resolve: (ctx: BranchContext, payload: P) => T;
 };
 
+/** Ação só com efeito (sem navegação). Equivalente à função sem retorno da v2. */
+export type EffectRef<P = unknown> = {
+	readonly kind: 'effect';
+	readonly run: (ctx: BranchContext, payload: P) => void;
+};
+
 export type LocalTarget<SN extends string> = SN | GotoRef | ExitRef;
 
-export type Transition<SN extends string, P> = LocalTarget<SN> | BranchRef<LocalTarget<SN>, P>;
+export type Transition<SN extends string, P> = LocalTarget<SN> | BranchRef<LocalTarget<SN>, P> | EffectRef<P>;
 
 /** Para cada passo, as ações do ecrã ligado a esse passo → destino. */
 export type TransitionsFor<S extends StepsInput> = {
@@ -97,4 +103,4 @@ export type TransitionsFor<S extends StepsInput> = {
 	};
 };
 
-export type AnyTransition = string | GotoRef | ExitRef | BranchRef<unknown, any>;
+export type AnyTransition = string | GotoRef | ExitRef | BranchRef<unknown, any> | EffectRef<any>;

@@ -2,6 +2,7 @@
 declare module 'node:test' {
 	export function describe(name: string, fn: () => void): void;
 	export function it(name: string, fn: () => void | Promise<void>): void;
+	export function it(name: string, options: { skip?: string | boolean }, fn?: () => void): void;
 	export const mock: {
 		method<T extends object, K extends keyof T>(
 			object: T,

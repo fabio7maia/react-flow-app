@@ -4,6 +4,7 @@ import type {
 	AnyTransition,
 	BranchContext,
 	BranchRef,
+	EffectRef,
 	ExitRef,
 	GotoRef,
 	StepsInput,
@@ -78,6 +79,11 @@ export const goto = Object.assign(gotoFn, {
 	/** Volta ao passo que abriu o flow atual (equivalente ao `fromFlow` da v2). */
 	exit: (): ExitRef => ({ kind: 'exit' }),
 });
+
+/** Ação só com efeito (sem navegação): analytics, abrir um link externo, etc. */
+export function effect<P>(run: (ctx: BranchContext, payload: P) => void): EffectRef<P> {
+	return { kind: 'effect', run };
+}
 
 /**
  * Transição condicional com destinos declarados: o diagrama mostra todos os

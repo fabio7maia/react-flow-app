@@ -42,7 +42,7 @@ const probes = [
 	{
 		name: "useFlowEvents('|') sugere os tipos de evento",
 		code: "useFlowEvents('|', () => {});",
-		expected: ['*', 'action', 'action:unhandled', 'flow:exit', 'flow:start', 'step:enter', 'step:leave'],
+		expected: ['*', 'action', 'action:unhandled', 'back:empty', 'flow:exit', 'flow:start', 'step:enter', 'step:leave'],
 	},
 	{
 		name: 'evento action: e.action sugere todas as ações de todos os flows',

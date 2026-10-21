@@ -100,7 +100,7 @@ describe('histórico (semântica da v2)', () => {
 		assert.equal(at(engine), 'checkout.payment');
 	});
 
-	it('clearHistory: back sem histórico emite flow:exit e não navega', () => {
+	it('clearHistory: back sem histórico emite back:empty e não navega', () => {
 		const engine = createFlowEngine(flowApp, { initial: { flow: 'checkout' } });
 		engine.dispatch('checkout', { loggedIn: true });
 		engine.dispatch('pay', { ok: true });
@@ -109,7 +109,7 @@ describe('histórico (semântica da v2)', () => {
 		engine.back();
 
 		assert.equal(at(engine), 'checkout.success');
-		assert.deepEqual(events, ['flow:exit@checkout.success#4']);
+		assert.deepEqual(events, ['back:empty@checkout.success#4']);
 	});
 
 	it('sem allowCyclicHistory, voltar a um passo já visitado corta o ciclo', () => {

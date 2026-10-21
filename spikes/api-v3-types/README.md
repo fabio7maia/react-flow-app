@@ -43,6 +43,7 @@ example/
 tests/
   types.test-d.ts           24 asserções de tipos (16 erros esperados + 8 igualdades de tipo)
   engine.test.ts            21 testes de runtime
+  parity.test.ts            41 cenários de paridade com a v2 (mesmos IDs da caracterização)
 scripts/                    test, completions, bench
 ```
 
@@ -64,7 +65,8 @@ scripts/                    test, completions, bench
 | Testes gerados por caminho + relatório de cobertura de transições | ✅ (ver descoberta 4) |
 | Semântica de histórico (ignoreHistory, clearHistory, ciclos, exit, back entre flows) | ✅ 7 testes |
 | Engine por instância (sem singleton) | ✅ |
-| Type-check com 300 ecrãs | ✅ 1,3 s (depois da descoberta 3) |
+| Type-check com 300 ecrãs | ✅ 1,3–1,7 s (depois da descoberta 3) |
+| Paridade com a v2 (41 cenários de caracterização) | ✅ 32 iguais ou equivalentes, 2 divergências intencionais, 7 fora do âmbito (ver abaixo) |
 
 ### Benchmark de type-check
 
@@ -73,10 +75,10 @@ Gerado por `scripts/bench.mjs`: um ficheiro por ecrã, por componente e por flow
 | Ecrãs | Ficheiros | Check time | Memória | Instanciações |
 |---|---|---|---|---|
 | 60 | 132 | 0,46 s | 107 MB | 63k |
-| 300 | 652 | 1,30 s | 158 MB | 631k |
-| 600 | 1302 | 2,46 s | 222 MB | 2,15M |
+| 300 | 652 | 1,3–1,7 s | 158 MB | 648k |
+| 600 | 1302 | 2,5–2,8 s | 222 MB | 2,18M |
 
-O tempo cresce de forma aproximadamente linear. As instanciações crescem mais depressa (provavelmente por causa do `Extract` por ação em `ActionPayloads`); é um ponto a otimizar, mas não bloqueia.
+Os intervalos vêm de várias execuções na mesma máquina. O tempo cresce de forma aproximadamente linear. As instanciações crescem mais depressa (provavelmente por causa do `Extract` por ação em `ActionPayloads`); é um ponto a otimizar, mas não bloqueia.
 
 ## Descobertas que mudam o desenho do RFC
 
@@ -116,16 +118,39 @@ A primeira versão gerava um membro por flow × passo × tipo de evento × açã
 
 O grafo mostra as duas arestas de `pay` (`success` e `failure`), mas para percorrer um caminho é preciso um payload que leve o resolver a escolher cada uma. No spike, isso é um mapa `aresta → payload` no teste. Na lib, deve ser uma opção do `branch` (ex.: `branch(targets, resolve, { samples: { success: { ok: true }, failure: { ok: false } } })`), validada pelo `validateFlows`.
 
+## Paridade com a v2
+
+Os 41 cenários dos testes de caracterização da v2 (`src/__tests__/characterization`, branch `test/v2-characterization`) foram reescritos com a API v3 em `tests/parity.test.ts`, com os mesmos IDs.
+
+| Estado | Nº | Cenários |
+|---|---|---|
+| **Igual** | 19 | C01–C04, C06, H01–H04, H06–H08, H11, H12, X02, X03, X05, X06, E03 |
+| **Equivalente** (outra API ou nome de evento) | 13 | C08 (`effect()`), C09, C10, H05, H09, H10 (`start(..., { history / clearHistory })`), X01 (`goto`), X04 (`flow:exit`), E01, E02, E04, E06, E07 |
+| **Diverge** (intencional) | 2 | C05: a v3 emite `action:unhandled`. C07: a v3 emite `back:empty`. Em ambos, a navegação é igual e só se acrescenta um evento |
+| **Fora do âmbito** | 7 | X07 (retomar um flow no passo onde estava), X08/X09 (anotherObjects/overlays), E05, U01–U03 (URL e scroll) |
+
+Lacunas fechadas no engine por causa da paridade:
+- `effect()` para ações só com efeito (C08);
+- opções `ignoreHistory` no `dispatch` e `clearHistory`/`history` no `start` e no arranque (H08–H11, X06);
+- `clearHistory()` imperativo (H12);
+- `flow:exit` emitido sempre que o flow ativo muda, com `reason: 'goto' | 'back' | 'exit' | 'start'` (X04, E07).
+
+Notas:
+- **H05:** na v2, o passo atual pode aparecer no próprio histórico depois de um ciclo (`['a']` estando em `a`). Na v3 o histórico fica `[]`. A navegação observável é a mesma (o back não navega).
+- **H06:** confirmado que a v3 tem a mesma regra que a v2: cada passo que reaparece no histórico precisa de `allowCyclicHistory`. Uma primeira versão deste spike assumia uma divergência que não existe, e o teste de paridade apanhou-a.
+- **X07** é uma decisão em aberto: a v2 permite `navigateTo()` sem passo, que retoma o flow onde ficou, e a v3 exige passo explícito no `goto`.
+
 ## Fora do âmbito do spike
 
 - Sincronização com o URL, View Transitions, scroll restoration e `checkpoint`.
 - Render React em runtime: a camada React está só verificada em tipos.
-- Testes de caracterização contra a v2 (o histórico implementado segue a v2, mas não foi comparado lado a lado).
 - Os tempos do `completions.mjs` são a frio (inclui reanalisar o ficheiro de sonda). No editor, as respostas incrementais são mais rápidas.
 
 ## Próximos passos
 
 1. Incorporar as descobertas 1–4 no RFC A (feito no mesmo commit deste spike).
-2. Testes de caracterização da v2 na `main`, e correr os mesmos cenários contra este engine.
-3. Otimizar `ActionPayloads` (instanciações) e repetir o benchmark com 1000 ecrãs.
-4. Decidir a API de `samples` no `branch` e o formato final dos eventos (contrato público).
+2. ~~Testes de caracterização da v2 e paridade~~ (feito: ver acima).
+3. Implementar overlays (`anotherObjects`), URL e scroll restoration, e fechar os cenários pendentes X08, X09, E05 e U01–U03.
+4. Decidir o X07 (retomar um flow no passo onde estava).
+5. Otimizar `ActionPayloads` (instanciações) e repetir o benchmark com 1000 ecrãs.
+6. Decidir a API de `samples` no `branch` e o formato final dos eventos (contrato público).

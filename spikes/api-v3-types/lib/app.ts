@@ -32,7 +32,7 @@ type ActionEvent<F> = {
 
 /** Union discriminada de todos os eventos possíveis para um conjunto de flows. */
 export type FlowEvent<F = FlowDef> =
-	| (Where<F> & EventBase & { type: 'flow:start'; source: 'initial' | 'api' | 'goto' })
+	| (Where<F> & EventBase & { type: 'flow:start'; source: 'initial' | 'api' | 'goto' | 'back' })
 	| (Where<F> & EventBase & { type: 'step:leave'; reason: 'dispatch' | 'back' | 'exit' | 'start' })
 	| (Where<F> &
 			EventBase & {
@@ -41,7 +41,10 @@ export type FlowEvent<F = FlowDef> =
 				from?: { flow: string; step: string };
 				meta?: RegisteredMeta;
 			})
-	| (Where<F> & EventBase & { type: 'flow:exit'; reason: 'exit' | 'back' })
+	/** O flow deixou de estar ativo (v2: backExit / onFlowUnmount). */
+	| (Where<F> & EventBase & { type: 'flow:exit'; reason: 'exit' | 'back' | 'goto' | 'start' })
+	/** `back()` sem histórico: nada para onde voltar (novo na v3). */
+	| (Where<F> & EventBase & { type: 'back:empty' })
 	| (Where<F> & EventBase & { type: 'action:unhandled'; action: string })
 	| ActionEvent<F>;
 

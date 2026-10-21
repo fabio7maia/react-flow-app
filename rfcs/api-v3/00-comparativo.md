@@ -65,7 +65,8 @@ type FlowEvent =
 	| { type: 'action'; flow; step; action; payload } // o utilizador fez algo
 	| { type: 'step:leave'; flow; step; reason: 'dispatch' | 'back' | 'start' }
 	| { type: 'step:enter'; flow; step; from?: { flow; step }; direction: 'forward' | 'back' }
-	| { type: 'flow:exit'; flow; to?: { flow; step } } // equivalente ao backExit da v2
+	| { type: 'flow:exit'; flow; step; reason: 'goto' | 'back' | 'exit' | 'start' } // o flow deixou de estar ativo (v2: backExit / onFlowUnmount)
+	| { type: 'back:empty'; flow; step } // back() sem histórico (novo: a app decide se fecha a webview, etc.)
 	| { type: 'navigation:blocked'; flow; step; action; reason } // guard/middleware cancelou
 	| { type: 'action:unhandled'; flow; step; action }; // ação sem transição (útil em dev/CI)
 

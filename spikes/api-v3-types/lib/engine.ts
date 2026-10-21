@@ -12,6 +12,16 @@ export type FlowSnapshot = {
 	readonly callers: readonly HistoryEntry[];
 };
 
+/** Opções de histórico de uma navegação imperativa (equivalentes às da v2). */
+export type NavigationOptions = {
+	/** Não guardar o passo atual no histórico (v2: opção `ignoreHistory` do dispatch). */
+	ignoreHistory?: boolean;
+	/** Limpar o histórico e esquecer o flow de origem (v2: `clearHistory`). */
+	clearHistory?: boolean;
+	/** Substituir o histórico (v2: `history` / `initialHistory`). Strings = passos do flow de destino. */
+	history?: ReadonlyArray<string | HistoryEntry>;
+};
+
 type Flows<A> = A extends FlowApp<infer F> ? F[number] : FlowDef;
 
 type EventOf<A, T> = Extract<FlowEvent<Flows<A>>, { type: T }>;
@@ -20,18 +30,24 @@ export type FlowEngine<A extends FlowApp = FlowApp> = {
 	getSnapshot(): FlowSnapshot;
 	subscribe(cb: () => void): () => void;
 	on<T extends FlowEventType>(type: T | '*', cb: (event: EventOf<A, T>) => void): () => void;
-	start<N extends Flows<A>['name']>(flow: N, step?: StepNameOf<Extract<Flows<A>, { name: N }>>): void;
-	dispatch(action: string, payload?: unknown): void;
+	start<N extends Flows<A>['name']>(
+		flow: N,
+		step?: StepNameOf<Extract<Flows<A>, { name: N }>>,
+		options?: Omit<NavigationOptions, 'ignoreHistory'>
+	): void;
+	dispatch(action: string, payload?: unknown, options?: Pick<NavigationOptions, 'ignoreHistory'>): void;
 	back(): void;
+	clearHistory(): void;
 	/** Cobertura de transições exercidas por esta instância (para testes). */
 	coverage(): { ratio: number; covered: string[]; missing: string[] };
 };
 
 const same = (a: HistoryEntry, b: HistoryEntry): boolean => a.flow === b.flow && a.step === b.step;
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 export function createFlowEngine<A extends FlowApp>(
 	app: A,
-	options: { initial?: { flow: Flows<A>['name']; step?: string } } = {}
+	options: { initial?: { flow: Flows<A>['name']; step?: string; history?: ReadonlyArray<string | HistoryEntry> } } = {}
 ): FlowEngine<A> {
 	let state: FlowSnapshot = { flow: null, step: null, history: [], callers: [] };
 	let navigationId = 0;
@@ -71,13 +87,16 @@ export function createFlowEngine<A extends FlowApp>(
 
 	const current = (): HistoryEntry | null => (state.flow && state.step ? { flow: state.flow, step: state.step } : null);
 
+	const toEntries = (flow: string, history: ReadonlyArray<string | HistoryEntry>): HistoryEntry[] =>
+		history.map(entry => (typeof entry === 'string' ? { flow, step: entry } : entry));
+
 	const enter = (
 		target: HistoryEntry,
 		next: Omit<FlowSnapshot, 'flow' | 'step'>,
-		ctx: { from: HistoryEntry | null; direction: 'forward' | 'back'; source?: 'initial' | 'api' | 'goto' }
+		ctx: { from: HistoryEntry | null; direction: 'forward' | 'back'; source: 'initial' | 'api' | 'goto' | 'back' }
 	): void => {
 		if (!ctx.from || ctx.from.flow !== target.flow) {
-			emit({ type: 'flow:start', ...target, source: ctx.source ?? 'goto' });
+			emit({ type: 'flow:start', ...target, source: ctx.source });
 		}
 		commit({ ...next, ...target });
 		emit({
@@ -89,14 +108,28 @@ export function createFlowEngine<A extends FlowApp>(
 		});
 	};
 
-	const forward = (target: HistoryEntry, reason: 'dispatch' | 'start', source?: 'api' | 'goto'): void => {
+	/** Sai do passo atual e, se mudar de flow, do flow atual. */
+	const leave = (from: HistoryEntry, to: HistoryEntry, reason: 'dispatch' | 'back' | 'exit' | 'start'): void => {
+		emit({ type: 'step:leave', ...from, reason });
+		if (from.flow !== to.flow) {
+			const exitReason = reason === 'dispatch' ? 'goto' : reason;
+			emit({ type: 'flow:exit', ...from, reason: exitReason });
+		}
+	};
+
+	const forward = (
+		target: HistoryEntry,
+		reason: 'dispatch' | 'start',
+		source: 'api' | 'goto',
+		navigation: NavigationOptions = {}
+	): void => {
 		const from = current();
 		let history = [...state.history];
 		let callers = [...state.callers];
 
 		if (from) {
-			emit({ type: 'step:leave', ...from, reason });
-			if (!stepOf(from).ignoreHistory) {
+			leave(from, target, reason);
+			if (!stepOf(from).ignoreHistory && !navigation.ignoreHistory) {
 				history.push(from);
 			}
 			if (from.flow !== target.flow) {
@@ -107,37 +140,40 @@ export function createFlowEngine<A extends FlowApp>(
 		const targetStep = stepOf(target);
 		const existing = history.findIndex(entry => same(entry, target));
 
+		// Como na v2 (H06/H07): cada passo que reaparece no histórico precisa de allowCyclicHistory.
 		if (existing >= 0 && !targetStep.allowCyclicHistory) {
 			history = history.slice(0, existing);
 		}
-		if (targetStep.clearHistory) {
+		if (targetStep.clearHistory || navigation.clearHistory) {
 			history = [];
 			callers = [];
+		}
+		if (navigation.history) {
+			history = toEntries(target.flow, navigation.history);
 		}
 
 		enter(target, { history, callers }, { from, direction: 'forward', source });
 	};
 
-	const exitFlow = (reason: 'exit' | 'back'): void => {
+	const exitFlow = (): void => {
 		const from = current();
-		if (!from) return;
-
-		emit({ type: 'flow:exit', ...from, reason });
-
 		const caller = state.callers[state.callers.length - 1];
-		if (!caller) return;
+		if (!from || !caller) {
+			console.warn('[react-flow-app] goto.exit() sem flow de origem');
+			return;
+		}
 
-		emit({ type: 'step:leave', ...from, reason: 'exit' });
+		leave(from, caller, 'exit');
 		const index = state.history.map(entry => same(entry, caller)).lastIndexOf(true);
 		const history = index >= 0 ? state.history.slice(0, index) : state.history;
-		enter(caller, { history, callers: state.callers.slice(0, -1) }, { from, direction: 'back' });
+		enter(caller, { history, callers: state.callers.slice(0, -1) }, { from, direction: 'back', source: 'back' });
 	};
 
 	const resolve = (
 		transition: AnyTransition,
 		from: HistoryEntry,
 		payload: unknown
-	): { target: HistoryEntry | 'exit'; key: string } => {
+	): { target: HistoryEntry | 'exit' | 'effect'; key: string } => {
 		if (typeof transition === 'string') {
 			return { target: { flow: from.flow, step: transition }, key: targetKey(transition) };
 		}
@@ -146,6 +182,9 @@ export function createFlowEngine<A extends FlowApp>(
 				return { target: { flow: transition.flow, step: transition.step }, key: targetKey(transition) };
 			case 'exit':
 				return { target: 'exit', key: targetKey(transition) };
+			case 'effect':
+				transition.run({ ...from, history: state.history }, payload);
+				return { target: 'effect', key: targetKey(transition) };
 			case 'branch': {
 				const chosen = transition.resolve({ ...from, history: state.history }, payload) as AnyTransition;
 				const allowed = transition.targets.map(t => targetKey(t as AnyTransition));
@@ -171,7 +210,7 @@ export function createFlowEngine<A extends FlowApp>(
 			set.add(cb);
 			return () => set.delete(cb);
 		},
-		start(flowName, stepName) {
+		start(flowName, stepName, navigation = {}) {
 			const flow = app.getFlow(flowName);
 			if (!flow) throw new Error(`[react-flow-app] Flow inexistente: ${flowName}`);
 
@@ -183,12 +222,13 @@ export function createFlowEngine<A extends FlowApp>(
 			const target = { flow: flow.name, step };
 
 			if (current()) {
-				forward(target, 'start', 'api');
+				forward(target, 'start', 'api', navigation);
 			} else {
-				enter(target, { history: [], callers: [] }, { from: null, direction: 'forward', source: 'initial' });
+				const history = navigation.history ? toEntries(flow.name, navigation.history) : [];
+				enter(target, { history, callers: [] }, { from: null, direction: 'forward', source: 'initial' });
 			}
 		},
-		dispatch(action, payload) {
+		dispatch(action, payload, navigation) {
 			const from = current();
 			if (!from) {
 				console.warn('[react-flow-app] dispatch sem flow ativo');
@@ -209,9 +249,9 @@ export function createFlowEngine<A extends FlowApp>(
 			traversed.add(edgeKey(from.flow, from.step, action, key));
 
 			if (target === 'exit') {
-				exitFlow('exit');
-			} else {
-				forward(target, 'dispatch', target.flow !== from.flow ? 'goto' : undefined);
+				exitFlow();
+			} else if (target !== 'effect') {
+				forward(target, 'dispatch', target.flow !== from.flow ? 'goto' : 'api', navigation);
 			}
 		},
 		back() {
@@ -222,12 +262,12 @@ export function createFlowEngine<A extends FlowApp>(
 			const previous = state.history[state.history.length - 1];
 
 			if (!previous) {
-				// Equivalente ao backExit da v2: a app decide (fechar webview, sair…).
-				exitFlow('back');
+				// Novo na v3: a app pode reagir (fechar webview, sair…). Na v2 não havia evento (C07).
+				emit({ type: 'back:empty', ...from });
 				return;
 			}
 
-			emit({ type: 'step:leave', ...from, reason: 'back' });
+			leave(from, previous, 'back');
 			const callers = state.callers;
 			const last = callers[callers.length - 1];
 			enter(
@@ -236,8 +276,11 @@ export function createFlowEngine<A extends FlowApp>(
 					history: state.history.slice(0, -1),
 					callers: last && same(last, previous) ? callers.slice(0, -1) : callers,
 				},
-				{ from, direction: 'back' }
+				{ from, direction: 'back', source: 'back' }
 			);
+		},
+		clearHistory() {
+			commit({ ...state, history: [], callers: [] });
 		},
 		coverage() {
 			const all = [...new Set(toGraph(app).edges.map(edge => edge.key))];
@@ -251,7 +294,7 @@ export function createFlowEngine<A extends FlowApp>(
 	};
 
 	if (options.initial) {
-		engine.start(options.initial.flow, options.initial.step as never);
+		engine.start(options.initial.flow, options.initial.step as never, { history: options.initial.history });
 	}
 
 	return engine;
