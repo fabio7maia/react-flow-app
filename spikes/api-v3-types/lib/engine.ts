@@ -2,7 +2,7 @@ import type { FlowApp, FlowEvent, FlowEventType } from './app';
 import type { FlowDef, StepNameOf } from './flow';
 import { edgeKey, targetKey, toGraph } from './graph';
 import type { AnyTransition, HistoryEntry, StepInput } from './types';
-import { buildUrl, type FlowParams } from './url';
+import { buildUrl, type FlowParams, type StepParams } from './url';
 
 export type FlowSnapshot = {
 	readonly flow: string | null;
@@ -35,10 +35,13 @@ export type FlowEngine<A extends FlowApp = FlowApp> = {
 	getSnapshot(): FlowSnapshot;
 	subscribe(cb: () => void): () => void;
 	on<T extends FlowEventType>(type: T | '*', cb: (event: EventOf<A, T>) => void): () => void;
-	start<N extends Flows<A>['name']>(
+	start<N extends Flows<A>['name'], S extends StepNameOf<Extract<Flows<A>, { name: N }>> = never>(
 		flow: N,
-		step?: StepNameOf<Extract<Flows<A>, { name: N }>>,
-		options?: Omit<NavigationOptions, 'ignoreHistory'>
+		step?: S,
+		options?: Omit<NavigationOptions, 'ignoreHistory' | 'params'> & {
+			/** Tipados a partir do URL do passo: `pay/:orderId` → `{ orderId: string }`. */
+			params?: StepParams<Extract<Flows<A>, { name: N }>, S>;
+		}
 	): void;
 	/** `from`: nome do ecrã que fez o dispatch (para ações de overlays). O `useFlow` preenche-o. */
 	dispatch(
@@ -49,7 +52,10 @@ export type FlowEngine<A extends FlowApp = FlowApp> = {
 	back(): void;
 	clearHistory(): void;
 	/** URL de um passo (por omissão com os parâmetros atuais). */
-	urlOf(entry: HistoryEntry, params?: FlowParams): string;
+	urlOf<N extends Flows<A>['name'], S extends StepNameOf<Extract<Flows<A>, { name: N }>>>(
+		entry: { flow: N; step: S },
+		params?: StepParams<Extract<Flows<A>, { name: N }>, S>
+	): string;
 	/** Cobertura de transições exercidas por esta instância (para testes). */
 	coverage(): { ratio: number; covered: string[]; missing: string[] };
 };
@@ -328,7 +334,7 @@ export function createFlowEngine<A extends FlowApp>(
 			commit({ ...state, history: [], callers: [] });
 		},
 		urlOf(entry, params) {
-			return buildUrl(app, entry, params ?? state.params);
+			return buildUrl(app, entry, (params as FlowParams | undefined) ?? state.params);
 		},
 		coverage() {
 			const all = [...new Set(toGraph(app).edges.map(edge => edge.key))];
@@ -343,7 +349,7 @@ export function createFlowEngine<A extends FlowApp>(
 
 	if (options.initial) {
 		const { flow, step, history, params } = options.initial;
-		engine.start(flow, step as never, { history, params });
+		engine.start(flow, step as never, { history, params: params as never });
 	}
 
 	return engine;

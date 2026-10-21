@@ -50,6 +50,11 @@ const probes = [
 		expected: ['cancel', 'checkout', 'finish', 'loggedIn', 'openCart', 'pay', 'retry'],
 	},
 	{
+		name: "start('checkout', 'payment', { params: { | } }) sugere os parâmetros do URL do passo",
+		code: "createFlowEngine(flowApp).start('checkout', 'payment', { params: { | } });",
+		expected: ['orderId'],
+	},
+	{
 		name: "engine.start('checkout', '|') sugere só passos do checkout",
 		code: "createFlowEngine(flowApp).start('checkout', '|');",
 		expected: ['cart', 'failure', 'payment', 'success'],

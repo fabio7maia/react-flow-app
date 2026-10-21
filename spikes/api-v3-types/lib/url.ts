@@ -1,7 +1,36 @@
 import type { FlowApp } from './app';
+import type { FlowDef } from './flow';
 import type { HistoryEntry } from './types';
 
 export type FlowParams = Readonly<Record<string, string>>;
+
+// ─── Parâmetros tipados a partir do padrão do URL ─────────────────────────────
+
+type Segments<P extends string> = P extends `${infer Head}/${infer Rest}` ? Head | Segments<Rest> : P;
+
+/** `'pay/:orderId/:line'` → `'orderId' | 'line'`. */
+export type ParamNames<P extends string> = Segments<P> extends infer S ? (S extends `:${infer N}` ? N : never) : never;
+
+/**
+ * `'pay/:orderId'` → `{ orderId: string }`. Sem parâmetros → `Record<string, never>`
+ * (e não `{}`, que aceitaria qualquer objeto).
+ */
+export type ParamsOf<P extends string> = string extends P
+	? FlowParams // padrão não literal (código genérico): sem tipagem por passo
+	: [ParamNames<P>] extends [never]
+	? Record<string, never>
+	: { [K in ParamNames<P>]: string };
+
+/** O URL de um passo é o `url` declarado ou, por omissão, o nome do passo. */
+export type StepUrl<F, Step> = F extends FlowDef<string, infer S>
+	? Step extends keyof S
+		? S[Step] extends { readonly url: infer U extends string }
+			? U
+			: Step & string
+		: never
+	: never;
+
+export type StepParams<F, Step> = ParamsOf<StepUrl<F, Step>>;
 
 const trimSlashes = (value: string): string => value.replace(/^\/+|\/+$/g, '');
 

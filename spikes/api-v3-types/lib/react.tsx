@@ -14,7 +14,8 @@ import {
 import type { FlowEventType, RegisteredEvent } from './app';
 import type { FlowAdapter } from './adapters';
 import { createFlowEngine, type FlowEngine, type FlowSnapshot } from './engine';
-import type { RegisteredApp, RegisteredFlowName } from './flow';
+import type { FlowByName, RegisteredApp, RegisteredFlowName, StepNameOf } from './flow';
+import type { StepParams } from './url';
 import type { ActionName, DispatchArgs, ScreenActions, ScreenDef } from './types';
 
 const EngineContext = createContext<FlowEngine | null>(null);
@@ -100,6 +101,17 @@ export function FlowProvider({
 export function useFlowSelector<T>(selector: (snapshot: FlowSnapshot) => T): T {
 	const engine = useEngine();
 	return useSyncExternalStore(engine.subscribe, () => selector(engine.getSnapshot()));
+}
+
+/**
+ * Parâmetros de URL do passo, tipados pelo padrão declarado no flow:
+ * `useStepParams('checkout', 'payment')` → `{ orderId: string }`.
+ */
+export function useStepParams<N extends RegisteredFlowName, S extends StepNameOf<FlowByName<N>>>(
+	_flow: N,
+	_step: S
+): StepParams<FlowByName<N>, S> {
+	return useFlowSelector(snapshot => snapshot.params) as StepParams<FlowByName<N>, S>;
 }
 
 /** Tipado a partir da definição do ecrã: não depende de flows nem do registo. */

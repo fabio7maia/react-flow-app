@@ -10,11 +10,13 @@ import {
 	effect,
 	goto,
 	payload,
+	type ParamsOf,
 	type RegisteredEvent,
 	type RegisteredFlowName,
 	type ScreenActions,
 	useFlow,
 	useFlowEvents,
+	useStepParams,
 } from 'react-flow-app';
 import { flowApp } from '../example/app.flow';
 import { checkoutFlow } from '../example/flows/checkout.flow';
@@ -156,6 +158,19 @@ checkoutFlow.transitions({
 	failure: { retry: goto('shop') },
 });
 
+// ─── Parâmetros de URL tipados ────────────────────────────────────────────────
+
+expectType<Equal<ParamsOf<'pay/:orderId'>, { orderId: string }>>();
+expectType<Equal<ParamsOf<'orders/:id/lines/:line'>, { id: string; line: string }>>();
+expectType<Equal<ParamsOf<'cart'>, Record<string, never>>>();
+
+function ParamsProbe() {
+	const params = useStepParams('checkout', 'payment');
+	expectType<Equal<typeof params, { orderId: string }>>();
+	return null;
+}
+void ParamsProbe;
+
 // ─── Registo, eventos e engine ────────────────────────────────────────────────
 
 expectType<Equal<RegisteredFlowName, 'home' | 'checkout' | 'auth'>>();
@@ -181,6 +196,14 @@ void EventsProbe;
 
 const engine = createFlowEngine(flowApp);
 engine.start('checkout', 'payment');
+engine.start('checkout', 'payment', { params: { orderId: '42' } });
+// @ts-expect-error o passo payment tem o parâmetro orderId, não id
+engine.start('checkout', 'payment', { params: { id: '42' } });
+// @ts-expect-error o passo cart não tem parâmetros
+engine.start('checkout', 'cart', { params: { orderId: '42' } });
+engine.urlOf({ flow: 'checkout', step: 'payment' }, { orderId: '42' });
+// @ts-expect-error parâmetro com o nome errado
+engine.urlOf({ flow: 'checkout', step: 'payment' }, { order: '42' });
 // @ts-expect-error passo que não pertence ao flow `checkout`
 engine.start('checkout', 'login');
 // @ts-expect-error flow inexistente
