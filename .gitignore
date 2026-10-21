@@ -44,3 +44,4 @@ test-report.xml
 # spikes
 spikes/**/.out
 spikes/**/.bench
+spikes/**/.e2e
