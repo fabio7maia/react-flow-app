@@ -7,15 +7,17 @@ import type {
 	EffectRef,
 	ExitRef,
 	GotoRef,
+	OverlaysInput,
 	StepsInput,
 	TransitionsFor,
 } from './types';
 
-export type FlowDef<N extends string = string, S extends StepsInput = StepsInput> = {
+export type FlowDef<N extends string = string, S extends StepsInput = StepsInput, O extends OverlaysInput = OverlaysInput> = {
 	readonly kind: 'flow';
 	readonly name: N;
 	readonly baseUrl?: string;
 	readonly steps: S;
+	readonly overlays: O;
 	/** @internal transições registadas por `transitions()`. */
 	readonly _transitions: Record<string, Record<string, AnyTransition>>;
 	/**
@@ -25,19 +27,28 @@ export type FlowDef<N extends string = string, S extends StepsInput = StepsInput
 	 * assim o tipo do flow não depende dos `goto(...)`, o que evita a referência
 	 * circular de tipos entre flows que se referem mutuamente via `Register`.
 	 */
-	transitions(map: TransitionsFor<S>): void;
+	transitions(map: TransitionsFor<S, O>): void;
 };
 
-export function defineFlow<const N extends string, const S extends StepsInput>(def: {
+export function defineFlow<const N extends string, const S extends StepsInput, const O extends OverlaysInput = {}>(def: {
 	name: N;
 	baseUrl?: string;
 	steps: S;
-}): FlowDef<N, S> {
+	overlays?: O;
+}): FlowDef<N, S, O> {
 	const transitions: Record<string, Record<string, AnyTransition>> = {};
+	const overlays = (def.overlays ?? {}) as O;
+
+	for (const name of Object.keys(overlays)) {
+		if (name in def.steps) {
+			throw new Error(`[react-flow-app] O overlay "${name}" tem o mesmo nome de um passo do flow "${def.name}"`);
+		}
+	}
 
 	return {
 		kind: 'flow',
 		...def,
+		overlays,
 		_transitions: transitions,
 		transitions(map) {
 			for (const [step, actions] of Object.entries(map as Record<string, Record<string, AnyTransition>>)) {
@@ -64,16 +75,17 @@ export type StepNameOf<F> = F extends FlowDef<string, infer S> ? keyof S & strin
 
 export type FlowByName<N extends string> = Extract<RegisteredFlows, { name: N }>;
 
-function gotoFn<const F extends RegisteredFlowName, const S extends StepNameOf<FlowByName<F>>>(
+function gotoFn<const F extends RegisteredFlowName, const S extends StepNameOf<FlowByName<F>> = never>(
 	flow: F,
-	step: S
+	step?: S
 ): GotoRef<F, S> {
-	return { kind: 'goto', flow, step };
+	return step === undefined ? { kind: 'goto', flow } : { kind: 'goto', flow, step };
 }
 
 /**
  * Destino noutro flow, validado por nome contra o `Register`
  * (sem importar o outro flow → sem imports circulares).
+ * Sem passo, retoma o flow no último passo onde esteve (v2: `navigateTo()` sem passo).
  */
 export const goto = Object.assign(gotoFn, {
 	/** Volta ao passo que abriu o flow atual (equivalente ao `fromFlow` da v2). */

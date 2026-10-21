@@ -344,7 +344,8 @@ Os payloads também validados em runtime (opcional, `schema: z.object(...)` em v
 | `fm.flow().steps()` + `f.step()()` | `defineScreen` (um ficheiro por ecrã) + `defineFlow` (um ficheiro por flow) + `createFlowApp([...])` |
 | `TStepOptions` (`ignoreHistory`, `clearHistory`, `allowCyclicHistory`, `checkpoint`, `url`) | Mantidas com a **mesma semântica**, cobertas por testes de caracterização |
 | Ação como função (`() => f0.navigateTo('x')`) | `branch([...alvos], resolver)` ou `effect(fn)` para efeitos sem navegação |
-| `anotherObjects` (modais) | `defineScreen({ name: 'modal', actions, kind: 'overlay' })` — participa no grafo sem ser passo |
+| `anotherObjects` (modais) | `defineFlow({ ..., overlays: { help: helpScreen } })` + `flow.transitions({ help: { ... } })`. O overlay é um nó do grafo e entra na validação, mas não é passo (não entra no histórico). O `useFlow(helpScreen)` identifica a origem pelo nome do ecrã |
+| `navigateTo()` sem passo (retoma o flow) | `goto(flow)` / `start(flow)` sem passo: último passo desse flow, ou o inicial |
 | `listen` / `f.listen()` / `onFlowMount` | `useFlowEvents(type, cb)` + `engine.on(type, cb)` com filtro por flow |
 | `initialHistory`, `scrollRestoration`, `ignoreHistory` no dispatch | Opções de `start`/`dispatch` |
 | `fromFlow` + `backExit` | `goto.exit()` + evento `exit` |

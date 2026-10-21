@@ -7,6 +7,7 @@ import {
 	createFlowEngine,
 	defineFlow,
 	defineScreen,
+	effect,
 	goto,
 	payload,
 	type RegisteredEvent,
@@ -121,6 +122,39 @@ const reviewFlow = defineFlow({
 	},
 });
 reviewFlow.transitions({ firstCart: { checkout: 'secondCart' }, secondCart: { checkout: 'firstCart' } });
+
+// ─── Overlays e retoma ────────────────────────────────────────────────────────
+
+const helpScreen = defineScreen({
+	name: 'help',
+	actions: ['backToCart', 'close'],
+	meta: { title: 'Ajuda' },
+	loader: () => import('../example/screens/success/Success'),
+});
+const withHelp = defineFlow({
+	name: 'withHelp',
+	steps: { cart: { screen: cartScreen, initial: true }, payment: { screen: paymentScreen } },
+	overlays: { help: helpScreen },
+});
+withHelp.transitions({ help: { backToCart: 'cart', close: effect(() => undefined) } });
+withHelp.transitions({
+	// @ts-expect-error overlay que o flow não declara
+	modal: {},
+});
+withHelp.transitions({
+	// @ts-expect-error um overlay não é destino: só passos do flow
+	help: { backToCart: 'help' },
+});
+withHelp.transitions({
+	// @ts-expect-error ação que o ecrã do overlay não declara
+	help: { open: 'cart' },
+});
+
+checkoutFlow.transitions({ failure: { retry: goto('auth') } }); // sem passo: retoma o flow
+checkoutFlow.transitions({
+	// @ts-expect-error flow inexistente, mesmo sem passo
+	failure: { retry: goto('shop') },
+});
 
 // ─── Registo, eventos e engine ────────────────────────────────────────────────
 

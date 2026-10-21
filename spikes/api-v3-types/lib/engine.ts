@@ -35,7 +35,8 @@ export type FlowEngine<A extends FlowApp = FlowApp> = {
 		step?: StepNameOf<Extract<Flows<A>, { name: N }>>,
 		options?: Omit<NavigationOptions, 'ignoreHistory'>
 	): void;
-	dispatch(action: string, payload?: unknown, options?: Pick<NavigationOptions, 'ignoreHistory'>): void;
+	/** `from`: nome do ecrã que fez o dispatch (para ações de overlays). O `useFlow` preenche-o. */
+	dispatch(action: string, payload?: unknown, options?: Pick<NavigationOptions, 'ignoreHistory'> & { from?: string }): void;
 	back(): void;
 	clearHistory(): void;
 	/** Cobertura de transições exercidas por esta instância (para testes). */
@@ -54,6 +55,17 @@ export function createFlowEngine<A extends FlowApp>(
 	const subscribers = new Set<() => void>();
 	const listeners = new Map<string, Set<(event: any) => void>>();
 	const traversed = new Set<string>();
+	/** Último passo de cada flow, para retomar com `goto(flow)` / `start(flow)` sem passo (v2: X07). */
+	const lastStep = new Map<string, string>();
+
+	const initialStepOf = (flowName: string): string => {
+		const flow = app.getFlow(flowName);
+		if (!flow) throw new Error(`[react-flow-app] Flow inexistente: ${flowName}`);
+		const entries = Object.entries(flow.steps);
+		return entries.find(([, opts]) => opts.initial)?.[0] ?? entries[0][0];
+	};
+
+	const resumeStepOf = (flowName: string): string => lastStep.get(flowName) ?? initialStepOf(flowName);
 
 	const stepOf = (entry: HistoryEntry): StepInput => {
 		const step = app.getFlow(entry.flow)?.steps[entry.step];
@@ -99,6 +111,7 @@ export function createFlowEngine<A extends FlowApp>(
 			emit({ type: 'flow:start', ...target, source: ctx.source });
 		}
 		commit({ ...next, ...target });
+		lastStep.set(target.flow, target.step);
 		emit({
 			type: 'step:enter',
 			...target,
@@ -179,7 +192,10 @@ export function createFlowEngine<A extends FlowApp>(
 		}
 		switch (transition.kind) {
 			case 'goto':
-				return { target: { flow: transition.flow, step: transition.step }, key: targetKey(transition) };
+				return {
+					target: { flow: transition.flow, step: transition.step ?? resumeStepOf(transition.flow) },
+					key: targetKey(transition),
+				};
 			case 'exit':
 				return { target: 'exit', key: targetKey(transition) };
 			case 'effect':
@@ -215,11 +231,7 @@ export function createFlowEngine<A extends FlowApp>(
 			if (!flow) throw new Error(`[react-flow-app] Flow inexistente: ${flowName}`);
 
 			navigationId++;
-			const step =
-				stepName ??
-				Object.entries(flow.steps).find(([, opts]) => opts.initial)?.[0] ??
-				Object.keys(flow.steps)[0];
-			const target = { flow: flow.name, step };
+			const target = { flow: flow.name, step: stepName ?? resumeStepOf(flow.name) };
 
 			if (current()) {
 				forward(target, 'start', 'api', navigation);
@@ -236,17 +248,20 @@ export function createFlowEngine<A extends FlowApp>(
 			}
 
 			navigationId++;
-			const transition = app.getFlow(from.flow)?._transitions[from.step]?.[action];
+			const flow = app.getFlow(from.flow);
+			// Ações de um overlay (v2: anotherObjects) usam as transições do overlay; as restantes, as do passo atual.
+			const overlay = Object.entries(flow?.overlays ?? {}).find(([, screen]) => screen.name === navigation?.from)?.[0];
+			const transition = flow?._transitions[overlay ?? from.step]?.[action];
 
 			if (!transition) {
 				emit({ type: 'action:unhandled', ...from, action });
 				return;
 			}
 
-			emit({ type: 'action', ...from, action, payload });
+			emit({ type: 'action', ...from, action, payload, overlay });
 
 			const { target, key } = resolve(transition, from, payload);
-			traversed.add(edgeKey(from.flow, from.step, action, key));
+			traversed.add(edgeKey(from.flow, overlay ? `@${overlay}` : from.step, action, key));
 
 			if (target === 'exit') {
 				exitFlow();

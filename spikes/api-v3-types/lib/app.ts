@@ -13,7 +13,7 @@ type EventBase = { readonly navigationId: number; readonly timestamp: number };
 
 type FlowNameOf<F> = F extends FlowDef<infer N> ? N : never;
 type StepNameOfAny<F> = F extends FlowDef<string, infer S> ? keyof S & string : never;
-type ScreensOf<F> = F extends FlowDef<string, infer S> ? S[keyof S]['screen'] : never;
+type ScreensOf<F> = F extends FlowDef<string, infer S, infer O> ? S[keyof S]['screen'] | O[keyof O] : never;
 
 type ActionPairs<Sc> = Sc extends unknown
 	? { [A in keyof ScreenActions<Sc> & string]: [A, ScreenActions<Sc>[A]] }[keyof ScreenActions<Sc> & string]
@@ -27,7 +27,8 @@ export type ActionPayloads<F> = {
 type Where<F> = { flow: FlowNameOf<F>; step: StepNameOfAny<F> };
 
 type ActionEvent<F> = {
-	[A in keyof ActionPayloads<F>]: Where<F> & EventBase & { type: 'action'; action: A; payload: ActionPayloads<F>[A] };
+	[A in keyof ActionPayloads<F>]: Where<F> &
+		EventBase & { type: 'action'; action: A; payload: ActionPayloads<F>[A]; overlay?: string };
 }[keyof ActionPayloads<F>];
 
 /** Union discriminada de todos os eventos possíveis para um conjunto de flows. */

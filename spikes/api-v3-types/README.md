@@ -41,8 +41,8 @@ example/
   app.flow.ts                       composição + Register
   App.tsx                           Provider + analytics
 tests/
-  types.test-d.ts           24 asserções de tipos (16 erros esperados + 8 igualdades de tipo)
-  engine.test.ts            21 testes de runtime
+  types.test-d.ts           28 asserções de tipos (20 erros esperados + 8 igualdades de tipo)
+  engine.test.ts            24 testes de runtime
   parity.test.ts            41 cenários de paridade com a v2 (mesmos IDs da caracterização)
 scripts/                    test, completions, bench
 ```
@@ -66,7 +66,8 @@ scripts/                    test, completions, bench
 | Semântica de histórico (ignoreHistory, clearHistory, ciclos, exit, back entre flows) | ✅ 7 testes |
 | Engine por instância (sem singleton) | ✅ |
 | Type-check com 300 ecrãs | ✅ 1,3–1,7 s (depois da descoberta 3) |
-| Paridade com a v2 (41 cenários de caracterização) | ✅ 32 iguais ou equivalentes, 2 divergências intencionais, 7 fora do âmbito (ver abaixo) |
+| Paridade com a v2 (41 cenários de caracterização) | ✅ 34 iguais ou equivalentes, 3 divergências intencionais, 4 fora do âmbito (ver abaixo) |
+| Overlays (v2: anotherObjects) e retoma de flows (v2: `navigateTo()` sem passo) | ✅ |
 
 ### Benchmark de type-check
 
@@ -125,20 +126,22 @@ Os 41 cenários dos testes de caracterização da v2 (`src/__tests__/characteriz
 | Estado | Nº | Cenários |
 |---|---|---|
 | **Igual** | 19 | C01–C04, C06, H01–H04, H06–H08, H11, H12, X02, X03, X05, X06, E03 |
-| **Equivalente** (outra API ou nome de evento) | 13 | C08 (`effect()`), C09, C10, H05, H09, H10 (`start(..., { history / clearHistory })`), X01 (`goto`), X04 (`flow:exit`), E01, E02, E04, E06, E07 |
-| **Diverge** (intencional) | 2 | C05: a v3 emite `action:unhandled`. C07: a v3 emite `back:empty`. Em ambos, a navegação é igual e só se acrescenta um evento |
-| **Fora do âmbito** | 7 | X07 (retomar um flow no passo onde estava), X08/X09 (anotherObjects/overlays), E05, U01–U03 (URL e scroll) |
+| **Equivalente** (outra API ou nome de evento) | 15 | C08 (`effect()`), C09, C10, H05, H09, H10 (`start(..., { history / clearHistory })`), X01 (`goto`), X04 (`flow:exit`), X07 (`goto(flow)` sem passo), X09 (overlays), E01, E02, E04, E06, E07 |
+| **Diverge** (intencional) | 3 | C05: a v3 emite `action:unhandled`. C07: a v3 emite `back:empty`. Em ambos, a navegação é igual e só se acrescenta um evento. X08: o overlay funciona sem configuração extra (na v2, um anotherObject sem `name` era ignorado, o que é um bug) |
+| **Fora do âmbito** | 4 | E05, U01–U03 (URL e scroll) |
 
 Lacunas fechadas no engine por causa da paridade:
 - `effect()` para ações só com efeito (C08);
 - opções `ignoreHistory` no `dispatch` e `clearHistory`/`history` no `start` e no arranque (H08–H11, X06);
 - `clearHistory()` imperativo (H12);
-- `flow:exit` emitido sempre que o flow ativo muda, com `reason: 'goto' | 'back' | 'exit' | 'start'` (X04, E07).
+- `flow:exit` emitido sempre que o flow ativo muda, com `reason: 'goto' | 'back' | 'exit' | 'start'` (X04, E07);
+- retoma de flows: `goto(flow)` e `start(flow)` sem passo voltam ao último passo desse flow (X07);
+- overlays: `defineFlow({ overlays: { help } })`, com transições no mesmo `transitions()`. O dispatch identifica a origem pelo nome do ecrã (`useFlow(helpScreen)`), e o overlay tem nó próprio no grafo (`{{@help}}` no Mermaid) e entra no `validateFlows` (X08, X09).
 
 Notas:
 - **H05:** na v2, o passo atual pode aparecer no próprio histórico depois de um ciclo (`['a']` estando em `a`). Na v3 o histórico fica `[]`. A navegação observável é a mesma (o back não navega).
 - **H06:** confirmado que a v3 tem a mesma regra que a v2: cada passo que reaparece no histórico precisa de `allowCyclicHistory`. Uma primeira versão deste spike assumia uma divergência que não existe, e o teste de paridade apanhou-a.
-- **X07** é uma decisão em aberto: a v2 permite `navigateTo()` sem passo, que retoma o flow onde ficou, e a v3 exige passo explícito no `goto`.
+- **X07 e X08/X09** foram decididos: a retoma de flows e os modais (como overlays) mantêm-se na v3.
 
 ## Fora do âmbito do spike
 
@@ -150,7 +153,7 @@ Notas:
 
 1. Incorporar as descobertas 1–4 no RFC A (feito no mesmo commit deste spike).
 2. ~~Testes de caracterização da v2 e paridade~~ (feito: ver acima).
-3. Implementar overlays (`anotherObjects`), URL e scroll restoration, e fechar os cenários pendentes X08, X09, E05 e U01–U03.
-4. Decidir o X07 (retomar um flow no passo onde estava).
+3. ~~Overlays e retoma de flows~~ (feito).
+4. URL e scroll restoration, para fechar os cenários pendentes E05 e U01–U03.
 5. Otimizar `ActionPayloads` (instanciações) e repetir o benchmark com 1000 ecrãs.
 6. Decidir a API de `samples` no `branch` e o formato final dos eventos (contrato público).

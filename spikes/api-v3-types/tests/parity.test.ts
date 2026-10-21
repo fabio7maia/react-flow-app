@@ -33,7 +33,7 @@ const x = screen('x', ['next', 'done']);
 const y = screen('y', ['done']);
 
 /** Os flows destes cenários não estão no `Register` da app de exemplo: o `goto` tipado não os conhece. */
-const to = (flow: string, step: string): GotoRef => ({ kind: 'goto', flow, step }) as GotoRef;
+const to = (flow: string, step?: string): GotoRef => (step ? { kind: 'goto', flow, step } : { kind: 'goto', flow }) as GotoRef;
 
 const run = (flows: readonly FlowDef[], initial: { flow: string; step?: string; history?: string[] }) => {
 	const engine = createFlowEngine(createFlowApp(flows), { initial: initial as never });
@@ -331,9 +331,41 @@ describe('paridade · entre flows', () => {
 		assert.deepEqual(t.history(), []);
 	});
 
-	pending('X07', 'retomar um flow no passo onde estava: a v3 exige passo explícito no goto (decisão em aberto)');
-	pending('X08', 'anotherObjects sem name: sem equivalente no spike (overlays por implementar)');
-	pending('X09', 'anotherObjects com name: sem equivalente no spike (overlays por implementar)');
+	it('X07 [equivalente] navigateTo() sem passo → goto(flow) sem passo: retoma o flow onde estava', () => {
+		const { main, other } = flows();
+		main.transitions({ a: { next: 'b' }, b: { toOther: to('other', 'x') } });
+		other.transitions({ x: { done: to('main') } });
+		const t = run([main, other], { flow: 'main' });
+		t.engine.dispatch('next');
+		t.engine.dispatch('toOther');
+		t.engine.dispatch('done');
+		assert.equal(t.at(), 'main.b');
+	});
+
+	const withOverlay = () => {
+		const modal = screen('modal', ['restart']);
+		const main = defineFlow({ name: 'main', steps: { a: { screen: a }, b: { screen: b } }, overlays: { modal } });
+		main.transitions({ a: { next: 'b' }, modal: { restart: 'a' } });
+		return main;
+	};
+
+	it('X08 [diverge] overlay sem configuração extra funciona (na v2 o anotherObject sem `name` era ignorado: bug)', () => {
+		const t = run([withOverlay()], { flow: 'main' });
+		t.engine.dispatch('next');
+		t.engine.dispatch('restart', undefined, { from: 'modal' });
+		assert.equal(t.at(), 'main.a');
+	});
+
+	it('X09 [equivalente] anotherObjects → overlays: o dispatch do overlay usa as transições do overlay', () => {
+		const t = run([withOverlay()], { flow: 'main' });
+		t.engine.dispatch('next');
+		t.events.length = 0;
+		t.engine.dispatch('restart', undefined, { from: 'modal' });
+		assert.deepEqual(t.events, ['action:restart@main.b', 'step:leave(dispatch)@main.b', 'step:enter@main.a']);
+		// Sem `from`, a ação é procurada no passo atual (que não a declara).
+		t.engine.dispatch('restart');
+		assert.equal(t.events[t.events.length - 1], 'action:unhandled@main.a');
+	});
 });
 
 describe('paridade · eventos', () => {

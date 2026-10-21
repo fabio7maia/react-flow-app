@@ -184,9 +184,13 @@ A abordagem recomendada deve trazer um pacote `react-flow-app/testing`:
 8. Guia de migração v2 → v3 e versão `3.0.0-rc`.
 9. (Opcional) adaptadores de router.
 
+## Decisões tomadas
+
+- **Retomar um flow no passo onde estava** (v2: `navigateTo()` sem passo) mantém-se: `goto(flow)` e `start(flow)` sem passo retomam o último passo desse flow, ou o inicial se o flow nunca foi visitado.
+- **Os modais (`anotherObjects` da v2) mantêm-se como overlays**: declarados no flow (`overlays: { help: helpScreen }`), com transições no mesmo `transitions()`, nós próprios no grafo e incluídos na validação. Não são passos (não entram no histórico).
+
 ## Questões em aberto
 
 - Os parâmetros de rota (`:orderId`) ficam no passo ou passam a ser estado do flow?
-- Os modais (`anotherObjects` da v2) contam como nós do grafo ou ficam como "overlays" fora dele?
 - Qual é o nível de suporte a SSR: só render inicial, ou hidratação do estado do flow?
 - A v2 continua a receber correções durante quanto tempo após a v3?

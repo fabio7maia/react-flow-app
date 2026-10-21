@@ -76,13 +76,13 @@ export function useFlowSelector<T>(selector: (snapshot: FlowSnapshot) => T): T {
 }
 
 /** Tipado a partir da definição do ecrã: não depende de flows nem do registo. */
-export function useFlow<S extends ScreenDef>(_screen: S) {
+export function useFlow<S extends ScreenDef>(screen: S) {
 	const engine = useEngine();
 	const canGoBack = useFlowSelector(snapshot => snapshot.history.length > 0);
 
 	return {
 		dispatch: <K extends ActionName<S>>(...[action, payload]: DispatchArgs<ScreenActions<S>, K>): void =>
-			engine.dispatch(action, payload),
+			engine.dispatch(action, payload, { from: screen.name }),
 		back: (): void => engine.back(),
 		canGoBack,
 	};

@@ -4,7 +4,9 @@ import type { AnyTransition } from './types';
 export type GraphNode = {
 	id: string;
 	flow: string;
+	/** Nome do passo, ou `@overlay` para overlays. */
 	step: string;
+	overlay: boolean;
 	screen: string;
 	initial: boolean;
 	entrypoint: boolean;
@@ -20,6 +22,8 @@ export type GraphEdge = {
 	to: string;
 	action: string;
 	kind: 'direct' | 'branch' | 'cross-flow' | 'exit' | 'effect';
+	/** `goto(flow)` sem passo: retoma o flow (desenhado até ao passo inicial). */
+	resume?: boolean;
 };
 
 export type FlowGraph = { nodes: GraphNode[]; edges: GraphEdge[] };
@@ -40,7 +44,7 @@ const nodeId = (flow: string, step: string): string => `${flow}.${step}`;
 
 export const targetKey = (target: AnyTransition): string => {
 	if (typeof target === 'string') return target;
-	if (target.kind === 'goto') return `${target.flow}.${target.step}`;
+	if (target.kind === 'goto') return `${target.flow}.${target.step ?? '*'}`;
 	if (target.kind === 'exit') return 'exit';
 	if (target.kind === 'effect') return 'effect';
 	return 'branch';
@@ -58,23 +62,50 @@ export function toGraph(app: FlowApp): FlowGraph {
 	const edges: GraphEdge[] = [];
 	const exits: Array<{ from: string; flow: string; action: string; key: string }> = [];
 
+	const initialOf = (flowName: string): string => {
+		const flow = app.getFlow(flowName);
+		const entries = Object.entries(flow?.steps ?? {});
+		return entries.find(([, opts]) => opts.initial)?.[0] ?? entries[0]?.[0] ?? '';
+	};
+
 	for (const flow of app.flows) {
 		const entries = Object.entries(flow.steps);
 		const hasInitial = entries.some(([, opts]) => opts.initial);
+		const sources = [
+			...entries.map(([step, opts], index) => ({
+				key: step,
+				node: {
+					id: nodeId(flow.name, step),
+					flow: flow.name,
+					step,
+					overlay: false,
+					screen: opts.screen.name,
+					initial: opts.initial ?? (!hasInitial && index === 0),
+					entrypoint: opts.entrypoint ?? false,
+					actions: actionsOf(opts.screen.actions as never),
+				},
+			})),
+			...Object.entries(flow.overlays).map(([overlay, screen]) => ({
+				key: overlay,
+				node: {
+					id: nodeId(flow.name, `@${overlay}`),
+					flow: flow.name,
+					step: `@${overlay}`,
+					overlay: true,
+					screen: screen.name,
+					initial: false,
+					entrypoint: false,
+					actions: actionsOf(screen.actions as never),
+				},
+			})),
+		];
 
-		entries.forEach(([step, opts], index) => {
-			nodes.push({
-				id: nodeId(flow.name, step),
-				flow: flow.name,
-				step,
-				screen: opts.screen.name,
-				initial: opts.initial ?? (!hasInitial && index === 0),
-				entrypoint: opts.entrypoint ?? false,
-				actions: actionsOf(opts.screen.actions as never),
-			});
+		for (const { key: source, node } of sources) {
+			nodes.push(node);
+			const step = node.step;
 
-			for (const [action, transition] of Object.entries(flow._transitions[step] ?? {})) {
-				const from = nodeId(flow.name, step);
+			for (const [action, transition] of Object.entries(flow._transitions[source] ?? {})) {
+				const from = node.id;
 				const isBranch = typeof transition !== 'string' && transition.kind === 'branch';
 				const targets = isBranch ? (transition.targets as AnyTransition[]) : [transition];
 
@@ -84,7 +115,8 @@ export function toGraph(app: FlowApp): FlowGraph {
 					if (typeof target === 'string') {
 						edges.push({ id: key, key, from, to: nodeId(flow.name, target), action, kind: isBranch ? 'branch' : 'direct' });
 					} else if (target.kind === 'goto') {
-						edges.push({ id: key, key, from, to: nodeId(target.flow, target.step), action, kind: 'cross-flow' });
+						const to = nodeId(target.flow, target.step ?? initialOf(target.flow));
+						edges.push({ id: key, key, from, to, action, kind: 'cross-flow', resume: target.step === undefined });
 					} else if (target.kind === 'exit') {
 						exits.push({ from, flow: flow.name, action, key });
 					} else if (target.kind === 'effect') {
@@ -92,7 +124,7 @@ export function toGraph(app: FlowApp): FlowGraph {
 					}
 				}
 			}
-		});
+		}
 	}
 
 	// Um exit volta a cada passo que abre este flow a partir de outro flow.
@@ -119,14 +151,22 @@ export function toMermaid(graph: FlowGraph, direction: 'LR' | 'TB' = 'LR'): stri
 	for (const flow of flows) {
 		lines.push(`  subgraph ${flow}`);
 		for (const node of graph.nodes.filter(n => n.flow === flow)) {
-			lines.push(`    ${id(node.id)}${node.initial ? `((${node.step}))` : `[${node.step}]`}`);
+			const shape = node.overlay ? `{{${node.step}}}` : node.initial ? `((${node.step}))` : `[${node.step}]`;
+			lines.push(`    ${id(node.id)}${shape}`);
 		}
 		lines.push('  end');
 	}
 
 	for (const edge of graph.edges) {
 		const arrow = edge.kind === 'cross-flow' || edge.kind === 'exit' ? '-.->' : '-->';
-		const label = edge.kind === 'exit' ? `${edge.action} ↩` : edge.kind === 'effect' ? `${edge.action} ⚙` : edge.action;
+		const label =
+			edge.kind === 'exit'
+				? `${edge.action} ↩`
+				: edge.kind === 'effect'
+				? `${edge.action} ⚙`
+				: edge.resume
+				? `${edge.action} ⟲`
+				: edge.action;
 		lines.push(`  ${id(edge.from)} ${arrow}|${label}| ${id(edge.to)}`);
 	}
 
@@ -144,13 +184,18 @@ export function validateFlows(app: FlowApp): FlowIssue[] {
 			issues.push({ code: 'no-initial-step', where: flow.name, message: `O flow "${flow.name}" não marca nenhum passo como initial` });
 		}
 
-		for (const [step, opts] of Object.entries(flow.steps)) {
-			const declared = actionsOf(opts.screen.actions as never);
-			const handled = Object.keys(flow._transitions[step] ?? {});
-			const where = `${flow.name}.${step}`;
+		const sources = [
+			...Object.entries(flow.steps).map(([step, opts]) => ({ key: step, where: step, screen: opts.screen })),
+			...Object.entries(flow.overlays).map(([overlay, screen]) => ({ key: overlay, where: `@${overlay}`, screen })),
+		];
+
+		for (const { key, where: local, screen } of sources) {
+			const declared = actionsOf(screen.actions as never);
+			const handled = Object.keys(flow._transitions[key] ?? {});
+			const where = `${flow.name}.${local}`;
 
 			for (const action of declared.filter(a => !handled.includes(a))) {
-				issues.push({ code: 'unhandled-action', where, message: `A ação "${action}" do ecrã "${opts.screen.name}" não tem transição` });
+				issues.push({ code: 'unhandled-action', where, message: `A ação "${action}" do ecrã "${screen.name}" não tem transição` });
 			}
 			for (const action of handled.filter(a => !declared.includes(a))) {
 				issues.push({ code: 'unknown-action', where, message: `Transição para a ação "${action}", que o ecrã não declara` });
@@ -177,7 +222,7 @@ export function validateFlows(app: FlowApp): FlowIssue[] {
 			queue.push(edge.to);
 		}
 	}
-	for (const node of graph.nodes.filter(n => !reachable.has(n.id))) {
+	for (const node of graph.nodes.filter(n => !n.overlay && !reachable.has(n.id))) {
 		issues.push({ code: 'unreachable-step', where: node.id, message: 'Passo inalcançável a partir dos passos iniciais e entrypoints' });
 	}
 

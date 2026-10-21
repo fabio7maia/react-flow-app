@@ -4,6 +4,7 @@ import {
 	createFlowApp,
 	createFlowEngine,
 	defineFlow,
+	defineScreen,
 	type FlowEvent,
 	getPaths,
 	toGraph,
@@ -226,6 +227,47 @@ describe('diagrama e validação', () => {
 			issues.map(issue => `${issue.code}@${issue.where}`),
 			['no-initial-step@broken', 'unhandled-action@broken.cart', 'unhandled-action@broken.payment', 'unreachable-step@broken.payment']
 		);
+	});
+});
+
+describe('overlays e retoma de flows', () => {
+	const helpScreen = defineScreen({
+		name: 'help',
+		actions: ['backToCart', 'close'],
+		meta: { title: 'Ajuda' },
+		loader: () => import('../example/screens/success/Success'),
+	});
+
+	it('um overlay e o nome de um passo não podem coincidir', () => {
+		assert.throws(() =>
+			defineFlow({ name: 'clash', steps: { help: { screen: cartScreen } }, overlays: { help: helpScreen } })
+		);
+	});
+
+	it('overlays aparecem no grafo e no Mermaid, e entram na validação', () => {
+		const flow = defineFlow({
+			name: 'shop',
+			steps: { cart: { screen: cartScreen, initial: true }, payment: { screen: paymentScreen } },
+			overlays: { help: helpScreen },
+		});
+		flow.transitions({ cart: { checkout: 'payment' }, payment: { pay: 'cart', cancel: 'cart' }, help: { backToCart: 'cart' } });
+		const app = createFlowApp([flow]);
+
+		assert.ok(toMermaid(toGraph(app)).includes('shop__help{{@help}}'));
+		assert.ok(toMermaid(toGraph(app)).includes('shop__help -->|backToCart| shop_cart'));
+		assert.deepEqual(
+			validateFlows(app).map(issue => `${issue.code}@${issue.where}`),
+			['unhandled-action@shop.@help']
+		);
+	});
+
+	it('start(flow) sem passo retoma o flow no último passo onde esteve', () => {
+		const engine = createFlowEngine(flowApp, { initial: { flow: 'checkout' } });
+		engine.dispatch('checkout', { loggedIn: true });
+		engine.start('home');
+		engine.start('checkout');
+
+		assert.equal(at(engine), 'checkout.payment');
 	});
 });
 

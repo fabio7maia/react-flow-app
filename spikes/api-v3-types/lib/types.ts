@@ -64,12 +64,19 @@ export type StepInput = StepOptions & { readonly screen: ScreenDef<string, any> 
 
 export type StepsInput = { readonly [step: string]: StepInput };
 
+/**
+ * Overlays (v2: `anotherObjects`): ecrãs que não são passos (modais, painéis) mas
+ * cujas ações navegam no flow. Participam no grafo e na validação.
+ */
+export type OverlaysInput = { readonly [overlay: string]: ScreenDef<string, any> };
+
 export type HistoryEntry = { readonly flow: string; readonly step: string };
 
 export type GotoRef<F extends string = string, S extends string = string> = {
 	readonly kind: 'goto';
 	readonly flow: F;
-	readonly step: S;
+	/** Sem passo: retoma o flow no último passo onde esteve (ou no inicial). */
+	readonly step?: S;
 };
 
 export type ExitRef = { readonly kind: 'exit' };
@@ -96,10 +103,14 @@ export type LocalTarget<SN extends string> = SN | GotoRef | ExitRef;
 
 export type Transition<SN extends string, P> = LocalTarget<SN> | BranchRef<LocalTarget<SN>, P> | EffectRef<P>;
 
-/** Para cada passo, as ações do ecrã ligado a esse passo → destino. */
-export type TransitionsFor<S extends StepsInput> = {
+/** Para cada passo (e overlay), as ações do ecrã ligado → destino. */
+export type TransitionsFor<S extends StepsInput, O extends OverlaysInput = {}> = {
 	[K in keyof S]?: {
 		[A in keyof ScreenActions<S[K]['screen']>]?: Transition<keyof S & string, ScreenActions<S[K]['screen']>[A]>;
+	};
+} & {
+	[K in keyof O]?: {
+		[A in keyof ScreenActions<O[K]>]?: Transition<keyof S & string, ScreenActions<O[K]>[A]>;
 	};
 };
 
