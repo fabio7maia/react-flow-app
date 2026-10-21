@@ -58,17 +58,20 @@ function ScreenReady({ stepKey, onReady }: { stepKey: string; onReady: () => voi
 export function FlowProvider({
 	app,
 	initial,
-	adapters = [],
+	adapters: adaptersProp = [],
 	fallback = null,
 	children,
 }: {
 	app: RegisteredApp;
 	initial: { flow: RegisteredFlowName; step?: string };
+	/** Lidos só na primeira renderização (ligam-se uma vez por engine), como `initial`. */
 	adapters?: FlowAdapter[];
 	fallback?: ReactNode;
 	/** Renderizado dentro do contexto do flow, depois do ecrã (ex.: analytics, layout). */
 	children?: ReactNode;
 }) {
+	// Fixos: um pai que recria a lista em cada render não pode trocar os adaptadores ligados ao engine.
+	const [adapters] = useState(adaptersProp);
 	const [engine] = useState(() => {
 		// Um deep link (adaptador) tem prioridade sobre o passo inicial declarado.
 		const fromPlatform = adapters.map(adapter => adapter.initial?.(app as never)).find(Boolean);

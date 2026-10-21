@@ -33,27 +33,40 @@ export type ActionPayloads<F> = { [P in ActionPairs<ScreensOf<F>> as P[0]]: P[1]
 
 type Where<F> = { flow: FlowNameOf<F>; step: StepNameOfAny<F> };
 
-type ActionEvent<F> = {
+// Cada evento tem nome próprio: quem precisa de um só (ex.: analytics) não paga um `Extract`
+// sobre a union inteira, que com 1000 ações custava ~1,5M instanciações por uso.
+export type FlowStartEvent<F = FlowDef> = Where<F> &
+	EventBase & { type: 'flow:start'; source: 'initial' | 'api' | 'goto' | 'back' };
+export type StepLeaveEvent<F = FlowDef> = Where<F> &
+	EventBase & { type: 'step:leave'; reason: 'dispatch' | 'back' | 'exit' | 'start' };
+export type StepEnterEvent<F = FlowDef> = Where<F> &
+	EventBase & {
+		type: 'step:enter';
+		direction: 'forward' | 'back';
+		from?: { flow: string; step: string };
+		meta?: RegisteredMeta;
+	};
+/** O flow deixou de estar ativo (v2: backExit / onFlowUnmount). */
+export type FlowExitEvent<F = FlowDef> = Where<F> &
+	EventBase & { type: 'flow:exit'; reason: 'exit' | 'back' | 'goto' | 'start' };
+/** `back()` sem histórico: nada para onde voltar (novo na v3). */
+export type BackEmptyEvent<F = FlowDef> = Where<F> & EventBase & { type: 'back:empty' };
+export type ActionUnhandledEvent<F = FlowDef> = Where<F> &
+	EventBase & { type: 'action:unhandled'; action: string };
+
+export type ActionEvent<F = FlowDef> = {
 	[A in keyof ActionPayloads<F>]: Where<F> &
 		EventBase & { type: 'action'; action: A; payload: ActionPayloads<F>[A]; overlay?: string };
 }[keyof ActionPayloads<F>];
 
 /** Union discriminada de todos os eventos possíveis para um conjunto de flows. */
 export type FlowEvent<F = FlowDef> =
-	| (Where<F> & EventBase & { type: 'flow:start'; source: 'initial' | 'api' | 'goto' | 'back' })
-	| (Where<F> & EventBase & { type: 'step:leave'; reason: 'dispatch' | 'back' | 'exit' | 'start' })
-	| (Where<F> &
-			EventBase & {
-				type: 'step:enter';
-				direction: 'forward' | 'back';
-				from?: { flow: string; step: string };
-				meta?: RegisteredMeta;
-			})
-	/** O flow deixou de estar ativo (v2: backExit / onFlowUnmount). */
-	| (Where<F> & EventBase & { type: 'flow:exit'; reason: 'exit' | 'back' | 'goto' | 'start' })
-	/** `back()` sem histórico: nada para onde voltar (novo na v3). */
-	| (Where<F> & EventBase & { type: 'back:empty' })
-	| (Where<F> & EventBase & { type: 'action:unhandled'; action: string })
+	| FlowStartEvent<F>
+	| StepLeaveEvent<F>
+	| StepEnterEvent<F>
+	| FlowExitEvent<F>
+	| BackEmptyEvent<F>
+	| ActionUnhandledEvent<F>
 	| ActionEvent<F>;
 
 export type FlowEventType = FlowEvent['type'];

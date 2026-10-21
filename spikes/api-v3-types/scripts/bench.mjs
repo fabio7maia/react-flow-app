@@ -90,11 +90,12 @@ declare module 'react-flow-app' {
 );
 write(
 	'events.ts',
-	`import { createFlowEngine } from 'react-flow-app';
+	`import { createFlowEngine, segment } from 'react-flow-app';
 import { flowApp } from './app.flow';
 createFlowEngine(flowApp).on('action', e => {
 	if (e.action === 'next_f0s0') console.log(e.payload.value);
 });
+segment({ actions: { next_f0s0: payload => ({ name: 'next', properties: { value: payload.value } }) } });
 `
 );
 write(

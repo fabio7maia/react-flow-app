@@ -284,25 +284,32 @@ describe.each(getPaths(flowApp, { from: 'checkout.cart', strategy: 'shortest' })
 
 ### 1 e 2. Navegação por eventos e integração com terceiros
 
-A lib é dona do motor e por isso emite o [contrato de eventos](./00-comparativo.md#contrato-de-eventos-prioridades-1-e-2) completo. Todas as navegações (dispatch, back, start, entrada por URL) passam pelo motor, logo nenhuma escapa à captura.
+A lib é dona do motor e por isso emite o [contrato de eventos](./00-comparativo.md#contrato-de-eventos-prioridades-1-e-2) completo (v1, fixado em teste). Todas as navegações (dispatch, back, start, entrada por URL, back do browser) passam pelo motor, logo nenhuma escapa à captura.
 
-```ts
-export const flowApp = createFlowApp([checkoutFlow, authFlow, homeFlow], {
-	middleware: [
-		analytics(ga4Adapter({ measurementId: 'G-XXX' })),
-		// Integração própria: um único sítio, totalmente tipado
-		(ctx, next) => {
-			if (ctx.event.type === 'action' && ctx.event.action === 'pay') {
-				//                                                  ^ intellisense: todas as actions de todos os flows
-				datadog.addAction('checkout_pay', { ok: ctx.event.payload.ok }); // payload inferido: { ok: boolean }
-			}
-			return next();
-		},
-	],
+```tsx
+// App.tsx — analytics como adaptador, ao lado do URL e do scroll
+<FlowProvider
+	app={flowApp}
+	initial={{ flow: 'home' }}
+	adapters={[
+		browserHistory(),
+		scrollRestoration(),
+		ga4({
+			actions: {
+				pay: payload => ({ name: 'payment_submitted', properties: { ok: payload.ok } }),
+				//   ^ intellisense: todas as ações de todos os flows; payload inferido: { ok: boolean }
+			},
+		}),
+	]}
+/>;
+
+// Integração própria, num componente filho (tipada pelo Register)
+useFlowEvents('step:enter', e => sentry.addBreadcrumb({ message: `${e.flow}.${e.step}`, data: e.meta }));
+
+// Ou fora do React, para todas as instâncias (ex.: monitorização)
+createFlowApp(flows, {
+	integrations: [e => e.type === 'action:unhandled' && console.warn(`ação sem transição: ${e.action}`)],
 });
-
-// Ou fora do React (ex.: num módulo de telemetria)
-flowApp.engine.on('step:enter', (e) => sentry.addBreadcrumb({ message: `${e.flow}.${e.step}`, data: e.meta }));
 ```
 
 ### 3. Diagrama multi-fluxo

@@ -6,15 +6,13 @@ import { homeFlow } from './flows/home.flow';
 export const flowApp = createFlowApp([homeFlow, checkoutFlow, authFlow], {
 	integrations: [
 		event => {
-			// Ponto único de integração com terceiros, tipado para todos os flows.
-			if (event.type === 'action' && event.action === 'pay') {
-				analytics.track('checkout_pay', { ok: event.payload.ok });
+			// Todas as instâncias, sem React (ex.: monitorização). O analytics é um adaptador: ver analytics.ts.
+			if (event.type === 'action:unhandled') {
+				console.warn(`[flows] ação sem transição: ${event.flow}.${event.step} → ${event.action}`);
 			}
 		},
 	],
 });
-
-declare const analytics: { track(name: string, data?: object): void };
 
 declare module 'react-flow-app' {
 	interface Register {

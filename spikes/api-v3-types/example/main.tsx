@@ -6,7 +6,7 @@ const calls: string[] = [];
 Object.assign(window, { __analytics: calls });
 Object.assign(globalThis, {
 	analytics: {
-		page: (title: string) => calls.push(`page ${title}`),
+		page: (name: string, properties: { path: string }) => calls.push(`page ${name} ${properties.path}`),
 		track: (name: string) => calls.push(`track ${name}`),
 	},
 });

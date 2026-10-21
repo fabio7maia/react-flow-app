@@ -57,49 +57,84 @@ Escala de 1 (fraco) a 5 (forte). Os pesos seguem as prioridades acima: 3 nas pri
 
 ## Contrato de eventos (prioridades 1 e 2)
 
-Seja qual for a abordagem, o modelo de eventos deve ser desenhado como um **contrato público e estável**, porque é o que as integrações de terceiros vão consumir.
+Seja qual for a abordagem, o modelo de eventos deve ser desenhado como um **contrato público e estável**, porque é o que as integrações de terceiros vão consumir. A versão abaixo (v1) está implementada no spike e fixada em [`tests/events.contract.test.ts`](../../spikes/api-v3-types/tests/events.contract.test.ts): qualquer alteração de nomes, campos ou ordem aparece como diff nesse teste.
 
 ```ts
 type FlowEvent =
-	| { type: 'flow:start'; flow; step; source: 'initial' | 'url' | 'api' }
-	| { type: 'action'; flow; step; action; payload } // o utilizador fez algo
-	| { type: 'step:leave'; flow; step; reason: 'dispatch' | 'back' | 'start' }
-	| { type: 'step:enter'; flow; step; from?: { flow; step }; direction: 'forward' | 'back' }
-	| { type: 'flow:exit'; flow; step; reason: 'goto' | 'back' | 'exit' | 'start' } // o flow deixou de estar ativo (v2: backExit / onFlowUnmount)
-	| { type: 'back:empty'; flow; step } // back() sem histórico (novo: a app decide se fecha a webview, etc.)
-	| { type: 'navigation:blocked'; flow; step; action; reason } // guard/middleware cancelou
-	| { type: 'action:unhandled'; flow; step; action }; // ação sem transição (útil em dev/CI)
+	| { type: 'flow:start'; source: 'initial' | 'api' | 'goto' | 'back' }
+	| { type: 'action'; action; payload; overlay? } // o utilizador fez algo; payload tipado pela ação
+	| { type: 'step:leave'; reason: 'dispatch' | 'back' | 'exit' | 'start' }
+	| { type: 'flow:exit'; reason: 'goto' | 'back' | 'exit' | 'start' } // v2: backExit / onFlowUnmount
+	| { type: 'step:enter'; direction: 'forward' | 'back'; from?: { flow; step }; meta? } // meta tipada pelo Register
+	| { type: 'back:empty' } // back() sem histórico: a app decide (fechar a webview, etc.)
+	| { type: 'action:unhandled'; action }; // ação sem transição (útil em dev/CI)
 
-// Campos comuns a todos: navigationId (correlação), timestamp, url?, meta (tipada), history.length
+// Campos comuns a todos: flow, step, navigationId, timestamp, url (do passo a que o evento se refere)
 ```
 
-Garantias que fazem parte do contrato:
+Cada evento tem também um tipo com nome (`StepEnterEvent<F>`, `ActionEvent<F>`, …). Quem precisa de um só não paga um `Extract` sobre a union inteira: com 1000 ações, cada `Extract` custava ~1,5M instanciações no type-check.
 
-- **Ordem determinística:** `action → step:leave → step:enter`. O PR #63 emitia `mount` antes de `dispatch`, o que baralha funis de analytics.
-- **Um `navigationId` por navegação**, para correlacionar os eventos e medir o tempo entre `action` e `step:enter` (inclui o lazy loading).
-- **Isolamento de erros:** uma integração que lança exceção não parte a navegação nem as outras integrações.
-- **Metadados tipados por passo** (não por ecrã), com o tipo declarado uma vez pela app:
+### Ordem por tipo de navegação
+
+| Navegação | Eventos (todos com o mesmo `navigationId`) |
+| --- | --- |
+| Arranque | `flow:start(initial)` → `step:enter` |
+| Ação no mesmo flow | `action` → `step:leave(dispatch)` → `step:enter(forward)` |
+| Ação com `goto` para outro flow | `action` → `step:leave(dispatch)` → `flow:exit(goto)` → `flow:start(goto)` → `step:enter(forward)` |
+| `goto.exit()` | `action` → `step:leave(exit)` → `flow:exit(exit)` → `flow:start(back)` → `step:enter(back)` |
+| `back()` no mesmo flow | `step:leave(back)` → `step:enter(back)` |
+| `back()` para outro flow | `step:leave(back)` → `flow:exit(back)` → `flow:start(back)` → `step:enter(back)` |
+| `start()` com um flow ativo | `step:leave(start)` → [`flow:exit(start)` → `flow:start(api)`] → `step:enter(forward)` |
+| `back()` sem histórico | `back:empty` |
+| Ação sem transição | `action:unhandled` |
+| Ação com `effect` | `action` |
+
+### Garantias
+
+- **Ordem determinística**, conforme a tabela. O PR #63 emitia `mount` antes de `dispatch`, o que baralha funis de analytics.
+- **Um `navigationId` por navegação**, partilhado por todos os seus eventos e estritamente crescente. Serve para correlacionar eventos e medir o tempo entre `action` e `step:enter` (inclui o lazy loading).
+- **Run-to-completion**: uma navegação pedida dentro de um listener (ex.: um guard que redireciona no `step:enter`) só corre depois de a atual entregar todos os eventos. Dentro do listener, o estado ainda é o da navegação atual.
+- **Ordem de entrega**: listeners do tipo, depois `'*'`, depois as integrações da app.
+- **`url` do passo a que o evento se refere**, já com os parâmetros desse passo. `step:leave` e `flow:exit` levam o URL de onde se sai; `flow:start` e `step:enter`, o de onde se entra.
+- **Isolamento de erros**: uma integração que lança exceção não parte a navegação nem as outras integrações.
+- **Arranque sem perdas**: o `FlowProvider` retém os eventos do arranque até os filhos e adaptadores estarem ligados, por isso o primeiro page view não se perde.
+- **Metadados tipados por ecrã**, com o tipo declarado uma vez pela app:
 
 ```ts
 declare module 'react-flow-app' {
 	interface Register {
-		flows: typeof flows; // ativa intellisense global em useFlow, useFlowEvents, start…
-		meta: { title: string; gaPath?: string; funnel?: 'checkout' | 'onboarding' };
+		app: typeof flowApp; // ativa intellisense global em goto, useFlowEvents, start, analytics…
+		meta: { title: string; funnel?: 'checkout' | 'onboarding' };
 	}
 }
 ```
 
-- **Middleware** para casos que vão além de observar:
+### Analytics (adaptador oficial)
+
+Validado com adaptadores para GA4 (`gtag.js`) e Segment (`analytics.js`) por cima de um `analytics(sink)` genérico:
 
 ```ts
-createFlowApp(flows, {
-	middleware: [
-		analytics(ga4Adapter({ measurementId: 'G-XXX' })), // adaptador oficial: page_view em step:enter, event em action
-		logger({ collapsed: true }),
-		(ctx, next) => (ctx.action === 'pay' && !ctx.payload.ok ? ctx.redirect('failure') : next()),
-	],
-});
+const adapters = [
+	browserHistory(),
+	segment({
+		// page view em cada step:enter (título = meta.title) e funis (Flow Started / Flow Exited)
+		actions: {
+			// Opt-in: só as ações listadas saem, com o que o mapeamento escolhe do payload (PII)
+			checkout: payload => ({ name: 'Checkout Started', properties: { loggedIn: payload.loggedIn } }),
+			finish: 'Order Completed',
+		},
+		enabled: () => consent.analytics, // consentimento: nada sai enquanto for false
+	}),
+];
 ```
+
+Decisões que saíram da validação:
+
+- **É um adaptador do Provider, não uma integração da app.** As integrações são tipadas pelo próprio `createFlowApp`. Usar ali tipos do `Register` criava um ciclo, porque o `Register` depende do `flowApp`.
+- **`path` é o caminho do passo** (`/checkout/pay/42`), independente do modo hash/path do browser. O GA4 ignora o hash, por isso é este caminho que dá relatórios úteis.
+- **GA4 numa SPA**: o page view automático tem de estar desligado (`send_page_view: false` e "page changes based on browser history events" desligado), senão conta a dobrar.
+- **O SDK é resolvido em cada chamada**, porque os snippets do GA4 e do Segment podem carregar depois do arranque ou ser bloqueados por um ad blocker.
+- **Middleware (guards, redirecionar, bloquear navegação) fica fora da v1.** O caso "redirecionar" já é possível com um listener, graças ao run-to-completion. Um evento `navigation:blocked` só entra quando houver guards.
 
 ## Testes (prioridade 4)
 
@@ -167,10 +202,10 @@ A abordagem recomendada deve trazer um pacote `react-flow-app/testing`:
 
 ### Pré-requisitos antes de escrever o core
 
-- [ ] **Testes de caracterização da v2 na `main`.** Cobrir `ignoreHistory`, `clearHistory`, `allowCyclicHistory`, `checkpoint`, `fromFlow`/`backExit`, ordem dos eventos, `scrollRestoration` e `initialHistory`. São o contrato de compatibilidade.
+- [x] **Testes de caracterização da v2** (PR #67, na branch `v3`: nada vai para a `main` nesta fase). Cobrir `ignoreHistory`, `clearHistory`, `allowCyclicHistory`, `checkpoint`, `fromFlow`/`backExit`, ordem dos eventos, `scrollRestoration` e `initialHistory`. São o contrato de compatibilidade.
 - [ ] **Separar as mudanças de tooling** (pnpm, Vitest, Biome) num PR próprio, sem alterações de comportamento.
-- [ ] **Escrever um spike de tipos**: `defineFlows` + `branch` + `goto` + `Register`, com testes `expectTypeOf` e um benchmark de `tsc` com 50 flows / 300 ecrãs.
-- [ ] **Fechar o contrato de eventos** (tipos, ordem, campos comuns) antes de qualquer implementação, e validá-lo com um adaptador real de analytics (GA4 ou Segment).
+- [x] **Escrever um spike de tipos**: `defineFlows` + `branch` + `goto` + `Register`, com testes `expectTypeOf` e um benchmark de `tsc` com 50 flows / 300 ecrãs.
+- [x] **Fechar o contrato de eventos** (tipos, ordem, campos comuns) e validá-lo com adaptadores de analytics reais (GA4 e Segment). Ver [Contrato de eventos](#contrato-de-eventos-prioridades-1-e-2).
 
 ### Plano incremental proposto
 

@@ -8,12 +8,14 @@ import {
 	defineFlow,
 	defineScreen,
 	effect,
+	ga4,
 	goto,
 	payload,
 	type ParamsOf,
 	type RegisteredEvent,
 	type RegisteredFlowName,
 	type ScreenActions,
+	segment,
 	useFlow,
 	useFlowEvents,
 	useStepParams,
@@ -226,6 +228,29 @@ function EventsProbe() {
 	return null;
 }
 void EventsProbe;
+
+// ─── Analytics: ações e payloads tipados pelo Register ───────────────────────
+
+segment({
+	actions: {
+		checkout: payload => {
+			expectType<Equal<typeof payload, { loggedIn: boolean }>>();
+			return { name: 'Checkout Started', properties: { loggedIn: payload.loggedIn } };
+		},
+		pay: payload => (payload.ok ? false : { name: 'Payment Failed' }),
+		finish: 'Order Completed',
+		// @ts-expect-error ação que nenhum ecrã declara
+		refund: 'Refund',
+	},
+});
+ga4({
+	page: event => {
+		expectType<Equal<typeof event.meta, { title: string; funnel?: 'checkout' | 'onboarding' } | undefined>>();
+		return { title: event.meta?.title };
+	},
+	// @ts-expect-error o mapeamento tem de devolver { name } (ou false)
+	actions: { pay: () => ({ event: 'pay' }) },
+});
 
 const engine = createFlowEngine(flowApp);
 engine.start('checkout', 'payment');

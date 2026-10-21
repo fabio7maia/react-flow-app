@@ -64,9 +64,14 @@ const probes = [
 		code: "createFlowEngine(flowApp).start('checkout', '|');",
 		expected: ['cart', 'failure', 'payment', 'success'],
 	},
+	{
+		name: 'segment({ actions: { | } }) sugere as ações de todos os flows',
+		code: 'segment({ actions: { | } });',
+		expected: ['cancel', 'checkout', 'finish', 'loggedIn', 'openCart', 'pay', 'retry'],
+	},
 ];
 
-const header = `import { branch, createFlowEngine, goto, useFlow, useFlowEvents } from 'react-flow-app';
+const header = `import { branch, createFlowEngine, goto, segment, useFlow, useFlowEvents } from 'react-flow-app';
 import { flowApp } from './app.flow';
 import { checkoutFlow } from './flows/checkout.flow';
 import { paymentScreen } from './screens/payment/payment.screen';

@@ -5,12 +5,15 @@ import { afterEach, beforeEach, describe, it } from 'node:test';
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { browserHistory, scrollRestoration } from 'react-flow-app';
+import { appAnalytics } from '../example/analytics';
 import { App } from '../example/App';
 
+// Cliente Segment falso: o adaptador `segment()` resolve `globalThis.analytics` em cada chamada.
 const analyticsCalls: string[] = [];
 (globalThis as unknown as { analytics: unknown }).analytics = {
-	page: (title: string) => analyticsCalls.push(`page ${title}`),
-	track: (name: string) => analyticsCalls.push(`track ${name}`),
+	page: (name: string, properties: { path: string }) => analyticsCalls.push(`page ${name} ${properties.path}`),
+	track: (name: string, properties?: { flow?: string }) =>
+		analyticsCalls.push(`track ${name}${properties?.flow ? ` ${properties.flow}` : ''}`),
 };
 
 let root: Root;
@@ -50,6 +53,7 @@ const render = async (hash = ''): Promise<void> => {
 	const adapters = [
 		browserHistory(),
 		scrollRestoration({ get: () => scroll, set: top => scrollWrites.push((scroll = top)) }),
+		appAnalytics(),
 	];
 	await act(async () => root.render(<App adapters={adapters} />));
 	await flush();
@@ -73,13 +77,28 @@ describe('render React real (jsdom)', () => {
 		assert.equal(win.location.hash, '#/dashboard');
 	});
 
-	it('children do FlowProvider recebem eventos (analytics) e o dispatch navega entre flows', async () => {
+	it('analytics (adaptador Segment): page views e funis desde o arranque; o dispatch navega entre flows', async () => {
 		await render();
 		await click('Ver carrinho');
 
 		assert.equal(heading(), 'Carrinho');
 		assert.equal(win.location.hash, '#/checkout/cart');
-		assert.deepEqual(analyticsCalls, ['page Início', 'page Carrinho']);
+		assert.deepEqual(analyticsCalls, [
+			'track Flow Started home',
+			'page Início /dashboard',
+			'track Flow Exited home',
+			'track Flow Started checkout',
+			'page Carrinho /checkout/cart',
+		]);
+	});
+
+	it('children do FlowProvider recebem eventos, incluindo os do arranque', async () => {
+		await render();
+		assert.equal(win.document.title, 'Início · Loja');
+
+		await click('Ver carrinho');
+
+		assert.equal(win.document.title, 'Carrinho · Loja');
 	});
 
 	it('parâmetros de URL: dispatch com params e leitura tipada com useStepParams', async () => {
@@ -89,7 +108,7 @@ describe('render React real (jsdom)', () => {
 
 		assert.equal(heading(), 'Pagamento da encomenda 42');
 		assert.equal(win.location.hash, '#/checkout/pay/42');
-		assert.ok(analyticsCalls.includes('track checkout'));
+		assert.ok(analyticsCalls.includes('track Checkout Started'));
 	});
 
 	it('o back do browser navega o flow (popstate real do jsdom)', async () => {

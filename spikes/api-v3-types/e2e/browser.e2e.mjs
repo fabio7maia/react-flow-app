@@ -55,7 +55,8 @@ for (const target of targets) {
 			const { page } = await open();
 			assert.equal(await heading(page), 'Início');
 			assert.equal(new URL(page.url()).hash, '#/dashboard');
-			assert.deepEqual(await page.evaluate(() => window.__analytics), ['page Início']);
+			assert.deepEqual(await page.evaluate(() => window.__analytics), ['track Flow Started', 'page Início /dashboard']);
+			assert.equal(await page.title(), 'Início · Loja');
 			await page.close();
 		});
 

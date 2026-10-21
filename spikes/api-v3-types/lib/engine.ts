@@ -90,6 +90,9 @@ export function createFlowEngine<A extends FlowApp>(
 	let held: Array<Record<string, unknown>> | null = options.deferStartEvents ? [] : null;
 	/** Último passo de cada flow, para retomar com `goto(flow)` / `start(flow)` sem passo (v2: X07). */
 	const lastStep = new Map<string, string>();
+	/** Run-to-completion: navegações pedidas por um listener correm depois de a atual terminar. */
+	let navigating = false;
+	const pending: Array<() => void> = [];
 
 	const initialStepOf = (flowName: string): string => {
 		const flow = app.getFlow(flowName);
@@ -135,6 +138,26 @@ export function createFlowEngine<A extends FlowApp>(
 		}
 	};
 
+	/**
+	 * Uma navegação entrega todos os seus eventos antes de a seguinte começar. Sem isto, um
+	 * listener que navega (ex.: redirecionar no `step:enter`) intercalava eventos de duas
+	 * navegações e misturava `navigationId`s.
+	 */
+	const navigate = (run: () => void): void => {
+		if (navigating) {
+			pending.push(run);
+			return;
+		}
+		navigating = true;
+		try {
+			run();
+			for (let next = pending.shift(); next; next = pending.shift()) next();
+		} finally {
+			navigating = false;
+			pending.length = 0;
+		}
+	};
+
 	const commit = (next: FlowSnapshot): void => {
 		state = next;
 		subscribers.forEach(cb => cb());
@@ -150,10 +173,11 @@ export function createFlowEngine<A extends FlowApp>(
 		next: Omit<FlowSnapshot, 'flow' | 'step'>,
 		ctx: { from: HistoryEntry | null; direction: 'forward' | 'back'; source: 'initial' | 'api' | 'goto' | 'back' }
 	): void => {
+		// Commit primeiro: o `url` do flow:start já leva os parâmetros do passo de destino.
+		commit({ ...next, ...target });
 		if (!ctx.from || ctx.from.flow !== target.flow) {
 			emit({ type: 'flow:start', ...target, source: ctx.source });
 		}
-		commit({ ...next, ...target });
 		lastStep.set(target.flow, target.step);
 		emit({
 			type: 'step:enter',
@@ -277,75 +301,13 @@ export function createFlowEngine<A extends FlowApp>(
 		start(flowName, stepName, navigation = {}) {
 			const flow = app.getFlow(flowName);
 			if (!flow) throw new Error(`[react-flow-app] Flow inexistente: ${flowName}`);
-
-			navigationId++;
-			const target = { flow: flow.name, step: stepName ?? resumeStepOf(flow.name) };
-
-			if (current()) {
-				forward(target, 'start', 'api', navigation);
-			} else {
-				const history = navigation.history ? toEntries(flow.name, navigation.history) : [];
-				enter(
-					target,
-					{ history, callers: [], params: navigation.params ?? {} },
-					{ from: null, direction: 'forward', source: 'initial' }
-				);
-			}
+			navigate(() => startNow(flow.name, stepName, navigation));
 		},
 		dispatch(action, payload, navigation) {
-			const from = current();
-			if (!from) {
-				console.warn('[react-flow-app] dispatch sem flow ativo');
-				return;
-			}
-
-			navigationId++;
-			const flow = app.getFlow(from.flow);
-			// Ações de um overlay (v2: anotherObjects) usam as transições do overlay; as restantes, as do passo atual.
-			const overlay = Object.entries(flow?.overlays ?? {}).find(([, screen]) => screen.name === navigation?.from)?.[0];
-			const transition = flow?._transitions[overlay ?? from.step]?.[action];
-
-			if (!transition) {
-				emit({ type: 'action:unhandled', ...from, action });
-				return;
-			}
-
-			emit({ type: 'action', ...from, action, payload, overlay });
-
-			const { target, key } = resolve(transition, from, payload);
-			traversed.add(edgeKey(from.flow, overlay ? `@${overlay}` : from.step, action, key));
-
-			if (target === 'exit') {
-				exitFlow();
-			} else if (target !== 'effect') {
-				forward(target, 'dispatch', target.flow !== from.flow ? 'goto' : 'api', navigation);
-			}
+			navigate(() => dispatchNow(action, payload, navigation));
 		},
 		back() {
-			const from = current();
-			if (!from) return;
-
-			navigationId++;
-			const previous = state.history[state.history.length - 1];
-
-			if (!previous) {
-				// Novo na v3: a app pode reagir (fechar webview, sair…). Na v2 não havia evento (C07).
-				emit({ type: 'back:empty', ...from });
-				return;
-			}
-
-			leave(from, previous, 'back');
-			const callers = state.callers;
-			const last = callers[callers.length - 1];
-			enter(
-				{ flow: previous.flow, step: previous.step },
-				{
-					history: state.history.slice(0, -1),
-					callers: last && same(last, previous) ? callers.slice(0, -1) : callers,
-					params: previous.params ?? {},
-				},
-				{ from, direction: 'back', source: 'back' }
-			);
+			navigate(backNow);
 		},
 		clearHistory() {
 			commit({ ...state, history: [], callers: [] });
@@ -353,7 +315,7 @@ export function createFlowEngine<A extends FlowApp>(
 		releaseStartEvents() {
 			const queue = held ?? [];
 			held = null;
-			queue.forEach(deliver);
+			navigate(() => queue.forEach(deliver));
 		},
 		urlOf(entry, params) {
 			return buildUrl(app, entry, (params as FlowParams | undefined) ?? state.params);
@@ -368,6 +330,83 @@ export function createFlowEngine<A extends FlowApp>(
 			};
 		},
 	};
+
+	function startNow(flowName: string, stepName: string | undefined, navigation: NavigationOptions): void {
+		navigationId++;
+		const target = { flow: flowName, step: stepName ?? resumeStepOf(flowName) };
+
+		if (current()) {
+			forward(target, 'start', 'api', navigation);
+		} else {
+			const history = navigation.history ? toEntries(flowName, navigation.history) : [];
+			enter(
+				target,
+				{ history, callers: [], params: navigation.params ?? {} },
+				{ from: null, direction: 'forward', source: 'initial' }
+			);
+		}
+	}
+
+	function dispatchNow(
+		action: string,
+		payload: unknown,
+		navigation?: Pick<NavigationOptions, 'ignoreHistory' | 'params'> & { from?: string }
+	): void {
+		const from = current();
+		if (!from) {
+			console.warn('[react-flow-app] dispatch sem flow ativo');
+			return;
+		}
+
+		navigationId++;
+		const flow = app.getFlow(from.flow);
+		// Ações de um overlay (v2: anotherObjects) usam as transições do overlay; as restantes, as do passo atual.
+		const overlay = Object.entries(flow?.overlays ?? {}).find(([, screen]) => screen.name === navigation?.from)?.[0];
+		const transition = flow?._transitions[overlay ?? from.step]?.[action];
+
+		if (!transition) {
+			emit({ type: 'action:unhandled', ...from, action });
+			return;
+		}
+
+		emit({ type: 'action', ...from, action, payload, overlay });
+
+		const { target, key } = resolve(transition, from, payload);
+		traversed.add(edgeKey(from.flow, overlay ? `@${overlay}` : from.step, action, key));
+
+		if (target === 'exit') {
+			exitFlow();
+		} else if (target !== 'effect') {
+			forward(target, 'dispatch', target.flow !== from.flow ? 'goto' : 'api', navigation);
+		}
+	}
+
+	function backNow(): void {
+		const from = current();
+		if (!from) return;
+
+		navigationId++;
+		const previous = state.history[state.history.length - 1];
+
+		if (!previous) {
+			// Novo na v3: a app pode reagir (fechar webview, sair…). Na v2 não havia evento (C07).
+			emit({ type: 'back:empty', ...from });
+			return;
+		}
+
+		leave(from, previous, 'back');
+		const callers = state.callers;
+		const last = callers[callers.length - 1];
+		enter(
+			{ flow: previous.flow, step: previous.step },
+			{
+				history: state.history.slice(0, -1),
+				callers: last && same(last, previous) ? callers.slice(0, -1) : callers,
+				params: previous.params ?? {},
+			},
+			{ from, direction: 'back', source: 'back' }
+		);
+	}
 
 	if (options.initial) {
 		const { flow, step, history, params } = options.initial;

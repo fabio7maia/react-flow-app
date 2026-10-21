@@ -15,4 +15,5 @@ export * from './engine';
 export * from './graph';
 export * from './url';
 export * from './adapters';
+export * from './analytics';
 export * from './react';
