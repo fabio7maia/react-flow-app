@@ -1,4 +1,4 @@
-# Spike — tipos da API v3 (abordagem A, ecrãs e flows em ficheiros separados)
+# Spike — API v3 (abordagem A, ecrãs e flows em ficheiros separados)
 
 > Protótipo descartável para validar o [RFC da abordagem A](../../rfcs/api-v3/01-grafo-declarativo.md). Não é código de produção, nem faz parte do build da lib.
 
@@ -6,49 +6,54 @@
 
 Confirmar, com código a compilar e a correr, que a abordagem A cumpre as prioridades com **um ficheiro por ecrã, um ficheiro por flow e a composição num terceiro ficheiro**:
 
-1. tipagem ponta a ponta com intellisense, sem genéricos escritos à mão;
-2. `goto` entre flows declarados em ficheiros diferentes, validado em compilação;
-3. eventos tipados para integrações de terceiros;
-4. grafo, diagrama, validação e testes gerados sem executar código;
-5. tempo de type-check aceitável numa app grande (50 flows / 300 ecrãs).
+1. navegação por eventos;
+2. capturar as navegações e integrar com terceiros (analytics);
+3. diagrama com os vários flows;
+4. testes automáticos sobre os flows e agilidade nos testes;
+5. tipagem ponta a ponta com intellisense, sem genéricos escritos à mão;
+
+e que mantém o comportamento da v2 (paridade com os testes de caracterização).
 
 ## Como correr
 
-Usa as dependências da raiz do repo (TypeScript 5.8, React 19). A partir desta pasta:
+Usa as dependências da raiz do repo (TypeScript 5.8, React 19, jsdom, esbuild). O único pacote próprio é o `playwright-core`, para o e2e (`npm install` nesta pasta; usa os browsers que o Playwright já tem em cache, não descarrega nenhum).
 
 ```bash
-../../node_modules/.bin/tsc -p tsconfig.json --noEmit   # tipos + testes de tipos
-node scripts/test.mjs                                    # testes de runtime (node:test)
-node scripts/completions.mjs                             # intellisense real (language service)
-node scripts/bench.mjs 50 6                              # benchmark: 50 flows × 6 passos
+npm run typecheck      # tipos + testes de tipos
+npm test               # 90 testes em Node: engine, paridade com a v2, adaptadores, render React (jsdom)
+npm run completions    # intellisense real (language service do TypeScript)
+npm run bench -- 50 6  # benchmark de type-check: 50 flows × 6 passos
+npm run e2e            # 7 cenários × 2 browsers reais (Chromium do Playwright + Chrome do sistema)
 ```
 
 ## Estrutura
 
 ```
 lib/                        protótipo da lib ('react-flow-app' via tsconfig paths)
-  types.ts                  ecrãs, ações, payloads, transições
+  types.ts                  ecrãs, ações, payloads, transições, alvos
   screen.ts                 defineScreen, payload
-  flow.ts                   defineFlow, goto, branch, Register
+  flow.ts                   defineFlow (passos + overlays), goto, branch, effect, Register
   app.ts                    createFlowApp, contrato de eventos
   engine.ts                 motor headless (start, dispatch, back, eventos, cobertura)
   graph.ts                  toGraph, toMermaid, validateFlows, getPaths
-  url.ts                    URL de cada passo (/baseUrl/url, :params) e deep links (puro)
+  url.ts                    URL de cada passo (/baseUrl/url, :params tipados) e deep links (puro)
   adapters.ts               browserHistory (URL + back/forward do browser), scrollRestoration
-  react.tsx                 FlowProvider, useFlow, useFlowSelector, useFlowEvents
+  react.tsx                 FlowProvider, useFlow, useFlowSelector, useFlowEvents, useStepParams
 example/
   screens/<ecrã>/<ecrã>.screen.ts   definição (ações, payloads, meta, loader)
   screens/<ecrã>/<Ecrã>.tsx         componente (lazy)
   flows/<flow>.flow.ts              passos + transições
   app.flow.ts                       composição + Register
-  App.tsx                           Provider + analytics
+  App.tsx, main.tsx                 Provider + adaptadores + analytics; entrada do browser (e2e)
 tests/
-  types.test-d.ts           28 asserções de tipos (20 erros esperados + 8 igualdades de tipo)
-  engine.test.ts            24 testes de runtime
+  types.test-d.ts           37 asserções de tipos (25 erros esperados + 12 igualdades de tipo)
+  engine.test.ts            26 testes do motor, grafo, validação, testes gerados e cobertura
   parity.test.ts            41 cenários de paridade com a v2 (mesmos IDs da caracterização)
   adapters.test.ts          15 testes de URL, deep links, back/forward do browser e scroll
-  fake-browser.ts           browser falso em memória (popstate assíncrono, como nos browsers reais)
-scripts/                    test, completions, bench
+  react.test.tsx            8 testes de render React real (jsdom, popstate real)
+  fake-browser.ts, dom.ts   browser falso em memória; DOM jsdom para o React
+e2e/browser.e2e.mjs         7 cenários em browsers reais (Playwright)
+scripts/                    test, completions, bench, e2e
 ```
 
 ## Resultados
@@ -56,35 +61,41 @@ scripts/                    test, completions, bench
 | Hipótese | Resultado |
 |---|---|
 | Ecrã num ficheiro, flow noutro, composição num terceiro | ✅ Funciona, com uma condição (ver descoberta 1) |
-| `dispatch` tipado a partir do ecrã (ações, payload obrigatório/opcional) | ✅ |
+| `dispatch` tipado a partir do ecrã (ações, payload obrigatório/opcional, opções de navegação) | ✅ |
 | Transições: só passos do flow, só ações do ecrã do passo | ✅ Erros claros, incluindo `Did you mean '"payment"'?` |
 | `goto('flow', 'passo')` entre ficheiros, validado pelo `Register` | ✅ Sem imports circulares (ver descoberta 1) |
-| Payload inferido dentro do `branch` | ✅ `(_, p) => p.ok` sem anotações |
-| `branch` só pode devolver um dos alvos declarados | ✅ |
+| Payload inferido dentro do `branch`; o `branch` só devolve alvos declarados | ✅ `(_, p) => p.ok` sem anotações |
+| Exemplos de payload no `branch` (`samples`), com chaves e valores tipados | ✅ (ver descoberta 4) |
+| Parâmetros de URL tipados (`'pay/:orderId'` → `{ orderId: string }`) | ✅ `start`, `urlOf`, `useStepParams` |
 | Metadados tipados pela app (`Register['meta']`) | ✅ |
 | Eventos tipados (`e.action === 'pay'` → `e.payload.ok`) | ✅ (ver descoberta 3) |
-| Intellisense real em 9 pontos da API | ✅ 9/9 sugestões exatamente as esperadas |
+| Intellisense real em 11 pontos da API | ✅ 11/11 sugestões exatamente as esperadas |
 | Grafo e Mermaid sem executar resolvers | ✅ |
-| `validateFlows` (ações sem transição, inalcançáveis, sem inicial) | ✅ |
-| Testes gerados por caminho + relatório de cobertura de transições | ✅ (ver descoberta 4) |
-| Semântica de histórico (ignoreHistory, clearHistory, ciclos, exit, back entre flows) | ✅ 7 testes |
-| Engine por instância (sem singleton) | ✅ |
-| Type-check com 300 ecrãs | ✅ 1,3–1,7 s (depois da descoberta 3) |
-| Paridade com a v2 (41 cenários de caracterização) | ✅ 37 iguais ou equivalentes, 4 divergências intencionais, 0 pendentes (ver abaixo) |
+| `validateFlows` (ações sem transição, inalcançáveis, sem inicial, branch sem exemplo) | ✅ |
+| Testes gerados por caminho + relatório de cobertura de transições | ✅ Sem mapas escritos à mão |
 | Overlays (v2: anotherObjects) e retoma de flows (v2: `navigateTo()` sem passo) | ✅ |
-| URL nos eventos, deep links com parâmetros, botão back do browser, scroll restoration | ✅ 15 testes (ver descoberta 5) |
+| URL nos eventos, deep links, botão back do browser, scroll restoration | ✅ (ver descoberta 5) |
+| Render React real (lazy, Suspense, adaptadores, primeiro page view) | ✅ 8 testes; apanhou 2 bugs (ver descoberta 6) |
+| Browsers reais (Chromium + Chrome) | ✅ 14/14, incluindo code-splitting real |
+| Paridade com a v2 (41 cenários de caracterização) | ✅ 41/41: 21 iguais, 16 equivalentes, 4 divergências intencionais |
+| Type-check com 1000 ecrãs | ✅ ~4,0 s, crescimento aproximadamente linear (ver descoberta 7) |
 
 ### Benchmark de type-check
 
-Gerado por `scripts/bench.mjs`: um ficheiro por ecrã, por componente e por flow. Cada ecrã tem uma ação com nome único, um `branch` e um `goto` para outro flow, e o componente usa `useFlow`.
+Gerado por `scripts/bench.mjs`. Há um ficheiro por ecrã, por componente e por flow. Cada ecrã tem:
+- uma ação com nome único;
+- um `branch`;
+- um `goto` para outro flow;
+- um componente que usa `useFlow`.
 
 | Ecrãs | Ficheiros | Check time | Memória | Instanciações |
 |---|---|---|---|---|
-| 60 | 132 | 0,46 s | 107 MB | 63k |
-| 300 | 652 | 1,3–1,7 s | 158 MB | 648k |
-| 600 | 1302 | 2,5–2,8 s | 222 MB | 2,18M |
+| 60 | 132 | 0,5 s | 105 MB | 70k |
+| 300 | 652 | 1,4 s | 153 MB | 480k |
+| 600 | 1302 | 2,4 s | 237 MB | 1,48M |
+| 1002 | 2173 | 4,0 s | 334 MB | 3,66M |
 
-Os intervalos vêm de várias execuções na mesma máquina. O tempo cresce de forma aproximadamente linear. As instanciações crescem mais depressa (provavelmente por causa do `Extract` por ação em `ActionPayloads`); é um ponto a otimizar, mas não bloqueia.
+Na mesma máquina, os tempos variam até cerca de ±0,7 s entre execuções. As comparações abaixo usam três execuções de cada versão.
 
 ## Descobertas que mudam o desenho do RFC
 
@@ -104,7 +115,7 @@ checkoutFlow.transitions({
 
 O tipo do flow passa a depender só dos `steps`. Como bónus, o `S` já está fixo quando as transições são verificadas, e isso faz funcionar a inferência do payload no `branch`. É, curiosamente, a mesma forma da v2 (`f0.step('screen1')({ ... })`). O `transitions()` devolve `void` de propósito, para desencorajar `defineFlow(...).transitions(...)` numa só expressão, que reintroduz o ciclo.
 
-**Custo:** o TS deixa de poder verificar se todos os passos têm transições. Isso passa para o `validateFlows` (`unhandled-action`).
+**Custo:** o TS deixa de poder verificar se todos os passos têm transições (a v2 verificava, ver caracterização). Isso passa para o `validateFlows` (`unhandled-action`).
 
 ### 2. O `loader` não pode exigir `ComponentType`
 
@@ -120,9 +131,21 @@ A primeira versão gerava um membro por flow × passo × tipo de evento × açã
 
 **Custo:** `if (e.flow === 'checkout')` já não estreita `e.step` para os passos do checkout. Para analytics, o que importa (ação → payload) mantém-se.
 
-### 4. Testes gerados precisam de payloads de exemplo nos `branch`
+### 4. Testes gerados precisam de exemplos de payload nos `branch`
 
-O grafo mostra as duas arestas de `pay` (`success` e `failure`), mas para percorrer um caminho é preciso um payload que leve o resolver a escolher cada uma. No spike, isso é um mapa `aresta → payload` no teste. Na lib, deve ser uma opção do `branch` (ex.: `branch(targets, resolve, { samples: { success: { ok: true }, failure: { ok: false } } })`), validada pelo `validateFlows`.
+O grafo mostra as duas arestas de `pay` (`success` e `failure`), mas para percorrer cada uma é preciso um payload que leve o resolver a escolhê-la. Os exemplos declaram-se no próprio `branch`:
+
+```ts
+pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure'), {
+	samples: { success: { ok: true }, failure: { ok: false } },
+}),
+```
+
+- As chaves são as dos alvos declarados (`'payment'`, `'auth.login'`, `'exit'`), com autocomplete. Os valores têm o tipo do payload da ação, e `NoInfer` evita que o payload seja inferido a partir dos exemplos.
+- O grafo leva o exemplo em cada aresta, e o `getPaths` usa-o: os testes gerados deixam de precisar de um mapa escrito à mão.
+- O `validateFlows` emite um aviso (`severity: 'warning'`, `branch-without-sample`) quando falta o exemplo de um alvo.
+
+**Limitação conhecida:** um resolver **sem nenhum parâmetro** (`() => 'payment'`) devolve `string` e não o literal, porque o TS verifica-o antes de fixar os alvos (testado com `NoInfer` no retorno, sem efeito). Na prática, um resolver que usa `ctx` ou o payload funciona, e um `branch` que devolve sempre o mesmo alvo devia ser um destino direto.
 
 ### 5. URL e browser ficam fora do core, como adaptadores
 
@@ -141,9 +164,23 @@ Política do `browserHistory` (a v2 só fazia `replaceState`, por isso o botão 
 | Deep link para um passo `entrypoint` | Abre nesse passo, com os parâmetros extraídos do URL |
 | Deep link para outro passo | Redireciona para o passo inicial desse flow |
 
-É "best effort" em casos extremos: depois de cortes de histórico, a pilha do browser pode ter entradas a mais do que o engine. O adaptador lida com isso porque cada entrada guarda um índice crescente e o URL é sempre corrigido no `popstate`. Mesmo assim, deve ser validado com testes e2e em browsers reais (Playwright) antes da versão final.
+Validado em três níveis:
+- um browser falso em memória (15 testes);
+- o histórico real do jsdom (render React);
+- Chromium e Chrome reais (e2e).
 
-A scroll restoration guarda a posição ao avançar e repõe-na ao voltar quando o ecrã está de facto montado (um componente dentro do mesmo `Suspense` chama `screenReady()`), em vez dos 300 ms fixos da v2.
+Depois de cortes de histórico, a pilha do browser pode ter entradas a mais do que o engine. O adaptador lida com isso porque cada entrada guarda um índice crescente e o URL é corrigido no `popstate`.
+
+A scroll restoration guarda a posição ao avançar e repõe-na ao voltar, quando o ecrã está de facto montado: um componente dentro do mesmo `Suspense` chama `screenReady()`, em vez dos 300 ms fixos da v2. Validado em Chrome real.
+
+### 6. O render real apanhou dois bugs que os tipos não viam
+
+1. **`<Analytics />` estava fora do `FlowProvider`.** O `FlowProvider` não aceitava `children`, por isso os hooks dos filhos rebentavam. Agora os `children` são renderizados dentro do contexto.
+2. **O primeiro page view perdia-se.** O engine arrancava durante o render (`useState`) e emitia o `step:enter` inicial antes de os `useFlowEvents` dos filhos subscreverem (só as `integrations` da app o recebiam). Agora o estado inicial continua síncrono (primeiro render já com o ecrã, bom para SSR), mas os eventos do arranque ficam retidos (`deferStartEvents`) e são emitidos no `useEffect` do Provider. Os efeitos dos filhos correm antes, por isso já subscreveram. O e2e confirma que o primeiro page view chega ao analytics em Chrome real.
+
+### 7. O `goto` era a parte que crescia mais do que linearmente
+
+Uma ablação com 1000 ecrãs mostrou o `goto` como responsável pela maior parte das instanciações: cada chamada resolvia `FlowByName<F>` com um `Extract` sobre todos os flows registados. Agora usa um mapa `nome → flow` calculado uma única vez (acesso indexado). Com 1000 ecrãs, o check desceu de ~4,7 s para ~4,0 s (três execuções de cada versão) e as instanciações de 5,7M para 3,7M. A hipótese inicial (o `ActionPayloads` dos eventos) estava errada: mudá-lo não alterou nada, e ficou a versão mais simples.
 
 ## Paridade com a v2
 
@@ -155,35 +192,21 @@ Os 41 cenários dos testes de caracterização da v2 (`src/__tests__/characteriz
 | **Equivalente** (outra API ou nome de evento) | 16 | C08 (`effect()`), C09, C10, H05, H09, H10 (`start(..., { history / clearHistory })`), X01 (`goto`), X04 (`flow:exit`), X07 (`goto(flow)` sem passo), X09 (overlays), E01, E02, E04, E06, E07, U03 (scroll quando o ecrã está montado) |
 | **Diverge** (intencional) | 4 | C05: a v3 emite `action:unhandled`. C07: a v3 emite `back:empty`. Em ambos, a navegação é igual e só se acrescenta um evento. X08: o overlay funciona sem configuração extra (na v2, um anotherObject sem `name` era ignorado, o que é um bug). U01: `pushState` em vez de só `replaceState`, por isso o back do browser passa a navegar o flow |
 
-Lacunas fechadas no engine por causa da paridade:
-- `effect()` para ações só com efeito (C08);
-- opções `ignoreHistory` no `dispatch` e `clearHistory`/`history` no `start` e no arranque (H08–H11, X06);
-- `clearHistory()` imperativo (H12);
-- `flow:exit` emitido sempre que o flow ativo muda, com `reason: 'goto' | 'back' | 'exit' | 'start'` (X04, E07);
-- retoma de flows: `goto(flow)` e `start(flow)` sem passo voltam ao último passo desse flow (X07);
-- overlays: `defineFlow({ overlays: { help } })`, com transições no mesmo `transitions()`. O dispatch identifica a origem pelo nome do ecrã (`useFlow(helpScreen)`), e o overlay tem nó próprio no grafo (`{{@help}}` no Mermaid) e entra no `validateFlows` (X08, X09);
-- URL nos eventos, parâmetros de URL no estado e no histórico, e os adaptadores `browserHistory` e `scrollRestoration` (E05, U01–U03).
-
 Notas:
 - **H05:** na v2, o passo atual pode aparecer no próprio histórico depois de um ciclo (`['a']` estando em `a`). Na v3 o histórico fica `[]`. A navegação observável é a mesma (o back não navega).
-- **H06:** confirmado que a v3 tem a mesma regra que a v2: cada passo que reaparece no histórico precisa de `allowCyclicHistory`. Uma primeira versão deste spike assumia uma divergência que não existe, e o teste de paridade apanhou-a.
+- **H06:** a v3 tem a mesma regra que a v2: cada passo que reaparece no histórico precisa de `allowCyclicHistory`. Uma primeira versão deste spike assumia uma divergência que não existe, e o teste de paridade apanhou-a.
 - **X07 e X08/X09** foram decididos: a retoma de flows e os modais (como overlays) mantêm-se na v3.
 
 ## Fora do âmbito do spike
 
 - View Transitions e `checkpoint`.
-- Render React em runtime: a camada React (incluindo a ligação dos adaptadores e o `screenReady`) está só verificada em tipos.
-- Testes do `browserHistory` em browsers reais: os testes usam um browser falso em memória.
-- Parâmetros de URL tipados a partir do padrão (`'pay/:orderId'` → `{ orderId: string }`): em runtime funcionam, nos tipos ainda são `Record<string, string>`.
+- Firefox e WebKit no e2e: os builds em cache são de versões antigas do Playwright e testá-los exige descarregar novos (`npx playwright-core install firefox webkit`, cerca de 200 MB).
+- SSR completo (hidratação do estado do flow).
 - Os tempos do `completions.mjs` são a frio (inclui reanalisar o ficheiro de sonda). No editor, as respostas incrementais são mais rápidas.
 
 ## Próximos passos
 
-1. Incorporar as descobertas 1–4 no RFC A (feito no mesmo commit deste spike).
-2. ~~Testes de caracterização da v2 e paridade~~ (feito: ver acima).
-3. ~~Overlays e retoma de flows~~ (feito).
-4. ~~URL, browser e scroll restoration~~ (feito: paridade 41/41).
-5. Parâmetros de URL tipados a partir do padrão, e testes e2e do `browserHistory` (Playwright).
-6. Render React em runtime (jsdom ou browser) para validar a ligação dos adaptadores e o `screenReady`.
-7. Otimizar `ActionPayloads` (instanciações) e repetir o benchmark com 1000 ecrãs.
-8. Decidir a API de `samples` no `branch` e o formato final dos eventos (contrato público).
+1. Fechar o contrato de eventos (nomes, campos, ordem) e escrever um adaptador real de analytics (GA4 ou Segment) por cima dele.
+2. Decidir se o spike passa a protótipo da lib (pacote `packages/` ou `src/v3`) e com que estrutura de build (ESM + tipos).
+3. Firefox e WebKit no e2e, e e2e em CI.
+4. CLI `react-flow-app check`: `validateFlows` + Mermaid + diff do grafo face à branch base.

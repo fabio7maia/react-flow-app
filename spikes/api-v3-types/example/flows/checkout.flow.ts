@@ -17,10 +17,14 @@ export const checkoutFlow = defineFlow({
 
 checkoutFlow.transitions({
 	cart: {
-		checkout: branch(['payment', goto('auth', 'login')], (_, p) => (p.loggedIn ? 'payment' : goto('auth', 'login'))),
+		checkout: branch(['payment', goto('auth', 'login')], (_, p) => (p.loggedIn ? 'payment' : goto('auth', 'login')), {
+			samples: { payment: { loggedIn: true }, 'auth.login': { loggedIn: false } },
+		}),
 	},
 	payment: {
-		pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure')),
+		pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure'), {
+			samples: { success: { ok: true }, failure: { ok: false } },
+		}),
 		cancel: 'cart',
 	},
 	failure: { retry: 'payment' },

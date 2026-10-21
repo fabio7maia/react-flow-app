@@ -104,7 +104,20 @@ export type BranchRef<T = unknown, P = unknown> = {
 	readonly kind: 'branch';
 	readonly targets: readonly T[];
 	readonly resolve: (ctx: BranchContext, payload: P) => T;
+	/** Payload de exemplo que leva o `resolve` a cada alvo (para testes gerados a partir do grafo). */
+	readonly samples?: { readonly [key: string]: P | undefined };
 };
+
+/** Chave de um alvo: `'payment'`, `'auth.login'`, `'auth.*'` (retoma) ou `'exit'`. */
+export type TargetKey<T> = T extends string
+	? T
+	: T extends GotoRef<infer F, infer S>
+	? [S] extends [never]
+		? `${F}.*`
+		: `${F}.${S}`
+	: T extends ExitRef
+	? 'exit'
+	: never;
 
 /** Ação só com efeito (sem navegação). Equivalente à função sem retorno da v2. */
 export type EffectRef<P = unknown> = {

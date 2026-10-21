@@ -132,7 +132,10 @@ checkoutFlow.transitions({
 		),
 	},
 	payment: {
-		pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure')),
+		// samples: payloads de exemplo por alvo, usados pelos testes gerados a partir do grafo.
+		pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure'), {
+			samples: { success: { ok: true }, failure: { ok: false } },
+		}),
 		cancel: 'cart',
 	},
 	failure: { retry: 'payment' },
@@ -319,7 +322,8 @@ t.dispatch('checkout', { loggedIn: true }).dispatch('pay', { ok: false });
 t.expectStep('checkout.failure');
 t.expectEvents(['action:checkout', 'step:enter:payment', 'action:pay', 'step:enter:failure']);
 
-// Um teste por caminho do grafo + relatório de arestas não cobertas
+// Um teste por caminho do grafo (os payloads dos ramos vêm dos `samples` de cada branch)
+// + relatório de arestas não cobertas
 test.each(getPaths(flowApp, { strategy: 'simple' }))('%s', (path) => createFlowTester(flowApp).run(path).expectReached());
 afterAll(() => expect(transitionCoverage()).toBeGreaterThanOrEqual(0.9));
 ```
@@ -379,7 +383,7 @@ Os payloads também validados em runtime (opcional, `schema: z.object(...)` em v
 | Risco | Mitigação |
 |---|---|
 | Semântica de histórico divergir da v2 (como aconteceu no PR #63) | Escrever primeiro testes de caracterização contra a `main` e corrê-los no core novo |
-| Tipos lentos | Medido no spike: 1,3 s de check com 300 ecrãs e 2,5 s com 600, crescimento linear. O benchmark (`spikes/api-v3-types/scripts/bench.mjs`) deve correr em CI |
+| Tipos lentos | Medido no spike: 1,4 s de check com 300 ecrãs, 2,4 s com 600 e 4,0 s com 1000, crescimento aproximadamente linear. O benchmark (`spikes/api-v3-types/scripts/bench.mjs`) deve correr em CI |
 | Referências circulares de tipos | Regras 4 e 5 (transições separadas, `loader` sem `ComponentType`), cobertas por testes de tipos |
 | Scope creep (guards, paralelismo, async) | Fora de scope explícito. Se for preciso, ver abordagem B |
 

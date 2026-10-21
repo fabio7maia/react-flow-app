@@ -40,6 +40,11 @@ const probes = [
 		expected: ['ok'],
 	},
 	{
+		name: 'branch: as chaves de samples são os alvos declarados',
+		code: "checkoutFlow.transitions({ payment: { pay: branch(['success', 'failure'], () => 'success', { samples: { | } }) } });",
+		expected: ['failure', 'success'],
+	},
+	{
 		name: "useFlowEvents('|') sugere os tipos de evento",
 		code: "useFlowEvents('|', () => {});",
 		expected: ['*', 'action', 'action:unhandled', 'back:empty', 'flow:exit', 'flow:start', 'step:enter', 'step:leave'],
@@ -61,7 +66,7 @@ const probes = [
 	},
 ];
 
-const header = `import { createFlowEngine, goto, useFlow, useFlowEvents } from 'react-flow-app';
+const header = `import { branch, createFlowEngine, goto, useFlow, useFlowEvents } from 'react-flow-app';
 import { flowApp } from './app.flow';
 import { checkoutFlow } from './flows/checkout.flow';
 import { paymentScreen } from './screens/payment/payment.screen';

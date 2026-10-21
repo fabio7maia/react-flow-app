@@ -158,6 +158,39 @@ checkoutFlow.transitions({
 	failure: { retry: goto('shop') },
 });
 
+// ─── Exemplos de payload nos branch ───────────────────────────────────────────
+
+checkoutFlow.transitions({
+	payment: {
+		pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure'), {
+			samples: { success: { ok: true }, failure: { ok: false } },
+		}),
+	},
+});
+checkoutFlow.transitions({
+	cart: {
+		checkout: branch(['payment', goto('auth', 'login')], (_, p) => (p.loggedIn ? 'payment' : goto('auth', 'login')), {
+			samples: { 'auth.login': { loggedIn: false } },
+		}),
+	},
+});
+checkoutFlow.transitions({
+	payment: {
+		pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure'), {
+			// @ts-expect-error chave que não é um dos alvos do branch
+			samples: { refund: { ok: true } },
+		}),
+	},
+});
+checkoutFlow.transitions({
+	payment: {
+		pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure'), {
+			// @ts-expect-error o exemplo tem de ter a forma do payload da ação
+			samples: { success: { ok: 'yes' } },
+		}),
+	},
+});
+
 // ─── Parâmetros de URL tipados ────────────────────────────────────────────────
 
 expectType<Equal<ParamsOf<'pay/:orderId'>, { orderId: string }>>();

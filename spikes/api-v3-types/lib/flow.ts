@@ -9,6 +9,7 @@ import type {
 	GotoRef,
 	OverlaysInput,
 	StepsInput,
+	TargetKey,
 	TransitionsFor,
 } from './types';
 
@@ -110,7 +111,14 @@ export function effect<P>(run: (ctx: BranchContext, payload: P) => void): Effect
  */
 export function branch<const T extends readonly unknown[], P>(
 	targets: T,
-	resolve: (ctx: BranchContext, payload: P) => T[number]
+	resolve: (ctx: BranchContext, payload: P) => T[number],
+	options: {
+		/**
+		 * Payload de exemplo por alvo, usado pelos testes gerados (`getPaths`) para percorrer
+		 * cada ramo. `NoInfer`: o tipo do payload vem da ação, não dos exemplos.
+		 */
+		samples?: { readonly [K in TargetKey<T[number]>]?: NoInfer<P> };
+	} = {}
 ): BranchRef<T[number], P> {
-	return { kind: 'branch', targets, resolve };
+	return { kind: 'branch', targets, resolve, samples: options.samples as BranchRef<T[number], P>['samples'] };
 }

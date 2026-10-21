@@ -24,6 +24,10 @@ export type GraphEdge = {
 	kind: 'direct' | 'branch' | 'cross-flow' | 'exit' | 'effect';
 	/** `goto(flow)` sem passo: retoma o flow (desenhado até ao passo inicial). */
 	resume?: boolean;
+	/** Aresta de um `branch`. */
+	branch?: boolean;
+	/** Payload de exemplo que leva o `branch` a esta aresta (se declarado). */
+	sample?: unknown;
 };
 
 export type FlowGraph = { nodes: GraphNode[]; edges: GraphEdge[] };
@@ -35,7 +39,10 @@ export type FlowIssue = {
 		| 'unknown-target'
 		| 'unreachable-step'
 		| 'exit-without-caller'
-		| 'unknown-action';
+		| 'unknown-action'
+		| 'branch-without-sample';
+	/** `warning` não impede o funcionamento, mas reduz o que os testes gerados conseguem percorrer. */
+	severity: 'error' | 'warning';
 	where: string;
 	message: string;
 };
@@ -60,7 +67,7 @@ const actionsOf = (actions: readonly string[] | Record<string, unknown>): string
 export function toGraph(app: FlowApp): FlowGraph {
 	const nodes: GraphNode[] = [];
 	const edges: GraphEdge[] = [];
-	const exits: Array<{ from: string; flow: string; action: string; key: string }> = [];
+	const exits: Array<{ from: string; flow: string; action: string; key: string; extra: Partial<GraphEdge> }> = [];
 
 	const initialOf = (flowName: string): string => {
 		const flow = app.getFlow(flowName);
@@ -111,14 +118,18 @@ export function toGraph(app: FlowApp): FlowGraph {
 
 				for (const target of targets) {
 					const key = edgeKey(flow.name, step, action, targetKey(target));
+					const samples = isBranch ? transition.samples ?? {} : {};
+					const extra: Partial<GraphEdge> = isBranch
+						? { branch: true, ...(targetKey(target) in samples ? { sample: samples[targetKey(target)] } : {}) }
+						: {};
 
 					if (typeof target === 'string') {
-						edges.push({ id: key, key, from, to: nodeId(flow.name, target), action, kind: isBranch ? 'branch' : 'direct' });
+						edges.push({ id: key, key, from, to: nodeId(flow.name, target), action, kind: isBranch ? 'branch' : 'direct', ...extra });
 					} else if (target.kind === 'goto') {
 						const to = nodeId(target.flow, target.step ?? initialOf(target.flow));
-						edges.push({ id: key, key, from, to, action, kind: 'cross-flow', resume: target.step === undefined });
+						edges.push({ id: key, key, from, to, action, kind: 'cross-flow', resume: target.step === undefined, ...extra });
 					} else if (target.kind === 'exit') {
-						exits.push({ from, flow: flow.name, action, key });
+						exits.push({ from, flow: flow.name, action, key, extra });
 					} else if (target.kind === 'effect') {
 						edges.push({ id: key, key, from, to: from, action, kind: 'effect' });
 					}
@@ -133,10 +144,18 @@ export function toGraph(app: FlowApp): FlowGraph {
 			edge => edge.kind === 'cross-flow' && edge.to.startsWith(`${exit.flow}.`) && !edge.from.startsWith(`${exit.flow}.`)
 		);
 		for (const caller of callers) {
-			edges.push({ id: `${exit.key}@${caller.from}`, key: exit.key, from: exit.from, to: caller.from, action: exit.action, kind: 'exit' });
+			edges.push({
+				id: `${exit.key}@${caller.from}`,
+				key: exit.key,
+				from: exit.from,
+				to: caller.from,
+				action: exit.action,
+				kind: 'exit',
+				...exit.extra,
+			});
 		}
 		if (callers.length === 0) {
-			edges.push({ id: exit.key, key: exit.key, from: exit.from, to: 'exit', action: exit.action, kind: 'exit' });
+			edges.push({ id: exit.key, key: exit.key, from: exit.from, to: 'exit', action: exit.action, kind: 'exit', ...exit.extra });
 		}
 	}
 
@@ -181,7 +200,7 @@ export function validateFlows(app: FlowApp): FlowIssue[] {
 
 	for (const flow of app.flows) {
 		if (!Object.values(flow.steps).some(opts => opts.initial)) {
-			issues.push({ code: 'no-initial-step', where: flow.name, message: `O flow "${flow.name}" não marca nenhum passo como initial` });
+			issues.push({ severity: 'error', code: 'no-initial-step', where: flow.name, message: `O flow "${flow.name}" não marca nenhum passo como initial` });
 		}
 
 		const sources = [
@@ -195,21 +214,30 @@ export function validateFlows(app: FlowApp): FlowIssue[] {
 			const where = `${flow.name}.${local}`;
 
 			for (const action of declared.filter(a => !handled.includes(a))) {
-				issues.push({ code: 'unhandled-action', where, message: `A ação "${action}" do ecrã "${screen.name}" não tem transição` });
+				issues.push({ severity: 'error', code: 'unhandled-action', where, message: `A ação "${action}" do ecrã "${screen.name}" não tem transição` });
 			}
 			for (const action of handled.filter(a => !declared.includes(a))) {
-				issues.push({ code: 'unknown-action', where, message: `Transição para a ação "${action}", que o ecrã não declara` });
+				issues.push({ severity: 'error', code: 'unknown-action', where, message: `Transição para a ação "${action}", que o ecrã não declara` });
 			}
 		}
 	}
 
 	for (const edge of graph.edges) {
 		if (edge.to !== 'exit' && !nodeIds.has(edge.to)) {
-			issues.push({ code: 'unknown-target', where: edge.from, message: `Destino inexistente: ${edge.to}` });
+			issues.push({ severity: 'error', code: 'unknown-target', where: edge.from, message: `Destino inexistente: ${edge.to}` });
 		}
 		if (edge.kind === 'exit' && edge.to === 'exit') {
-			issues.push({ code: 'exit-without-caller', where: edge.from, message: 'goto.exit() num flow que nenhum outro flow abre' });
+			issues.push({ severity: 'error', code: 'exit-without-caller', where: edge.from, message: 'goto.exit() num flow que nenhum outro flow abre' });
 		}
+	}
+
+	for (const edge of graph.edges.filter(e => e.branch && !('sample' in e))) {
+		issues.push({
+			severity: 'warning',
+			code: 'branch-without-sample',
+			where: edge.from,
+			message: `O branch da ação "${edge.action}" não tem payload de exemplo para "${edge.key.split('->')[1]}"`,
+		});
 	}
 
 	const roots = graph.nodes.filter(node => node.initial || node.entrypoint).map(node => node.id);
@@ -223,13 +251,17 @@ export function validateFlows(app: FlowApp): FlowIssue[] {
 		}
 	}
 	for (const node of graph.nodes.filter(n => !n.overlay && !reachable.has(n.id))) {
-		issues.push({ code: 'unreachable-step', where: node.id, message: 'Passo inalcançável a partir dos passos iniciais e entrypoints' });
+		issues.push({ severity: 'error', code: 'unreachable-step', where: node.id, message: 'Passo inalcançável a partir dos passos iniciais e entrypoints' });
 	}
 
 	return issues;
 }
 
-export type FlowPath = { target: string; steps: Array<{ from: string; action: string; to: string; key: string }> };
+export type FlowPath = {
+	target: string;
+	/** `payload`: o exemplo declarado no `branch` (ou `undefined` para transições diretas). */
+	steps: Array<{ from: string; action: string; to: string; key: string; payload?: unknown }>;
+};
 
 /** Caminho mais curto (BFS) desde `from` até cada passo alcançável. */
 export function getPaths(app: FlowApp, from: string): FlowPath[] {
@@ -251,7 +283,7 @@ export function getPaths(app: FlowApp, from: string): FlowPath[] {
 		const steps: FlowPath['steps'] = [];
 		for (let node = target; previous.has(node); node = (previous.get(node) as GraphEdge).from) {
 			const edge = previous.get(node) as GraphEdge;
-			steps.unshift({ from: edge.from, action: edge.action, to: edge.to, key: edge.key });
+			steps.unshift({ from: edge.from, action: edge.action, to: edge.to, key: edge.key, payload: edge.sample });
 		}
 		return { target, steps };
 	});

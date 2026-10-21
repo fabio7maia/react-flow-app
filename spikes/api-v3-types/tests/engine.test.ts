@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it, mock } from 'node:test';
 import {
+	branch,
 	createFlowApp,
 	createFlowEngine,
 	defineFlow,
@@ -222,6 +223,19 @@ describe('diagrama e validação', () => {
 		);
 	});
 
+	it('avisa quando um branch não tem payload de exemplo para um alvo', () => {
+		const flow = defineFlow({ name: 'nosample', steps: { payment: { screen: paymentScreen, initial: true }, cart: { screen: cartScreen } } });
+		flow.transitions({
+			payment: { pay: branch(['cart', 'payment'], (_, p) => (p.ok ? 'cart' : 'payment'), { samples: { cart: { ok: true } } }), cancel: 'cart' },
+			cart: { checkout: 'payment' },
+		});
+
+		assert.deepEqual(
+			validateFlows(createFlowApp([flow])).map(issue => `${issue.severity}:${issue.code}@${issue.where}`),
+			['warning:branch-without-sample@nosample.payment']
+		);
+	});
+
 	it('a app de exemplo é válida', () => {
 		assert.deepEqual(validateFlows(flowApp), []);
 	});
@@ -284,14 +298,7 @@ describe('overlays e retoma de flows', () => {
 });
 
 describe('testes gerados a partir do grafo', () => {
-	// Os branches escolhem o destino em runtime: cada aresta de branch precisa de um payload de exemplo.
-	const samples: Record<string, unknown> = {
-		'checkout.cart:checkout->payment': { loggedIn: true },
-		'checkout.cart:checkout->auth.login': { loggedIn: false },
-		'checkout.payment:pay->success': { ok: true },
-		'checkout.payment:pay->failure': { ok: false },
-	};
-
+	// Os payloads de cada ramo vêm dos `samples` declarados no próprio branch (checkout.flow.ts).
 	const paths = getPaths(flowApp, 'home.dashboard');
 
 	it('gera um caminho para cada passo alcançável', () => {
@@ -308,7 +315,7 @@ describe('testes gerados a partir do grafo', () => {
 		it(`chega a ${path.target} por ${path.steps.map(step => step.action).join(' → ')}`, () => {
 			const engine = createFlowEngine(flowApp, { initial: { flow: 'home' } });
 			for (const step of path.steps) {
-				engine.dispatch(step.action, samples[step.key]);
+				engine.dispatch(step.action, step.payload);
 			}
 			assert.equal(at(engine), path.target);
 		});
@@ -319,7 +326,7 @@ describe('testes gerados a partir do grafo', () => {
 		for (const path of paths) {
 			engine.start('home');
 			for (const step of path.steps) {
-				engine.dispatch(step.action, samples[step.key]);
+				engine.dispatch(step.action, step.payload);
 			}
 		}
 
