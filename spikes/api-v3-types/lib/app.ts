@@ -24,10 +24,12 @@ type ActionPairs<Sc> = Sc extends unknown
 	? { [A in keyof ScreenActions<Sc> & string]: [A, ScreenActions<Sc>[A]] }[keyof ScreenActions<Sc> & string]
 	: never;
 
-/** `{ pay: { ok: boolean }; cancel: undefined; ... }` agregado de todos os ecrãs dos flows. */
-export type ActionPayloads<F> = {
-	[A in ActionPairs<ScreensOf<F>>[0]]: Extract<ActionPairs<ScreensOf<F>>, [A, unknown]>[1];
-};
+/**
+ * `{ pay: { ok: boolean }; cancel: undefined; ... }` agregado de todos os ecrãs dos flows.
+ * Mapped type com `as`: chaves repetidas (a mesma ação em vários ecrãs) juntam os payloads
+ * numa union, numa só passagem (um `Extract` por ação seria quadrático).
+ */
+export type ActionPayloads<F> = { [P in ActionPairs<ScreensOf<F>> as P[0]]: P[1] };
 
 type Where<F> = { flow: FlowNameOf<F>; step: StepNameOfAny<F> };
 

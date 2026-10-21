@@ -73,7 +73,14 @@ export type RegisteredFlowName = RegisteredFlows['name'];
 
 export type StepNameOf<F> = F extends FlowDef<string, infer S> ? keyof S & string : never;
 
-export type FlowByName<N extends string> = Extract<RegisteredFlows, { name: N }>;
+/**
+ * Mapa nome → flow, calculado uma vez (não é genérico, o TS guarda-o em cache).
+ * Um `Extract<RegisteredFlows, { name: N }>` por chamada de `goto` seria O(flows) em cada
+ * chamada, o que dá crescimento quadrático numa app grande.
+ */
+type RegisteredFlowMap = { [F in RegisteredFlows as F['name']]: F };
+
+export type FlowByName<N extends string> = N extends keyof RegisteredFlowMap ? RegisteredFlowMap[N] : never;
 
 function gotoFn<const F extends RegisteredFlowName, const S extends StepNameOf<FlowByName<F>> = never>(
 	flow: F,
