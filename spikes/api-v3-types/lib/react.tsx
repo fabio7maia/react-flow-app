@@ -106,6 +106,11 @@ export function FlowProvider({
 	);
 }
 
+/** O engine do Provider (para devtools e integrações que precisam de mais do que eventos, como a cobertura). */
+export function useFlowEngine(): FlowEngine {
+	return useEngine();
+}
+
 /** Re-renderiza apenas quando o valor selecionado muda. */
 export function useFlowSelector<T>(selector: (snapshot: FlowSnapshot) => T): T {
 	const engine = useEngine();

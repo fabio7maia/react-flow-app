@@ -46,3 +46,4 @@ spikes/**/.out
 spikes/**/.bench
 spikes/**/.e2e
 spikes/**/flows-report.md
+spikes/**/.demo

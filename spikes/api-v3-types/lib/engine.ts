@@ -90,6 +90,11 @@ export function createFlowEngine<A extends FlowApp>(
 	let held: Array<Record<string, unknown>> | null = options.deferStartEvents ? [] : null;
 	/** Último passo de cada flow, para retomar com `goto(flow)` / `start(flow)` sem passo (v2: X07). */
 	const lastStep = new Map<string, string>();
+	/**
+	 * Parâmetros da última visita a cada passo: uma transição sem `params` (ex.: `retry` da falha
+	 * para o pagamento) mantém os do passo, em vez de deixar `:orderId` por preencher no URL.
+	 */
+	const lastParams = new Map<string, FlowParams>();
 	/** Run-to-completion: navegações pedidas por um listener correm depois de a atual terminar. */
 	let navigating = false;
 	const pending: Array<() => void> = [];
@@ -175,6 +180,7 @@ export function createFlowEngine<A extends FlowApp>(
 	): void => {
 		// Commit primeiro: o `url` do flow:start já leva os parâmetros do passo de destino.
 		commit({ ...next, ...target });
+		lastParams.set(`${target.flow}.${target.step}`, next.params);
 		if (!ctx.from || ctx.from.flow !== target.flow) {
 			emit({ type: 'flow:start', ...target, source: ctx.source });
 		}
@@ -233,7 +239,8 @@ export function createFlowEngine<A extends FlowApp>(
 			history = toEntries(target.flow, navigation.history);
 		}
 
-		enter(target, { history, callers, params: navigation.params ?? {} }, { from: origin, direction: 'forward', source });
+		const params = navigation.params ?? lastParams.get(`${target.flow}.${target.step}`) ?? {};
+		enter(target, { history, callers, params }, { from: origin, direction: 'forward', source });
 	};
 
 	const exitFlow = (): void => {

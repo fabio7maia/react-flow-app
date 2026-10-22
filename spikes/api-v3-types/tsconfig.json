@@ -13,5 +13,5 @@
 		"types": ["node", "react"],
 		"paths": { "react-flow-app": ["./lib/index.ts"] }
 	},
-	"include": ["lib", "example", "tests"]
+	"include": ["lib", "example", "tests", "demo"]
 }

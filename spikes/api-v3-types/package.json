@@ -8,7 +8,8 @@
 		"completions": "node scripts/completions.mjs",
 		"bench": "node scripts/bench.mjs",
 		"e2e": "node scripts/e2e.mjs",
-		"check": "node scripts/check.mjs"
+		"check": "node scripts/check.mjs",
+		"demo": "node scripts/demo.mjs"
 	},
 	"devDependencies": {
 		"playwright-core": "1.64.1"
