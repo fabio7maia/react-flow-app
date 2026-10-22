@@ -20,15 +20,27 @@ Usa as dependências da raiz do repo (TypeScript 5.8, React 19, jsdom, esbuild).
 
 ```bash
 npm run typecheck      # tipos + testes de tipos
-npm test               # 117 testes em Node: engine, contrato de eventos, paridade com a v2, adaptadores, analytics, check, render React (jsdom)
+npm test               # 119 testes em Node: engine, contrato de eventos, paridade com a v2, adaptadores, analytics, check, render React (jsdom)
 npm run completions    # intellisense real (language service do TypeScript)
 npm run check          # protótipo de `react-flow-app check` (ver abaixo)
+npm run demo           # demo interativa numa só página: .demo/index.html (ver abaixo)
 npm run bench -- 50 6  # benchmark de type-check: 50 flows × 6 passos
 npm run e2e            # 8 cenários em browsers reais (por omissão: Chromium do Playwright + Chrome do sistema)
 E2E_BROWSERS=chromium,firefox,webkit npm run e2e
 ```
 
 O CI (`.github/workflows/spike-api-v3.yml`) corre tudo isto em PRs para a branch `v3` que mexam no spike, com o e2e em Chromium, Firefox e WebKit. O resumo do `check` face à branch base aparece no sumário do job.
+
+### Demo
+
+`demo/` é uma página que corre a loja do exemplo com o motor, o adaptador `browserHistory` e o analytics reais, ao lado de ferramentas de desenvolvimento:
+- um browser simulado (barra de endereço, back/forward, reload e o histórico do separador), que implementa o `BrowserLike` do adaptador;
+- o mapa dos flows desenhado a partir do `toGraph`, com o passo atual, as transições percorridas e a última em destaque;
+- os eventos do contrato agrupados por `navigationId`, e o que o adaptador `segment()` envia;
+- os testes gerados (`getPaths`), com a cobertura e a opção de reproduzir cada caminho no ecrã;
+- a revisão de um PR de exemplo (`diffGraphs`), e o código fonte dos ficheiros do passo atual.
+
+O mapa e os painéis são o protótipo de um devtools. Para isso a lib passou a exportar `useFlowEngine()`.
 
 ### `check`: validação, diagrama e diff face à base
 
@@ -243,6 +255,12 @@ O analytics é um **adaptador do Provider, não uma integração da app**. As in
 Depois de uma compra (`clearHistory`), o back do browser deve sair da app, porque o engine já não tem para onde voltar. O adaptador fazia `history.go(-n)` para a entrada anterior à app. Quando a app é a primeira página do separador (por exemplo, um link aberto num separador novo), não existe essa entrada. O `go()` fica fora dos limites e o browser ignora-o sem erro: o URL ficava no carrinho e o ecrã na compra concluída.
 
 O Chromium do Playwright abre cada separador com um `about:blank` antes da app, por isso o problema não aparecia lá. Agora o adaptador guarda, no estado de cada entrada, quantas entradas havia antes da app no primeiro carregamento. Se não houver nenhuma, fica no passo atual e repõe o URL. O e2e cobre os dois casos: sair para uma página anterior real, em todos os browsers, e o separador novo, onde o browser o permite (Firefox).
+
+### 11. A demo apanhou parâmetros perdidos ao voltar a um passo
+
+Em `failure → retry → payment`, a transição não passa `params`, por isso o pagamento ficava sem `orderId` e o URL ficava `/checkout/pay/:orderId`. Agora uma transição sem `params` mantém os da última visita a esse passo, como já acontece com a retoma de flows. `params` explícitos substituem-nos.
+
+**Decisão em aberto:** a alternativa é obrigar a passar `params` em todas as transições para passos com parâmetros no URL. Isso é verificável nos tipos, mas mais verboso. A regra atual pode reutilizar um `orderId` antigo se o dev se esquecer de o passar.
 
 ## Paridade com a v2
 

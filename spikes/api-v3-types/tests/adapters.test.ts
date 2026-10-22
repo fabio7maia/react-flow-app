@@ -52,6 +52,30 @@ describe('URL nos eventos', () => {
 	});
 });
 
+describe('parâmetros ao voltar a um passo por uma transição', () => {
+	it('uma transição sem params mantém os da última visita ao passo (failure → retry → payment)', () => {
+		// Apanhado pela demo: o URL ficava /checkout/pay/:orderId depois de "Tentar novamente".
+		const engine = createFlowEngine(flowApp, { initial: { flow: 'checkout' } });
+		engine.dispatch('checkout', { loggedIn: true }, { params: { orderId: '42' } });
+		engine.dispatch('pay', { ok: false });
+
+		engine.dispatch('retry');
+
+		assert.deepEqual(engine.getSnapshot().params, { orderId: '42' });
+		assert.equal(engine.urlOf({ flow: 'checkout', step: 'payment' }), '/checkout/pay/42');
+	});
+
+	it('params explícitos substituem os da última visita', () => {
+		const engine = createFlowEngine(flowApp, { initial: { flow: 'checkout' } });
+		engine.dispatch('checkout', { loggedIn: true }, { params: { orderId: '42' } });
+		engine.dispatch('cancel');
+
+		engine.dispatch('checkout', { loggedIn: true }, { params: { orderId: '7' } });
+
+		assert.deepEqual(engine.getSnapshot().params, { orderId: '7' });
+	});
+});
+
 describe('deep links', () => {
 	it('um passo entrypoint abre diretamente', () => {
 		assert.deepEqual(matchUrl(flowApp, '/auth/login'), { flow: 'auth', step: 'login', params: {}, redirected: false });
