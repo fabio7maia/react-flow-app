@@ -1,0 +1,62 @@
+name: Release v3
+on:
+    # Each push to v3 opens or updates the "Version Packages" PR with the pending changesets.
+    push:
+        branches:
+            - v3
+    # Publishing only happens when started by hand (Actions → Release v3 → Run workflow).
+    workflow_dispatch:
+        inputs:
+            publish:
+                description: 'Publish the current version to npm (alpha tag while in pre mode)'
+                type: boolean
+                default: false
+concurrency:
+    group: release-v3
+    cancel-in-progress: false
+jobs:
+    version:
+        name: Version Packages PR
+        if: github.event_name == 'push'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            pull-requests: write
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+                  cache: yarn
+            - run: yarn install --frozen-lockfile
+            - name: Create or update the Version Packages PR
+              uses: changesets/action@v1
+              with:
+                  version: yarn changeset version
+                  title: 'chore(release): version packages (v3)'
+                  commit: 'chore(release): version packages'
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    publish:
+        name: Publish to npm
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+            id-token: write
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+                  cache: yarn
+                  registry-url: 'https://registry.npmjs.org'
+            - run: yarn install --frozen-lockfile
+            - run: yarn test
+            - name: Build and publish
+              run: yarn release
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+                  NPM_CONFIG_PROVENANCE: 'true'
+            - name: Push the release tags
+              run: git push --follow-tags

@@ -1,0 +1,73 @@
+name: CI v3
+on:
+    pull_request:
+        branches:
+            - v3
+    push:
+        branches:
+            - v3
+    workflow_dispatch:
+permissions:
+    contents: read
+concurrency:
+    group: ci-v3-${{ github.ref }}
+    cancel-in-progress: true
+jobs:
+    checks:
+        name: Lint, types, tests, flows, package
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  # The flows check compares the graph snapshot with the base branch's (git show).
+                  fetch-depth: 0
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+                  cache: yarn
+            - name: Install
+              run: yarn install --frozen-lockfile
+            - name: Lint and spelling
+              run: yarn lint
+            - name: Formatting
+              run: yarn format:check
+            - name: Types and type tests
+              run: yarn typecheck
+            - name: Tests (engine, event contract, v2 parity, adapters, analytics, testing, CLI, React)
+              run: yarn test:coverage
+            - name: Intellisense
+              run: yarn completions
+            - name: Flows (validation, snapshot and diff against the base)
+              run: yarn check:flows --base origin/${{ github.base_ref || 'v3' }} --report flows-report.md
+            - name: Flows summary
+              if: always()
+              run: if [ -f flows-report.md ]; then cat flows-report.md >> "$GITHUB_STEP_SUMMARY"; fi
+            - name: Build
+              run: yarn build
+            - name: Package smoke test (types, ESM, CJS, CLI)
+              run: yarn smoke
+    e2e:
+        name: E2E (${{ matrix.browser }})
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                browser: [chromium, firefox, webkit]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '22'
+                  cache: yarn
+            - name: Install
+              run: yarn install --frozen-lockfile
+            - name: Browser
+              run: npx playwright-core install --with-deps ${{ matrix.browser }}
+            - name: E2E
+              run: yarn e2e
+              env:
+                  E2E_BROWSERS: ${{ matrix.browser }}

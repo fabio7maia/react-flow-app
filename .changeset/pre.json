@@ -1,0 +1,8 @@
+{
+  "mode": "pre",
+  "tag": "alpha",
+  "initialVersions": {
+    "react-flow-app": "2.20.0"
+  },
+  "changesets": []
+}

@@ -1,12 +1,5 @@
 {
-	"./src/**/*": [
-		"cspell"
-	],
-	"./src/**/*.{js,jsx,ts,tsx}": [
-		"eslint --quiet",
-		"stylelint"
-	],
-	"./src/**/*.{css,scss}": [
-		"stylelint"
-	]
+	"src/**/*.{ts,tsx}": ["cspell --no-progress --no-must-find-files"],
+	"*.{js,mjs,ts,tsx}": ["eslint --quiet", "prettier --check"],
+	"*.{json,md,yml,css}": ["prettier --check"]
 }

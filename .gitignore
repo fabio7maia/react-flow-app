@@ -47,3 +47,9 @@ spikes/**/.bench
 spikes/**/.e2e
 spikes/**/flows-report.md
 spikes/**/.demo
+# v3 tooling output
+/.e2e
+/.bench
+/.demo
+flows-report.md
+/.smoke

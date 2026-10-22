@@ -1,16 +1,32 @@
 {
 	"compilerOptions": {
-		"baseUrl": "./src/",
-		"outDir": "./dist/",
-		"sourceMap": false,
-		"declaration": true,
+		"strict": true,
+		"target": "es2022",
+		"lib": ["es2022", "dom", "dom.iterable"],
+		"module": "preserve",
+		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
 		"esModuleInterop": true,
 		"skipLibCheck": true,
-		"noImplicitAny": false,
-		"module": "commonjs",
-		"target": "es6",
-		"jsx": "react",
-		"typeRoots": ["./node_modules/@types", "./src/custom-typings"]
+		"noEmit": true,
+		"isolatedModules": true,
+		"types": ["node"],
+		"paths": {
+			"react-flow-app": ["./src/index.ts"],
+			"react-flow-app/react": ["./src/react/index.tsx"],
+			"react-flow-app/*": ["./src/*/index.ts"]
+		}
 	},
-	"exclude": ["dist", "node_modules", "spikes"]
+	"include": [
+		"src/index.ts",
+		"src/core",
+		"src/react",
+		"src/analytics",
+		"src/testing",
+		"src/cli",
+		"test",
+		"examples",
+		"tsup.config.ts",
+		"vitest.config.ts"
+	]
 }

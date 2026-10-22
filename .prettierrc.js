@@ -1,9 +1,10 @@
-module.exports = {
+export default {
 	trailingComma: 'es5',
 	semi: true,
 	singleQuote: true,
-	printWidth: 120,
+	printWidth: 140,
 	tabWidth: 4,
 	useTabs: true,
 	endOfLine: 'auto',
+	arrowParens: 'avoid',
 };
