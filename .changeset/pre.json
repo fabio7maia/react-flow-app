@@ -4,5 +4,7 @@
   "initialVersions": {
     "react-flow-app": "2.20.0"
   },
-  "changesets": []
+  "changesets": [
+    "v3-core"
+  ]
 }
