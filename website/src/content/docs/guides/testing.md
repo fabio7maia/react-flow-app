@@ -42,6 +42,28 @@ for (const path of getPaths(flowApp, 'home.dashboard')) {
 
 `engine.coverage()` returns `{ ratio, covered, missing }`: the transitions that no test walked, so you know what to write by hand.
 
+### What generated tests cover today
+
+They test the **navigation map**, not the screens: each path runs on the headless engine and checks that every action leads where the
+flows declare, across flows, and that each `branch` resolver picks the right target for its samples.
+
+They do **not** cover yet:
+
+- **Every transition**: one path per reachable step means transitions off the shortest paths are not walked. In the example store,
+  generated paths cover 5 of 10 transitions; `coverage().missing` lists the rest.
+- **Back**: only forward navigation is generated.
+- **Overlays**: their transitions are never walked, since nothing navigates into an overlay.
+- **Several payloads per branch target**, or **URL params**: one sample per target, and no `params`.
+- **Effects** run for real, so mock them if they call out.
+- **The UI**: whether a button dispatches the right action, rendering and the browser. Use component and e2e tests for that.
+
+:::note[Planned]
+Before the beta: one generated path per transition (100% of transitions, overlays and `goto.exit()` included), back snapshots,
+several samples per target, URL params, `effects: false` for tests, a `describeFlows(app, { describe, it, expect })` runner that turns
+all of this into tests in one line, and a screen harness for component tests. The design is in
+[RFC 04](https://github.com/fabio7maia/react-flow-app/blob/v3/rfcs/api-v3/04-testes-gerados.md).
+:::
+
 ## Validation
 
 ```ts
