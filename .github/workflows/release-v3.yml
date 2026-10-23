@@ -65,5 +65,6 @@ jobs:
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
                   NPM_CONFIG_PROVENANCE: 'true'
+            # Changesets creates lightweight tags, which --follow-tags does not push.
             - name: Push the release tags
-              run: git push --follow-tags
+              run: git push origin --tags
