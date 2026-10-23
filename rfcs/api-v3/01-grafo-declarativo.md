@@ -52,7 +52,7 @@ src/
 1. **A definição do ecrã (`*.screen.ts`) fica separada do componente.** O flow importa a definição (dados + `import()`), não o componente. Assim os flows conhecem as ações sem carregar código de UI, e o code-splitting mantém-se.
 2. **O ecrã declara o que o utilizador pode fazer; o flow declara para onde isso leva.** Ações, payloads e metadados vivem no ecrã. Passos, regras de histórico e transições vivem no flow. O mesmo ecrã pode ser usado em vários flows, ou duas vezes no mesmo flow com nomes de passo diferentes.
 3. **Os saltos entre flows referem o destino por nome** (`goto('auth', 'login')`), sem importar o outro flow. Isto evita imports circulares (o auth pode voltar ao checkout). A validação de tipos é feita contra o registo global (`Register`) declarado na composição.
-4. **As transições são declaradas num statement separado do `defineFlow`** (`checkoutFlow.transitions({...})`). O [spike](../../spikes/api-v3-types/README.md) mostrou que, dentro do `defineFlow`, o `goto` validado pelo `Register` cria uma referência circular de tipos (TS7022). Separadas, o tipo do flow depende só dos `steps` e o ciclo desaparece. É a mesma forma da v2 (`f0.step('x')({...})`).
+4. **As transições são declaradas num statement separado do `defineFlow`** (`checkoutFlow.transitions({...})`). O [spike](./spike-findings.md) mostrou que, dentro do `defineFlow`, o `goto` validado pelo `Register` cria uma referência circular de tipos (TS7022). Separadas, o tipo do flow depende só dos `steps` e o ciclo desaparece. É a mesma forma da v2 (`f0.step('x')({...})`).
 5. **O `loader` não exige `ComponentType` no tipo** (`default: unknown`, verificado em runtime). Exigir `ComponentType` obriga o TS a inferir o retorno do componente, que usa `useFlow(screen)`, e isso volta a criar um ciclo.
 
 ### 1. Ecrãs (um ficheiro por ecrã)
@@ -246,7 +246,7 @@ test('flows são válidos', () => {
 });
 ```
 
-Isto também corre como CLI em CI (`npx react-flow-app check src/app.flow.ts`). O protótipo está no spike (`npm run check`):
+Isto também corre como CLI em CI (`npx react-flow-app check src/app.flow.ts`). Está implementado na lib (`react-flow-app check`):
 
 - **Snapshot do grafo no repo.** `flows.graph.json` (ordenado, sem payloads de exemplo) e `FLOWS.md` (Mermaid, que o GitHub renderiza). O CI falha se estiverem desatualizados, como num lockfile, por isso o diff de um PR que muda a navegação mostra a mudança no grafo.
 - **Diff face à branch base.** `--base origin/v3` lê o snapshot da base com `git show`, sem compilar o código da base. Gera um resumo em markdown para o PR, com:
@@ -357,7 +357,7 @@ A partir daí, sem genéricos manuais:
 | `useFlowEvents('action', e => …)` | `e.action === 'pay'` estreita `e.payload` para `{ ok: boolean }` |
 | `start({ flow, step })` | `step` restringido aos passos desse `flow` |
 
-Por razões de performance do type-check, a union de eventos tem um membro por nome de ação, e não por flow × passo × ação. O payload fica correlacionado com a ação, mas `e.flow` e `e.step` não se estreitam um ao outro. Com o produto cartesiano, o check de uma app com 300 ecrãs passava de 1,3 s para 8,6 s (ver o [spike](../../spikes/api-v3-types/README.md#3-a-union-de-eventos-não-pode-ser-um-produto-cartesiano)).
+Por razões de performance do type-check, a union de eventos tem um membro por nome de ação, e não por flow × passo × ação. O payload fica correlacionado com a ação, mas `e.flow` e `e.step` não se estreitam um ao outro. Com o produto cartesiano, o check de uma app com 300 ecrãs passava de 1,3 s para 8,6 s (ver o [spike](./spike-findings.md#3-a-union-de-eventos-não-pode-ser-um-produto-cartesiano)).
 
 Os payloads também validados em runtime (opcional, `schema: z.object(...)` em vez de `payload<T>()`) tornam-se úteis para analytics: só eventos com payload válido chegam aos terceiros.
 
@@ -397,7 +397,7 @@ Os payloads também validados em runtime (opcional, `schema: z.object(...)` em v
 | Risco | Mitigação |
 |---|---|
 | Semântica de histórico divergir da v2 (como aconteceu no PR #63) | Escrever primeiro testes de caracterização contra a `main` e corrê-los no core novo |
-| Tipos lentos | Medido no spike: 1,4 s de check com 300 ecrãs, 2,4 s com 600 e 4,0 s com 1000, crescimento aproximadamente linear. O benchmark (`spikes/api-v3-types/scripts/bench.mjs`) deve correr em CI |
+| Tipos lentos | Medido no spike: 1,4 s de check com 300 ecrãs, 2,4 s com 600 e 4,0 s com 1000, crescimento aproximadamente linear. O benchmark (`scripts/bench.mjs`) deve correr em CI |
 | Referências circulares de tipos | Regras 4 e 5 (transições separadas, `loader` sem `ComponentType`), cobertas por testes de tipos |
 | Scope creep (guards, paralelismo, async) | Fora de scope explícito. Se for preciso, ver abordagem B |
 

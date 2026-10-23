@@ -10,3 +10,5 @@ CHANGELOG.md
 **/flows.graph.json
 **/FLOWS.md
 .changeset/pre.json
+# Discussion documents (RFCs), formatted by hand
+rfcs

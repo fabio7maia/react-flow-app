@@ -76,7 +76,7 @@
 		"demo": "node scripts/demo.mjs",
 		"check:flows": "node scripts/check-example.mjs",
 		"smoke": "node scripts/smoke.mjs",
-		"lint": "eslint . && cspell --no-progress \"src/**/*.{ts,tsx}\"",
+		"lint": "eslint src test examples scripts e2e eslint.config.js tsup.config.ts vitest.config.ts && cspell --no-progress \"src/**/*.{ts,tsx}\"",
 		"format": "prettier --write src test examples scripts e2e .github",
 		"format:check": "prettier --check src test examples scripts e2e .github",
 		"changeset": "changeset",

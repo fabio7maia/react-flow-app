@@ -1,3 +1,7 @@
+<!-- cspell:disable -->
+
+> **Nota:** este é o README do spike (`spikes/api-v3-types`), preservado como registo das descobertas. O código foi integrado na lib (`src/`, `test/`, `examples/store`) no commit `ab4534a`; os caminhos abaixo referem-se ao spike, que pode ser consultado no histórico (`git show adfa8ba:spikes/api-v3-types/README.md`).
+
 # Spike — API v3 (abordagem A, ecrãs e flows em ficheiros separados)
 
 > Protótipo descartável para validar o [RFC da abordagem A](../../rfcs/api-v3/01-grafo-declarativo.md). Não é código de produção, nem faz parte do build da lib.

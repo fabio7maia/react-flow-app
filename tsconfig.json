@@ -17,16 +17,5 @@
 			"react-flow-app/*": ["./src/*/index.ts"]
 		}
 	},
-	"include": [
-		"src/index.ts",
-		"src/core",
-		"src/react",
-		"src/analytics",
-		"src/testing",
-		"src/cli",
-		"test",
-		"examples",
-		"tsup.config.ts",
-		"vitest.config.ts"
-	]
+	"include": ["src", "test", "examples", "tsup.config.ts", "vitest.config.ts"]
 }

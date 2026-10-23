@@ -57,7 +57,7 @@ Escala de 1 (fraco) a 5 (forte). Os pesos seguem as prioridades acima: 3 nas pri
 
 ## Contrato de eventos (prioridades 1 e 2)
 
-Seja qual for a abordagem, o modelo de eventos deve ser desenhado como um **contrato público e estável**, porque é o que as integrações de terceiros vão consumir. A versão abaixo (v1) está implementada no spike e fixada em [`tests/events.contract.test.ts`](../../spikes/api-v3-types/tests/events.contract.test.ts): qualquer alteração de nomes, campos ou ordem aparece como diff nesse teste.
+Seja qual for a abordagem, o modelo de eventos deve ser desenhado como um **contrato público e estável**, porque é o que as integrações de terceiros vão consumir. A versão abaixo (v1) está implementada e fixada em [`test/events-contract.test.ts`](../../test/events-contract.test.ts): qualquer alteração de nomes, campos ou ordem aparece como diff nesse teste.
 
 ```ts
 type FlowEvent =

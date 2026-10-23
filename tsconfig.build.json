@@ -3,5 +3,5 @@
 	"compilerOptions": {
 		"noEmit": false
 	},
-	"include": ["src/index.ts", "src/core", "src/react", "src/analytics", "src/testing", "src/cli"]
+	"include": ["src"]
 }
