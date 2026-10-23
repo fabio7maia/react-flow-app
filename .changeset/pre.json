@@ -5,6 +5,7 @@
     "react-flow-app": "2.20.0"
   },
   "changesets": [
+    "keep-previous-mounted",
     "v3-core"
   ]
 }
