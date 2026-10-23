@@ -56,6 +56,10 @@ jobs:
                   registry-url: 'https://registry.npmjs.org'
             - run: yarn install --frozen-lockfile
             - run: yarn test
+            # Trusted Publishing (OIDC) needs npm 11.5+; with a trusted publisher configured on npmjs.com
+            # no token is needed. NPM_TOKEN stays as a fallback.
+            - name: npm with trusted publishing
+              run: npm install -g npm@^11.5.1
             - name: Build and publish
               run: yarn release
               env:
