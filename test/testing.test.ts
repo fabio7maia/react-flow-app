@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { branch, createFlowApp, defineFlow, defineScreen, goto, toGraph } from 'react-flow-app';
 import { check, diffGraphs, diffToMarkdown, isEmptyDiff, toMermaidDiff, toSnapshot } from 'react-flow-app/testing';
@@ -11,7 +13,7 @@ import { cartScreen } from '../examples/store/screens/cart/cart.screen';
 import { failureScreen } from '../examples/store/screens/failure/failure.screen';
 import { paymentScreen } from '../examples/store/screens/payment/payment.screen';
 import { successScreen } from '../examples/store/screens/success/success.screen';
-import { main } from '../src/cli/index';
+import { aliasesFrom, main } from '../src/cli/index';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
@@ -160,5 +162,28 @@ describe('react-flow-app check (CLI)', () => {
 
 		log.mockRestore();
 		assert.equal(code, 1);
+	});
+});
+
+describe('react-flow-app check: tsconfig paths as aliases', () => {
+	it('reads JSONC (comments, trailing commas, "/*" inside strings) and maps exact and prefix paths', () => {
+		const dir = mkdtempSync(join(tmpdir(), 'rfa-paths-'));
+		writeFileSync(
+			join(dir, 'tsconfig.json'),
+			`{
+				// comment
+				"compilerOptions": {
+					/* block comment */
+					"baseUrl": ".",
+					"paths": {
+						"@/*": ["src/*"],
+						"@flows": ["src/app.flow.ts"],
+						"lib/*": ["packages/*/index.ts"],
+					},
+				},
+			}`
+		);
+
+		assert.deepEqual(aliasesFrom(dir), { '@': join(dir, 'src'), '@flows': join(dir, 'src/app.flow.ts') });
 	});
 });

@@ -8,7 +8,7 @@ on:
     workflow_dispatch:
         inputs:
             publish:
-                description: 'Publish the current version to npm (alpha tag while in pre mode)'
+                description: 'Publish the current version to npm (rc tag while in pre mode)'
                 type: boolean
                 default: false
 concurrency:

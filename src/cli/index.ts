@@ -28,21 +28,49 @@ Exit code 1 when there are errors, warnings with --strict, or a stale snapshot.`
 const isApp = (value: unknown): value is FlowApp =>
 	typeof value === 'object' && value !== null && (value as { kind?: unknown }).kind === 'app';
 
-/** `compilerOptions.paths` of the project's tsconfig, as jiti aliases (`@/*` → `src/*`). */
-function aliasesFrom(cwd: string): Record<string, string> {
+/** Removes line and block comments outside strings, and trailing commas (tsconfig is JSONC). */
+function stripJsonc(text: string): string {
+	let out = '';
+	for (let i = 0; i < text.length; i++) {
+		const char = text[i];
+		if (char === '"') {
+			let end = i + 1;
+			while (end < text.length && text[end] !== '"') end += text[end] === '\\' ? 2 : 1;
+			out += text.slice(i, end + 1);
+			i = end;
+		} else if (char === '/' && text[i + 1] === '/') {
+			while (i < text.length && text[i] !== '\n') i++;
+			out += '\n';
+		} else if (char === '/' && text[i + 1] === '*') {
+			i = text.indexOf('*/', i + 2) + 1 || text.length;
+		} else {
+			out += char;
+		}
+	}
+	return out.replace(/,(\s*[}\]])/g, '$1');
+}
+
+/**
+ * `compilerOptions.paths` of the project's tsconfig, as jiti aliases. Exact entries (`@app/flows`) and
+ * prefix entries (`@/<wildcard>` → `src/<wildcard>`) are supported; other wildcard patterns are skipped.
+ */
+export function aliasesFrom(cwd: string): Record<string, string> {
 	const file = resolve(cwd, 'tsconfig.json');
 	if (!existsSync(file)) return {};
 	try {
-		const text = readFileSync(file, 'utf8')
-			.replace(/\/\*[\s\S]*?\*\/|^\s*\/\/.*$/gm, '')
-			.replace(/,(\s*[}\]])/g, '$1');
-		const { compilerOptions = {} } = JSON.parse(text) as { compilerOptions?: { baseUrl?: string; paths?: Record<string, string[]> } };
+		const { compilerOptions = {} } = JSON.parse(stripJsonc(readFileSync(file, 'utf8'))) as {
+			compilerOptions?: { baseUrl?: string; paths?: Record<string, string[]> };
+		};
 		const base = resolve(cwd, compilerOptions.baseUrl ?? '.');
-		return Object.fromEntries(
-			Object.entries(compilerOptions.paths ?? {})
-				.filter(([, targets]) => targets.length > 0)
-				.map(([from, [to]]) => [from.replace(/\/\*$/, ''), resolve(base, to.replace(/\/\*$/, ''))])
-		);
+		const aliases: Record<string, string> = {};
+		for (const [from, [to] = []] of Object.entries(compilerOptions.paths ?? {})) {
+			if (!to) continue;
+			if (!from.includes('*') && !to.includes('*')) aliases[from] = resolve(base, to);
+			else if (from.endsWith('/*') && to.endsWith('/*') && !from.slice(0, -2).includes('*') && !to.slice(0, -2).includes('*')) {
+				aliases[from.slice(0, -2)] = resolve(base, to.slice(0, -2));
+			}
+		}
+		return aliases;
 	} catch {
 		return {};
 	}

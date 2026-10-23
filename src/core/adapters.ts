@@ -46,12 +46,15 @@ const isOurs = (state: unknown): state is EntryState => typeof state === 'object
 export function browserHistory(options: { mode?: 'hash' | 'path'; basename?: string; browser?: BrowserLike } = {}): FlowAdapter {
 	const { mode = 'hash', basename = '' } = options;
 	const browser = (): BrowserLike => options.browser ?? (globalThis as unknown as { window: BrowserLike }).window;
+	// Server render (SSR): no window, so no deep link; the Provider uses its `initial` step.
+	const hasBrowser = (): boolean => options.browser !== undefined || typeof (globalThis as { window?: unknown }).window !== 'undefined';
 	const href = (url: string): string => (mode === 'hash' ? `#${url}` : `${basename}${url}`);
 	const currentPath = (b: BrowserLike): string =>
 		mode === 'hash' ? b.location.hash.replace(/^#/, '') || '/' : b.location.pathname.slice(basename.length) || '/';
 
 	return {
 		initial(app) {
+			if (!hasBrowser()) return undefined;
 			const match = matchUrl(app, currentPath(browser()));
 			return match && { flow: match.flow, step: match.step, params: match.params };
 		},

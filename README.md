@@ -4,7 +4,7 @@ Event-based navigation for React. Screens dispatch **actions**; **flows** declar
 navigation is data, you get a diagram of every flow, tests generated from the graph, analytics from one event stream, and end-to-end
 typing with intellisense.
 
-> **v3 is in alpha** (`npm install react-flow-app@alpha`). v2 stays on `latest`. See the [migration guide](./MIGRATION.md).
+> **v3 is a release candidate** (`npm install react-flow-app@rc`). v2 stays on `latest`. See the [migration guide](./MIGRATION.md).
 
 - 🤳 **Event based**: screens dispatch actions; they never import other screens or call `navigate`
 - 🗺️ **Diagram of every flow**, generated from the code (Mermaid, or your own renderer)
@@ -18,7 +18,7 @@ typing with intellisense.
 ## Install
 
 ```bash
-npm install react-flow-app@alpha
+npm install react-flow-app@rc
 ```
 
 React 18 or 19. The core (`react-flow-app`) works without React; the React binding lives in `react-flow-app/react`.
