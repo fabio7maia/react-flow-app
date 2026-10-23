@@ -6,6 +6,8 @@ const src = (path: string): string => fileURLToPath(new URL(`../src/${path}`, im
 
 const config: StorybookConfig = {
 	stories: ['../stories/**/*.mdx', '../stories/**/*.stories.tsx'],
+	// The brand files (logo, favicon) of the site, at the root of Storybook.
+	staticDirs: [{ from: '../website/public/brand', to: '/' }],
 	addons: ['@storybook/addon-essentials'],
 	framework: { name: '@storybook/react-vite', options: {} },
 	viteFinal: config =>

@@ -2,7 +2,7 @@
 
 # Documentação e identidade da v3
 
-> **Estado:** plano, por implementar (na branch `docs/v3-identity-and-docs`). **Alvo:** antes de divulgar a v3 às equipas que usam a v2.
+> **Estado:** implementado (na branch `docs/v3-identity-and-docs`). **Alvo:** antes de divulgar a v3 às equipas que usam a v2.
 
 ## Contexto
 
