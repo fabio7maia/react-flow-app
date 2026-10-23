@@ -108,12 +108,20 @@ jobs:
                   path: ~/.cache/ms-playwright
                   key: playwright-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('yarn.lock') }}
             - name: Browser
-              # The download and the apt step sometimes hang for tens of minutes on the runners (the tests take
-              # ~15 s): give each attempt a time limit and retry.
+              # `apt-get install` (run by Playwright for the system libraries) sometimes hangs on the runners for
+              # tens of minutes, while the tests take ~15 s. Make apt non-interactive (needrestart can wait for a
+              # prompt), give each attempt a time limit, and clean up before retrying: a killed attempt leaves its
+              # apt-get holding the dpkg lock.
+              env:
+                  DEBIAN_FRONTEND: noninteractive
+                  NEEDRESTART_MODE: a
               run: |
+                  sudo sed -i "s/^#\$nrconf{restart} = .*/\$nrconf{restart} = 'a';/" /etc/needrestart/needrestart.conf || true
                   for attempt in 1 2 3; do
-                    timeout 240 npx playwright-core install --with-deps ${{ matrix.browser }} && exit 0
+                    timeout --kill-after=10 240 npx playwright-core install --with-deps ${{ matrix.browser }} && exit 0
                     echo "Attempt $attempt failed, retrying"
+                    sudo pkill -9 -x apt-get || true
+                    sudo dpkg --configure -a || true
                   done
                   exit 1
             - name: E2E
