@@ -3,6 +3,10 @@ title: History and back
 description: How the history works, the step options that shape it, and keeping screens mounted.
 ---
 
+:::note[v2 equivalent]
+The history options are the v2 ones: `ignoreHistory`, `clearHistory`, `allowCyclicHistory`, `keepPreviousMounted`, and `initialHistory` is now `initial.history`.
+:::
+
 Every forward navigation keeps the step you leave in the history; `back()` returns to the last one. The rules are the v2 rules, checked
 by a parity suite that runs the v2 scenarios against v3.
 

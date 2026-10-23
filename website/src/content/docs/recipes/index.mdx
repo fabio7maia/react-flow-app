@@ -1,0 +1,14 @@
+---
+title: Recipes
+description: Short, compiled examples for the cases teams ask about most.
+---
+
+Every example here is a real file in the repository (`website/snippets`), type-checked against the library in CI, so none of them can drift from the API.
+
+- [Login in the middle of a flow](/recipes/login-mid-flow/): Send anonymous users through the auth flow and bring them back with goto.exit().
+- [A wizard with a saved draft](/recipes/wizard-draft/): Save progress with an effect and clear it when the user leaves, with useFlowEvents.
+- [Analytics with consent](/recipes/analytics-consent/): Send nothing until the user accepts, then start the stream, for GDPR.
+- [Next.js App Router](/recipes/nextjs/): Render the Provider from a client component; the first render is the initial step.
+- [List to detail without losing the list](/recipes/keep-list-state/): Keep the previous step mounted, hidden, so filters and scroll survive back.
+- [Deep link into the middle of a flow](/recipes/deep-link/): Open a step directly, with a history behind it so back works.
+- [Test a flow in Vitest](/recipes/test-a-flow/): Drive the engine without rendering, and generate one test per reachable step.

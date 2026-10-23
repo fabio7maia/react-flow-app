@@ -17,3 +17,37 @@
 	border-radius: 12px;
 	background: var(--sl-color-gray-7);
 }
+
+.concept-map {
+	width: 100%;
+	height: auto;
+	font-family: inherit;
+}
+.concept-map .box {
+	fill: var(--sl-color-gray-6);
+	stroke: var(--sl-color-gray-4);
+	stroke-width: 1.5;
+}
+.concept-map .hot {
+	stroke: var(--sl-color-accent);
+	stroke-width: 2.5;
+}
+.concept-map .t {
+	fill: var(--sl-color-white);
+	font-size: 15px;
+	font-weight: 600;
+	text-anchor: middle;
+}
+.concept-map .s {
+	fill: var(--sl-color-gray-2);
+	font-size: 12px;
+	text-anchor: middle;
+}
+.concept-map .l {
+	stroke: var(--sl-color-gray-3);
+	stroke-width: 2;
+	fill: none;
+}
+.concept-map .arrow {
+	fill: var(--sl-color-gray-3);
+}

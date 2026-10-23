@@ -3,6 +3,10 @@ title: Testing and the check CLI
 description: Test flows without React, generate tests from the graph, and keep the diagram in the repo.
 ---
 
+:::note[v2 equivalent]
+v2 had no way to test a flow without rendering the Provider.
+:::
+
 ## Test the engine directly
 
 The engine runs in plain Node: no DOM, no rendering.

@@ -3,6 +3,10 @@ title: Screens
 description: Declare a screen, its actions and payloads, its metadata and its lazy-loaded component.
 ---
 
+:::note[v2 equivalent]
+In v2 screens were entries of one `screens` object with `actions` as a list of names and a `loader` returning a `React.lazy` component.
+:::
+
 A screen is the unit a user sees. Its definition says **what the user can do** (actions), not where that leads: navigation lives in the
 flows.
 

@@ -1,0 +1,39 @@
+---
+title: Why v3
+description: What v3 changes for teams on v2, what stays the same, what a migration costs and the risks of the alpha.
+---
+
+import { Aside, LinkCard } from '@astrojs/starlight/components';
+
+For teams already running v2. The model does not change; what changes is that navigation becomes **data** that tools can read.
+
+## Before and after
+
+| In v2                                                         | In v3                                                      |
+| ------------------------------------------------------------- | ---------------------------------------------------------- |
+| Screens and flows configured apart, types with `any`          | One file per screen and per flow, typed end to end         |
+| Navigation in functions (`navigateTo`) that no tool can read  | Navigation as data: diagram, validation, generated tests   |
+| Listeners with events in a variable order                     | A stable event contract and analytics adapters             |
+| The URL only uses `replaceState`: the browser back button does not navigate | The browser back and forward buttons work, with deep links |
+| Testing a flow requires rendering                             | A headless engine: tests in Node, in milliseconds          |
+
+## What stays the same
+
+- The model: screens dispatch actions, flows decide where they go.
+- The history rules: `ignoreHistory`, `clearHistory`, `allowCyclicHistory` and `keepPreviousMounted`, covered by a parity suite of 41 v2 scenarios.
+- Lazy-loaded screens, and a Provider that renders the current step.
+
+## What it costs
+
+A flow is a mechanical move: split its screens into files, write `defineFlow` and `transitions`, swap the Provider. Most of the work is
+replacing functions that decide with `branch`, listing every possible target. Plan **an hour or two per flow** (an estimate, not a
+measurement), and you can do it one flow at a time. The [migration guide](/migration/v2-to-v3/) has a checklist for each flow.
+
+## Risks
+
+<Aside type="caution" title="Alpha">
+	v3 is in alpha: the API can still change before the beta, and a few v2 features have no equivalent yet (View Transitions, `StepRender`
+	templates, `LoggerHelper`). The list is in [Not in v3 yet](/migration/v2-to-v3/#not-in-v3-yet). v2 stays on `latest` and keeps receiving fixes.
+</Aside>
+
+<LinkCard title="Migrate a flow" description="Side by side, checklist and FAQ." href="/migration/v2-to-v3/" />

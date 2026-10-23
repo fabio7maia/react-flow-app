@@ -23,7 +23,7 @@ export default defineConfig({
 			customCss: ['./src/styles/theme.css'],
 			lastUpdated: true,
 			sidebar: [
-				{ label: 'Getting started', items: ['getting-started/installation', 'getting-started/quick-start'] },
+				{ label: 'Getting started', items: ['why-v3', 'getting-started/installation', 'getting-started/quick-start', 'concepts'] },
 				{
 					label: 'Guides',
 					items: [
@@ -38,6 +38,7 @@ export default defineConfig({
 						'guides/typing',
 					],
 				},
+				{ label: 'Recipes', autogenerate: { directory: 'recipes' } },
 				{ label: 'Migration', items: ['migration/v2-to-v3'] },
 				{
 					label: 'Demo',

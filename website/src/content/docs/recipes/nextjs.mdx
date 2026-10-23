@@ -1,0 +1,18 @@
+---
+title: Next.js App Router
+description: Render the Provider from a client component; the first render is the initial step.
+sidebar:
+    order: 4
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import { Code } from '@astrojs/starlight/components';
+import code from '../../../../snippets/nextjs-provider.tsx?raw';
+
+The React entry is marked `'use client'`, so `FlowProvider` must be rendered from a client component. Import `AppFlows` from a server
+component (a page or a layout) as usual.
+
+On the server there is no `window`: the `browserHistory` adapter skips the deep link and the Provider starts at `initial`, so the first
+render is the initial step and HTML and hydration agree. Lazy screens show the `fallback` until they load on the client.
+
+<Code code={code} lang="tsx" title="nextjs-provider.tsx" />

@@ -3,6 +3,10 @@ title: URLs and the browser
 description: The browser history adapter, deep links, typed URL params and scroll restoration.
 ---
 
+:::note[v2 equivalent]
+v2's `options.withUrl` is `browserHistory()`. v2 only replaced the URL; v3 pushes an entry per step, so the browser back button navigates.
+:::
+
 The engine has no DOM. URLs and the browser back button come from an optional adapter, so the same flows run in React Native, in
 embedded widgets and in Node tests.
 

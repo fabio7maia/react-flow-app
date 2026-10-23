@@ -1,0 +1,19 @@
+---
+title: Analytics with consent
+description: Send nothing until the user accepts, then start the stream, for GDPR.
+sidebar:
+    order: 3
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import { Code } from '@astrojs/starlight/components';
+import code from '../../../../snippets/analytics-consent.ts?raw';
+
+Both adapters read `enabled` on every event, so the consent can change while the app runs: nothing is sent before the opt-in, and the
+stream starts at the next event after it. Only the actions you list are sent, with what you pick from the payload.
+
+Pass `analytics` in the Provider's `adapters`. See [analytics](/guides/analytics/) for the page views and flow events each adapter sends.
+
+<Code code={code} lang="ts" title="analytics-consent.ts" />
+
+<Aside title="v2 equivalent">In v2 this was a `listen` callback that you filtered by hand.</Aside>

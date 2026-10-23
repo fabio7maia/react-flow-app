@@ -3,6 +3,10 @@ title: Flows and transitions
 description: Steps, step options, and every kind of transition target.
 ---
 
+:::note[v2 equivalent]
+In v2 a flow was `fm.flow({ … }).steps({ … })` and transitions were `f.step('x')({ … })`, with functions that called `navigateTo`.
+:::
+
 A flow is a set of steps (each one a screen) and the transitions between them.
 
 ```ts

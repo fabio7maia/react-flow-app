@@ -1,0 +1,32 @@
+---
+title: Concepts
+description: The mental model in one page, from a screen to an event, and where the adapters plug in.
+---
+
+Read this page before the guides.
+
+<svg viewBox="0 0 760 250" role="img" aria-label="Screen, action, flow, engine, events, adapters and Provider" class="concept-map">
+	<g class="l"><path d="M150 70H190"/><path d="M320 70H360"/><path d="M490 70H530"/><path d="M595 100V140"/><path d="M460 190H400"/><path d="M270 190H230"/></g>
+	<g class="arrow"><path d="M190 65l8 5-8 5z"/><path d="M360 65l8 5-8 5z"/><path d="M530 65l8 5-8 5z"/><path d="M590 140l5 8 5-8z"/><path d="M400 185l-8 5 8 5z"/><path d="M230 185l-8 5 8 5z"/></g>
+	<g><rect class="box" x="20" y="40" width="130" height="60" rx="10"/><text class="t" x="85" y="68">Screen</text><text class="s" x="85" y="86">declares actions</text></g>
+	<g><rect class="box" x="198" y="40" width="122" height="60" rx="10"/><text class="t" x="259" y="68">Action</text><text class="s" x="259" y="86">dispatch('pay')</text></g>
+	<g><rect class="box" x="368" y="40" width="122" height="60" rx="10"/><text class="t" x="429" y="68">Flow</text><text class="s" x="429" y="86">transitions as data</text></g>
+	<g><rect class="box hot" x="538" y="40" width="200" height="60" rx="10"/><text class="t" x="638" y="68">Engine</text><text class="s" x="638" y="86">no DOM, runs in Node</text></g>
+	<g><rect class="box" x="470" y="150" width="250" height="80" rx="10"/><text class="t" x="595" y="180">Events</text><text class="s" x="595" y="200">action, step:leave, step:enter,</text><text class="s" x="595" y="216">flow:start, flow:exit</text></g>
+	<g><rect class="box" x="278" y="160" width="122" height="60" rx="10"/><text class="t" x="339" y="188">Adapters</text><text class="s" x="339" y="206">URL, scroll, analytics</text></g>
+	<g><rect class="box" x="20" y="160" width="202" height="60" rx="10"/><text class="t" x="121" y="188">Provider</text><text class="s" x="121" y="206">renders the current step</text></g>
+</svg>
+
+## The pieces
+
+- **Screen**: a component plus the actions it can dispatch, with payload types. It never imports another screen. See [screens](/guides/screens/).
+- **Action**: a named event with an optional payload. The screen says *what happened*, not where to go.
+- **Flow**: steps (each one a screen) and **transitions**: for each action of each step, a target. A target is a step, another flow
+  (`goto`), a `branch` that decides between declared targets, or an `effect`. See [flows](/guides/flows/).
+- **Engine**: runs the transitions and keeps the history. It has no DOM, so it runs in Node tests and can be driven without rendering.
+- **Events**: every navigation emits an ordered set of events with one `navigationId`. See [events](/guides/events/).
+- **Adapters**: listen to the events or the engine: the browser URL and back button, scroll restoration, analytics.
+  See [URLs](/guides/urls/) and [analytics](/guides/analytics/).
+- **Provider**: `FlowProvider` owns one engine and renders its current step. See [React](/guides/react/).
+
+Because transitions are data, the same graph feeds the diagram, validation and [generated tests](/guides/testing/).
