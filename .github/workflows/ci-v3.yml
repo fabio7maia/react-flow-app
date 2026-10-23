@@ -87,6 +87,7 @@ jobs:
     e2e:
         name: E2E (${{ matrix.browser }})
         runs-on: ubuntu-latest
+        timeout-minutes: 15
         strategy:
             fail-fast: false
             matrix:
@@ -101,8 +102,20 @@ jobs:
                   cache: yarn
             - name: Install
               run: yarn install --frozen-lockfile
+            - name: Browser cache
+              uses: actions/cache@v4
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: playwright-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('yarn.lock') }}
             - name: Browser
-              run: npx playwright-core install --with-deps ${{ matrix.browser }}
+              # The download and the apt step sometimes hang for tens of minutes on the runners (the tests take
+              # ~15 s): give each attempt a time limit and retry.
+              run: |
+                  for attempt in 1 2 3; do
+                    timeout 240 npx playwright-core install --with-deps ${{ matrix.browser }} && exit 0
+                    echo "Attempt $attempt failed, retrying"
+                  done
+                  exit 1
             - name: E2E
               run: yarn e2e
               env:
