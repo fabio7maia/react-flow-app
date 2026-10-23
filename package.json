@@ -2,6 +2,7 @@
 	"name": "react-flow-app",
 	"version": "3.0.0-alpha.1",
 	"description": "Event-based navigation for React: flows declared as data, typed end to end, with a diagram, generated tests and analytics out of the box.",
+	"homepage": "https://react-flow-app-pr.vercel.app",
 	"license": "MIT",
 	"type": "module",
 	"sideEffects": false,

@@ -4,7 +4,8 @@ Event-based navigation for React. Screens dispatch **actions**; **flows** declar
 navigation is data, you get a diagram of every flow, tests generated from the graph, analytics from one event stream, and end-to-end
 typing with intellisense.
 
-> **v3 is in alpha** (`npm install react-flow-app@alpha`). v2 stays on `latest`. See the [migration guide](./MIGRATION.md).
+> **v3 is in alpha** (`npm install react-flow-app@alpha`). v2 stays on `latest`.
+> **Documentation:** [react-flow-app-pr.vercel.app](https://react-flow-app-pr.vercel.app) · [migration guide from v2](https://react-flow-app-pr.vercel.app/migration/v2-to-v3/) · [demo](https://react-flow-app-pr.vercel.app/demo/)
 
 - 🤳 **Event based**: screens dispatch actions; they never import other screens or call `navigate`
 - 🗺️ **Diagram of every flow**, generated from the code (Mermaid, or your own renderer)
@@ -238,7 +239,7 @@ check writes a summary of new, removed and changed steps and transitions, with a
 
 ## Documentation
 
-The documentation site lives in [`website/`](./website) (Astro Starlight): guides, the migration guide from v2, the API reference and
+The [documentation site](https://react-flow-app-pr.vercel.app) lives in [`website/`](./website) (Astro Starlight): guides, the migration guide from v2, the API reference and
 the demo. `yarn docs:dev` runs it locally; it deploys to Vercel (`vercel.json`).
 
 ## Examples, Storybook and demo
