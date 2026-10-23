@@ -1,3 +1,19 @@
+# react-flow-app
+
+# [2.20.0](https://github.com/fabio7maia/react-flow-app/compare/v2.19.0...v2.20.0) (2026-08-20)
+
+
+### Features
+
+* implement keepPreviousMounted option to preserve previous step instance during navigation ([c8591c6](https://github.com/fabio7maia/react-flow-app/commit/c8591c6ad4dc91cd31d6d0ed2e8446c0e557ee85))
+
+# [2.19.0](https://github.com/fabio7maia/react-flow-app/compare/v2.18.0...v2.19.0) (2026-06-08)
+
+
+### Features
+
+* added scroll restoration and ignoreHistory on dispatch action ([5e05378](https://github.com/fabio7maia/react-flow-app/commit/5e05378ab3db90fe1f0d409b906190dbfbbb8378))
+
 # [2.18.0](https://github.com/fabio7maia/react-flow-app/compare/v2.17.0...v2.18.0) (2026-04-28)
 
 
