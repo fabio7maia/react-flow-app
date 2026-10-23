@@ -10,6 +10,8 @@ Correm com a API pública real (`FlowManager`, `FlowProvider`, `useFlow`, `useFl
 CI=true node scripts/test.js --watchAll=false src/__tests__/characterization
 ```
 
+> **v3:** os cenários K01–K03 (`keepPreviousMounted`, 2.20) estão em `test/keep-previous-mounted.test.tsx`; esta caracterização é da 2.18 e não os inclui.
+
 ## Catálogo
 
 | ID      | Cenário                                                                                |

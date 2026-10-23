@@ -1,6 +1,7 @@
 import {
 	type ComponentType,
 	createContext,
+	Fragment,
 	lazy,
 	type LazyExoticComponent,
 	type ReactNode,
@@ -19,7 +20,9 @@ import {
 	type FlowByName,
 	type FlowEngine,
 	type FlowEventType,
+	type FlowParams,
 	type FlowSnapshot,
+	type HistoryEntry,
 	type RegisteredApp,
 	type RegisteredEvent,
 	type RegisteredFlowName,
@@ -30,6 +33,43 @@ import {
 } from 'react-flow-app';
 
 const EngineContext = createContext<FlowEngine | null>(null);
+
+/** The step a screen belongs to: with `keepPreviousMounted`, hidden screens keep their own params. */
+type MountedStep = { key: string; flow: string; step: string; params: FlowParams; current: boolean };
+const StepContext = createContext<MountedStep | null>(null);
+
+const HIDDEN = { display: 'none' } as const;
+const VISIBLE = { display: 'contents' } as const;
+
+/**
+ * Screens to keep mounted: the current one and, walking back through the history of the same
+ * flow, each previous step while the step after it has `keepPreviousMounted`. Derived from the
+ * snapshot, so back, clearHistory or a step without the option drop them naturally. Keys follow the
+ * position in the history, so React keeps the same instance when a step is hidden or shown again.
+ */
+function mountedSteps(app: RegisteredApp, snapshot: FlowSnapshot): { steps: MountedStep[]; keeps: boolean } {
+	const { flow, step, history, params } = snapshot;
+	if (!flow || !step) return { steps: [], keeps: false };
+	const steps = app.getFlow(flow)?.steps ?? {};
+	const keeps = Object.values(steps).some(options => options.keepPreviousMounted);
+	const list: MountedStep[] = [{ key: `${flow}.${step}#${history.length}`, flow, step, params, current: true }];
+	if (!keeps) return { steps: list, keeps };
+
+	let next = step;
+	for (let index = history.length - 1; index >= 0; index--) {
+		const entry: HistoryEntry = history[index];
+		if (entry.flow !== flow || !steps[next]?.keepPreviousMounted) break;
+		list.unshift({
+			key: `${entry.flow}.${entry.step}#${index}`,
+			flow: entry.flow,
+			step: entry.step,
+			params: entry.params ?? {},
+			current: false,
+		});
+		next = entry.step;
+	}
+	return { steps: list, keeps };
+}
 
 const lazyScreens = new WeakMap<ScreenDef, LazyExoticComponent<ComponentType>>();
 
@@ -65,7 +105,8 @@ function ScreenReady({ stepKey, onReady }: { stepKey: string; onReady: () => voi
 
 export type FlowProviderProps = {
 	app: RegisteredApp;
-	initial: { flow: RegisteredFlowName; step?: string };
+	/** Initial step; `history` lets back work from it (e.g. a deep link into the middle of a flow). */
+	initial: { flow: RegisteredFlowName; step?: string; history?: ReadonlyArray<string | HistoryEntry> };
 	/** Read on the first render only (they attach once per engine), like `initial`. */
 	adapters?: FlowAdapter[];
 	fallback?: ReactNode;
@@ -86,8 +127,8 @@ export function FlowProvider({ app, initial, adapters: adaptersProp = [], fallba
 		return createFlowEngine(app as never, { initial: (fromPlatform ?? initial) as never, deferStartEvents: true });
 	});
 	const snapshot = useSyncExternalStore(engine.subscribe, engine.getSnapshot, engine.getSnapshot);
-	const screen = snapshot.flow && snapshot.step ? app.getFlow(snapshot.flow)?.steps[snapshot.step]?.screen : undefined;
-	const Screen = screen ? lazyFor(screen) : null;
+	const { steps, keeps } = mountedSteps(app, snapshot);
+	const onReady = (): void => adapters.forEach(adapter => adapter.screenReady?.());
 
 	useEffect(() => {
 		const detach = adapters.map(adapter => adapter.attach(engine as FlowEngine));
@@ -100,15 +141,28 @@ export function FlowProvider({ app, initial, adapters: adaptersProp = [], fallba
 
 	return (
 		<EngineContext.Provider value={engine as FlowEngine}>
-			{Screen && (
-				<Suspense fallback={fallback}>
-					<Screen />
-					<ScreenReady
-						stepKey={`${snapshot.flow}.${snapshot.step}#${snapshot.history.length}`}
-						onReady={() => adapters.forEach(adapter => adapter.screenReady?.())}
-					/>
-				</Suspense>
-			)}
+			{steps.map(mounted => {
+				const screen = app.getFlow(mounted.flow)?.steps[mounted.step]?.screen;
+				if (!screen) return null;
+				const Screen = lazyFor(screen);
+				const content = (
+					<StepContext.Provider value={mounted}>
+						<Suspense fallback={mounted.current ? fallback : null}>
+							<Screen />
+							{mounted.current && <ScreenReady stepKey={mounted.key} onReady={onReady} />}
+						</Suspense>
+					</StepContext.Provider>
+				);
+				// Flows that keep screens mounted wrap every screen, so a screen keeps its place in the
+				// tree (and its instance) when it becomes hidden. `display: contents` adds no box.
+				return keeps ? (
+					<div key={mounted.key} style={mounted.current ? VISIBLE : HIDDEN} data-flow-step={`${mounted.flow}.${mounted.step}`}>
+						{content}
+					</div>
+				) : (
+					<Fragment key="screen">{content}</Fragment>
+				);
+			})}
 			{children}
 		</EngineContext.Provider>
 	);
@@ -133,7 +187,10 @@ export function useStepParams<N extends RegisteredFlowName, S extends StepNameOf
 	_flow: N,
 	_step: S
 ): StepParams<FlowByName<N>, S> {
-	return useFlowSelector(snapshot => snapshot.params) as StepParams<FlowByName<N>, S>;
+	const mounted = useContext(StepContext);
+	const live = useFlowSelector(snapshot => snapshot.params);
+	// A screen kept mounted under another step reads its own params, not the current step's.
+	return (mounted && !mounted.current ? mounted.params : live) as StepParams<FlowByName<N>, S>;
 }
 
 /** Typed from the screen definition: it depends neither on flows nor on the registration. */

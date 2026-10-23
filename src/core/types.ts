@@ -65,6 +65,12 @@ export type StepOptions = {
 	clearHistory?: boolean;
 	/** Allow the step to appear more than once in the history. */
 	allowCyclicHistory?: boolean;
+	/**
+	 * When this step becomes active, keep the previous step of the flow mounted (hidden), with its
+	 * state, refs and DOM. Back shows it again without remounting it. Consecutive steps with the
+	 * option stack up; moving to a step without it unmounts them. Handy for list → detail.
+	 */
+	keepPreviousMounted?: boolean;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
