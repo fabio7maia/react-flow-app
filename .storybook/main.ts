@@ -1,19 +1,24 @@
-import { StorybookConfig } from '@storybook/react-vite';
+import { fileURLToPath } from 'node:url';
+import type { StorybookConfig } from '@storybook/react-vite';
+import { mergeConfig } from 'vite';
+
+const src = (path: string): string => fileURLToPath(new URL(`../src/${path}`, import.meta.url));
 
 const config: StorybookConfig = {
-	stories: ['../src/**/*.stories.@(tsx|mdx)'],
-	addons: [
-		'@storybook/addon-links',
-		'@storybook/addon-essentials',
-		'@storybook/addon-viewport',
-		'@storybook/addon-webpack5-compiler-swc',
-	],
-	staticDirs: ['../public'],
-	framework: '@storybook/react-vite',
-	docs: {},
-	typescript: {
-		reactDocgen: 'react-docgen-typescript',
-	},
+	stories: ['../stories/**/*.mdx', '../stories/**/*.stories.tsx'],
+	addons: ['@storybook/addon-essentials'],
+	framework: { name: '@storybook/react-vite', options: {} },
+	viteFinal: config =>
+		mergeConfig(config, {
+			resolve: {
+				// The library from its sources, like the tests (tsconfig paths).
+				alias: [
+					{ find: /^react-flow-app$/, replacement: src('index.ts') },
+					{ find: /^react-flow-app\/react$/, replacement: src('react/index.tsx') },
+					{ find: /^react-flow-app\/(analytics|testing)$/, replacement: src('$1/index.ts') },
+				],
+			},
+		}),
 };
 
 export default config;

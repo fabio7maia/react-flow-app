@@ -14,19 +14,9 @@
 		"paths": {
 			"react-flow-app": ["./src/index.ts"],
 			"react-flow-app/react": ["./src/react/index.tsx"],
-			"react-flow-app/*": ["./src/*/index.ts"]
+			"react-flow-app/analytics": ["./src/analytics/index.ts"],
+			"react-flow-app/testing": ["./src/testing/index.ts"]
 		}
 	},
-	"include": [
-		"src/index.ts",
-		"src/core",
-		"src/react",
-		"src/analytics",
-		"src/testing",
-		"src/cli",
-		"test",
-		"examples",
-		"tsup.config.ts",
-		"vitest.config.ts"
-	]
+	"include": ["src", "test", "examples", "stories", ".storybook", "tsup.config.ts", "vitest.config.ts"]
 }

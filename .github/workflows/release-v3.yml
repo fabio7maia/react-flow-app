@@ -8,12 +8,15 @@ on:
     workflow_dispatch:
         inputs:
             publish:
-                description: 'Publish the current version to npm (alpha tag while in pre mode)'
+                description: 'Publish the current version to npm (alpha, beta or rc tag while in pre mode)'
                 type: boolean
                 default: false
 concurrency:
     group: release-v3
     cancel-in-progress: false
+env:
+    # Git hooks are for local development; in CI they would block the release push.
+    HUSKY: 0
 jobs:
     version:
         name: Version Packages PR

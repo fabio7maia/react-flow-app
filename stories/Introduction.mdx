@@ -1,0 +1,36 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Introduction" />
+
+# react-flow-app v3
+
+Event-based navigation for React. Screens dispatch **actions**; **flows** declared as data decide where each action goes. Because the
+navigation is data, the library can draw every flow, generate tests from the graph, send analytics from one event stream, and type
+everything end to end.
+
+```ts
+checkoutFlow.transitions({
+	cart: { checkout: branch(['payment', goto('auth', 'login')], (_, p) => (p.loggedIn ? 'payment' : goto('auth', 'login'))) },
+	payment: { pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure')), cancel: 'cart' },
+	failure: { retry: 'payment' },
+});
+```
+
+## What is here
+
+- **Demo / Inside the store**: the example store in a simulated browser, with the live map of the flows, the event log, the analytics
+  calls, the generated tests, a PR review diff and the source of the current step.
+- **Examples**: one feature per story, each with an inspector (current step, history, map of the flow, events).
+    - _Basic flow_: steps, actions, transitions, back, `clearHistory`.
+    - _History options_: `ignoreHistory`, `clearHistory`, `allowCyclicHistory`.
+    - _Branch_: a conditional transition with declared targets and sample payloads.
+    - _Overlays_: a help panel whose actions navigate the flow.
+    - _Store_: three flows, `goto` and `goto.exit()`, URL params, and the Segment adapter.
+
+Everything runs on the library itself (`src/`), the same code the tests and the package use.
+
+## Links
+
+- [README](https://github.com/fabio7maia/react-flow-app/blob/v3/README.md) and
+  [migration guide](https://github.com/fabio7maia/react-flow-app/blob/v3/MIGRATION.md)
+- [Design (RFC)](https://github.com/fabio7maia/react-flow-app/tree/v3/rfcs/api-v3)

@@ -25,31 +25,18 @@ yarn-error.log*
 
 .idea
 
-src/react-app-env.d.ts
 /.vscode
 /.vs
 .favorites.json
 /.scannerwork
 test-report.xml
 
-/src/packages/*/node_modules/
-/src/packages/*/build/
-/src/packages/*/coverage/
-/src/packages/*/dist/
-
-/storybook-static
-!/src/packages/core/src/components/**/*
 
 /docs
-# spikes
-spikes/**/.out
-spikes/**/.bench
-spikes/**/.e2e
-spikes/**/flows-report.md
-spikes/**/.demo
 # v3 tooling output
 /.e2e
 /.bench
 /.demo
 flows-report.md
 /.smoke
+/storybook-static
