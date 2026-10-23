@@ -12,6 +12,9 @@ permissions:
 concurrency:
     group: ci-v3-${{ github.ref }}
     cancel-in-progress: true
+env:
+    # Git hooks are for local development; in CI they would block the release push.
+    HUSKY: 0
 jobs:
     checks:
         name: Lint, types, tests, flows, package
@@ -48,6 +51,8 @@ jobs:
               run: yarn build
             - name: Package smoke test (types, ESM, CJS, CLI)
               run: yarn smoke
+            - name: Storybook
+              run: yarn storybook:build --quiet
     compat:
         name: Compatibility (Node ${{ matrix.node }}, React ${{ matrix.react }})
         runs-on: ubuntu-latest

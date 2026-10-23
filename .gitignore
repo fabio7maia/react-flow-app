@@ -39,3 +39,4 @@ test-report.xml
 /.demo
 flows-report.md
 /.smoke
+/storybook-static

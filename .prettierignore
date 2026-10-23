@@ -12,3 +12,4 @@ CHANGELOG.md
 .changeset/pre.json
 # Discussion documents (RFCs), formatted by hand
 rfcs
+storybook-static

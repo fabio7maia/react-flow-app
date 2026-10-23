@@ -1,6 +1,6 @@
 {
   "mode": "pre",
-  "tag": "rc",
+  "tag": "alpha",
   "initialVersions": {
     "react-flow-app": "2.20.0"
   },

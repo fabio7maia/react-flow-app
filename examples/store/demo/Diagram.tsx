@@ -95,6 +95,9 @@ export function Diagram({ graph, current, covered, lastEdge, diff, removedEdges 
 		return { d: `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`, label: labelAt };
 	};
 
+	// Arcs that skip stations rise above their lane: grow the drawing upwards so they are not clipped.
+	const top = Math.min(0, ...edges.map(edge => (geometry(edge)?.label.y ?? 0) - 16));
+
 	const edgeText = (edge: GraphEdge): string =>
 		edge.kind === 'exit'
 			? `${edge.action} ↩`
@@ -109,7 +112,13 @@ export function Diagram({ graph, current, covered, lastEdge, diff, removedEdges 
 
 	return (
 		<div className="diagram-scroll">
-			<svg className="diagram" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label} style={{ minWidth: width * 0.8 }}>
+			<svg
+				className="diagram"
+				viewBox={`0 ${top} ${width} ${height - top}`}
+				role="img"
+				aria-label={label}
+				style={{ minWidth: width * 0.8 }}
+			>
 				<defs>
 					{['line-1', 'line-2', 'line-3', 'line-4', 'added', 'removed'].map(token => (
 						<marker

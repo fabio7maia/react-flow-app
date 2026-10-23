@@ -4,7 +4,7 @@ Event-based navigation for React. Screens dispatch **actions**; **flows** declar
 navigation is data, you get a diagram of every flow, tests generated from the graph, analytics from one event stream, and end-to-end
 typing with intellisense.
 
-> **v3 is a release candidate** (`npm install react-flow-app@rc`). v2 stays on `latest`. See the [migration guide](./MIGRATION.md).
+> **v3 is in alpha** (`npm install react-flow-app@alpha`). v2 stays on `latest`. See the [migration guide](./MIGRATION.md).
 
 - 🤳 **Event based**: screens dispatch actions; they never import other screens or call `navigate`
 - 🗺️ **Diagram of every flow**, generated from the code (Mermaid, or your own renderer)
@@ -18,7 +18,7 @@ typing with intellisense.
 ## Install
 
 ```bash
-npm install react-flow-app@rc
+npm install react-flow-app@alpha
 ```
 
 React 18 or 19. The core (`react-flow-app`) works without React; the React binding lives in `react-flow-app/react`.
@@ -234,10 +234,13 @@ npx react-flow-app check --base origin/main --report flows-report.md
 The graph snapshot and the Mermaid diagram live in the repo, so every PR that changes navigation shows it in the diff. With `--base`, the
 check writes a summary of new, removed and changed steps and transitions, with a highlighted diagram, for the PR.
 
-## Example and demo
+## Examples, Storybook and demo
 
-[`examples/store`](./examples/store) is a small store (three flows) used by the tests, the e2e suite and the demo. `yarn demo` builds an
-interactive page with the store, a live map of the flows, the event log, the analytics calls, the generated tests and a PR review diff.
+[`examples/store`](./examples/store) is a small store (three flows) used by the tests, the e2e suite and the demo.
+
+`yarn storybook` opens the examples, one feature per story (basic flow, history options, branch, overlays, the store across flows,
+analytics), each with an inspector: current step, history, a live map of the flow and the event log. It also hosts the interactive demo
+(the store in a simulated browser, with the generated tests and a PR review diff). `yarn demo` builds the demo as a single page.
 
 ## Development
 
@@ -248,6 +251,7 @@ yarn completions   # real intellisense at key points of the API
 yarn e2e           # real browsers (E2E_BROWSERS=chromium,firefox,webkit)
 yarn bench 50 6    # type-check benchmark: 50 flows × 6 steps
 yarn build && yarn smoke   # build and test the packed package
+yarn storybook     # examples and the demo
 yarn changeset     # describe your change for the changelog
 ```
 

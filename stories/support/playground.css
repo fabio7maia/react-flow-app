@@ -1,0 +1,87 @@
+/* Playground of the examples: the screen on the left, the inspector on the right. Tokens come from demo.css. */
+.pg {
+	display: grid;
+	grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+	gap: 20px;
+	align-items: start;
+	font-family: var(--font-body);
+	color: var(--ink);
+}
+@media (max-width: 900px) {
+	.pg {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+.pg-main {
+	display: grid;
+	gap: 16px;
+	min-width: 0;
+}
+.pg .viewport {
+	height: 320px;
+}
+.pg-side {
+	min-width: 0;
+}
+.pg-inspector {
+	display: grid;
+	gap: 12px;
+	padding: 14px 16px;
+}
+.pg-state {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px 24px;
+	align-items: center;
+}
+.pg-state > div {
+	display: grid;
+	gap: 2px;
+}
+.pg-label {
+	font-size: 11px;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+.pg-history {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+.pg-hints {
+	font-size: 14px;
+	color: var(--muted);
+}
+.pg-hints ul {
+	margin: 6px 0 0;
+	padding-left: 18px;
+	display: grid;
+	gap: 4px;
+}
+.pg .events {
+	display: block;
+	max-height: 260px;
+	overflow: auto;
+}
+.pg-modal {
+	margin-top: 16px;
+	padding: 14px;
+	border: 1px solid var(--rule);
+	border-radius: 10px;
+	background: var(--surface-2);
+}
+.pg-aside {
+	padding: 12px 14px;
+	border: 1px solid var(--rule);
+	border-radius: 10px;
+	background: var(--surface);
+	font-size: 13px;
+}
+.pg-aside ol {
+	margin: 6px 0 0;
+	padding-left: 18px;
+	display: grid;
+	gap: 2px;
+	font-family: var(--font-mono);
+}
