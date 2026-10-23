@@ -1,6 +1,6 @@
 {
 	"name": "react-flow-app",
-	"version": "2.20.0",
+	"version": "3.0.0-alpha.0",
 	"description": "Event-based navigation for React: flows declared as data, typed end to end, with a diagram, generated tests and analytics out of the box.",
 	"license": "MIT",
 	"type": "module",
