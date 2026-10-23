@@ -24,7 +24,9 @@ v2 keeps receiving fixes on the `latest` npm tag; v3 ships as pre-releases (`alp
 | `fromFlow` / `backExit`                                             | `goto.exit()` and the `flow:exit` event                                                                          |
 | `anotherObjects` + `f.anotherObject('modal')({ … })`                | `overlays: { modal: modalScreen }` + `flow.transitions({ modal: { … } })`                                        |
 | Step options `initialStep`, `url`, `ignoreHistory`, `clearHistory`… | `initial`, `url` (now with typed `:params`), `ignoreHistory`, `clearHistory`, `allowCyclicHistory`, `entrypoint` |
+| Step option `keepPreviousMounted` (2.20)                            | Same option, same behaviour; kept screens read their own URL params                                              |
 | `<FlowProvider fm={fm} initialFlowName="f" initialStepName="s" />`  | `<FlowProvider app={flowApp} initial={{ flow: 'f', step: 's' }} adapters={[…]} />`                               |
+| `initialHistory`                                                    | `initial={{ flow, step, history: ['a', 'b'] }}`                                                                  |
 | `withUrl` / `scrollRestoration` props                               | `adapters={[browserHistory(), scrollRestoration()]}`                                                             |
 | `useFlow(screen)` → `dispatch`, `back`, `hasPreviousStep`           | `useFlow(screen)` → `dispatch`, `back`, `canGoBack` (from `react-flow-app/react`)                                |
 | `getHistory`, `getCurrentStep`, `getLastAction`                     | `useFlowSelector(snapshot => …)` (`history`, `flow`, `step`, `params`)                                           |
@@ -57,3 +59,18 @@ v2 keeps receiving fixes on the `latest` npm tag; v3 ships as pre-releases (`alp
   either version. (H05)
 - Event order is always `action → step:leave → step:enter`, and every event of a navigation shares a `navigationId`.
 - A transition without `params` keeps the URL params of the step's last visit.
+
+## Not in v3 yet
+
+These v2 features have no v3 equivalent in this alpha. Each one is tracked for a decision before the beta.
+
+- **View Transitions** (2.17): v2 wraps every navigation in `document.startViewTransition`.
+- **`StepRender` and custom templates**: in v2, `FlowProvider` children replace the screen and `<StepRender />` places it inside a
+  layout. In v3 the screen is always rendered first, followed by the children.
+- **`ErrorBoundary` / `UnexpectedError`** components: wrap the `FlowProvider` in your own error boundary.
+- **`animation` option** (built-in loading placeholder): pass your own `fallback`.
+- **Navigation options on a transition** (`navigateTo('x', { clearHistory, history })` returned by an action): use the `clearHistory`
+  step option, or `useFlowEngine().start(flow, step, { clearHistory, history })`.
+- **`clearAllHistory(flowName)`** for one flow, `getLastAction()` and `refresh()`: `useFlowEngine().clearHistory()` clears the whole
+  history; the direction of the last navigation is on the `step:enter` event.
+- **`LoggerHelper`**: log the events with an integration (`createFlowApp(flows, { integrations: [console.log] })`).

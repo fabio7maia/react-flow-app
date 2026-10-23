@@ -107,6 +107,8 @@ checkoutFlow.transitions({
 - `branch` declares every possible target, so the diagram shows them all without running your code. `samples` give the generated tests
   a payload for each branch.
 - `effect(fn)` runs a side effect without navigating.
+- Step options keep the v2 semantics: `initial`, `entrypoint`, `url`, `ignoreHistory`, `clearHistory`, `allowCyclicHistory` and
+  `keepPreviousMounted` (the previous step stays mounted, hidden, while this one is active: list → detail keeps the list's state).
 
 ### 3. The app, registered once
 
