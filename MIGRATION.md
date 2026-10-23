@@ -6,6 +6,8 @@ typed through a single `Register`. A parity suite runs the 41 v2 characterizatio
 ([`test/parity.test.ts`](./test/parity.test.ts)): 21 behave the same, 16 the same through another API, and 4 differ on purpose (listed
 below).
 
+The full guide, with side-by-side examples, is on the [documentation site](https://react-flow-app-pr.vercel.app/migration/v2-to-v3/).
+
 v2 keeps receiving fixes on the `latest` npm tag; v3 ships as pre-releases (`alpha`, then `beta` and `rc`) until it is stable.
 
 ## At a glance

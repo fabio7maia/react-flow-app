@@ -4,8 +4,7 @@ import { defineConfig } from 'astro/config';
 const repo = 'https://github.com/fabio7maia/react-flow-app';
 
 export default defineConfig({
-	// Vercel sets the production URL; locally the site runs on localhost.
-	site: process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : undefined,
+	site: 'https://react-flow-app-pr.vercel.app',
 	integrations: [
 		starlight({
 			title: 'react-flow-app',
