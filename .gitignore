@@ -40,3 +40,7 @@ test-report.xml
 flows-report.md
 /.smoke
 /storybook-static
+# docs site
+/website/dist
+/website/.astro
+/website/public/demo-app

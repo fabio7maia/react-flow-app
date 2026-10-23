@@ -64,5 +64,10 @@ ${script}
 `;
 
 mkdirSync(out, { recursive: true });
+// index.html: the page body only (the host adds the document); standalone.html: a full document (docs site).
 writeFileSync(join(out, 'index.html'), html);
-console.log(`.demo/index.html (${(html.length / 1024).toFixed(0)} KB)`);
+writeFileSync(
+	join(out, 'standalone.html'),
+	`<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n</head>\n<body>\n${html}</body>\n</html>\n`
+);
+console.log(`.demo/index.html and .demo/standalone.html (${(html.length / 1024).toFixed(0)} KB)`);
