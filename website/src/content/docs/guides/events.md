@@ -3,6 +3,10 @@ title: Events
 description: The event contract every navigation emits, its order and its guarantees.
 ---
 
+:::note[v2 equivalent]
+v2's events `mount`, `dispatch`, `back` and `backExit` are `step:enter`, `action`, `step:leave` (reason `back`) and `flow:exit`.
+:::
+
 Every navigation emits a stable, ordered set of events. Integrations (analytics, logging, monitoring) build on this contract, so it is
 pinned by tests: any change to names, fields or order is a contract change.
 

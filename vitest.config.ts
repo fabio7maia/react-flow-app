@@ -12,7 +12,7 @@ export default defineConfig({
 		],
 	},
 	test: {
-		include: ['test/**/*.test.{ts,tsx}'],
+		include: ['test/**/*.test.{ts,tsx}', 'website/snippets/**/*.test.ts'],
 		coverage: { include: ['src/**'], exclude: ['src/cli/bin.ts'] },
 	},
 });

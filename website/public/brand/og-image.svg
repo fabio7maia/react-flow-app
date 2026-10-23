@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+	<rect width="1200" height="630" fill="#0d1219"/>
+	<g fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" transform="translate(80 150) scale(3.4)">
+		<path stroke="#ff7b3d" d="M9 32H27"/>
+		<path stroke="#5b95ff" d="M27 32C38 32 38 14 49 14H55"/>
+		<path stroke="#b383ff" d="M27 32C38 32 38 50 49 50H55"/>
+	</g>
+	<g transform="translate(80 150) scale(3.4)" stroke-width="4">
+		<circle cx="9" cy="32" r="5" fill="#0d1219" stroke="#ff7b3d"/>
+		<circle cx="27" cy="32" r="5" fill="#0d1219" stroke="#ff7b3d"/>
+		<circle cx="55" cy="14" r="5" fill="#0d1219" stroke="#5b95ff"/>
+		<circle cx="55" cy="50" r="5" fill="#0d1219" stroke="#b383ff"/>
+	</g>
+	<g font-family="Overpass, 'Segoe UI', system-ui, sans-serif" fill="#e4e9f0">
+		<text x="80" y="440" font-size="84" font-weight="700">react-<tspan fill="#ff7b3d">flow</tspan>-app</text>
+		<text x="80" y="510" font-size="36" fill="#94a1b3">Navigation as data: typed flows, a diagram,</text>
+		<text x="80" y="556" font-size="36" fill="#94a1b3">generated tests and analytics for React.</text>
+	</g>
+</svg>

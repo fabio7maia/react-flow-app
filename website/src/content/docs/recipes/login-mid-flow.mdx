@@ -1,0 +1,21 @@
+---
+title: Login in the middle of a flow
+description: Send anonymous users through the auth flow and bring them back with goto.exit().
+sidebar:
+    order: 1
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import { Code } from '@astrojs/starlight/components';
+import code from '../../../../snippets/login-mid-flow.ts?raw';
+
+A step that needs a signed-in user declares both targets in a `branch`: the next step, or `goto('auth', 'login')`. The auth flow ends
+with `goto.exit()`, which returns to the step that opened it, so the booking flow never knows how login works.
+
+The `samples` give the [generated tests](/guides/testing/) a payload for each target.
+
+<Code code={code} lang="ts" title="login-mid-flow.ts" />
+
+The auth flow itself (`examples/store/flows/auth.flow.ts`) is one step whose actions are `goto.exit()`.
+
+<Aside title="v2 equivalent">In v2 this was `fromFlow` and `backExit`.</Aside>

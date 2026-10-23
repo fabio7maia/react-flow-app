@@ -1,6 +1,19 @@
 {
 	"version": "0.2",
 	"language": "en,en-GB",
-	"words": ["entrypoint", "entrypoints", "gtag", "jiti", "linkStyle", "classDef", "popstate", "tsup", "vitest"],
+	"words": [
+		"wordmark",
+		"replayable",
+		"codemod",
+		"entrypoint",
+		"entrypoints",
+		"gtag",
+		"jiti",
+		"linkStyle",
+		"classDef",
+		"popstate",
+		"tsup",
+		"vitest"
+	],
 	"ignorePaths": ["node_modules/**", "dist/**", "coverage/**", "CHANGELOG.md", "**/flows.graph.json", "**/FLOWS.md"]
 }

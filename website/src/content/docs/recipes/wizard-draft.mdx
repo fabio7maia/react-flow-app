@@ -1,0 +1,19 @@
+---
+title: A wizard with a saved draft
+description: Save progress with an effect and clear it when the user leaves, with useFlowEvents.
+sidebar:
+    order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import { Code } from '@astrojs/starlight/components';
+import code from '../../../../snippets/wizard-draft.tsx?raw';
+
+`effect(fn)` runs a side effect for an action without navigating. Use it for what the screen reports on the way (saving a draft), and
+`useFlowEvents` for what has to react to navigation itself (dropping the draft on `flow:exit`).
+
+Render `DiscardDraftOnExit` as a child of the `FlowProvider`.
+
+<Code code={code} lang="tsx" title="wizard-draft.tsx" />
+
+<Aside title="v2 equivalent">In v2 an action that only had a side effect was a function without a return value.</Aside>

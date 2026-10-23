@@ -3,6 +3,10 @@ title: Analytics
 description: Page views, funnels and actions to GA4, Segment or your own tool.
 ---
 
+:::note[v2 equivalent]
+In v2 analytics was a `listen` callback that you wrote and filtered yourself.
+:::
+
 `react-flow-app/analytics` turns the [event contract](/guides/events/) into analytics calls. It is a Provider adapter:
 
 ```tsx

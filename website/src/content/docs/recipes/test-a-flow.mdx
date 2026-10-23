@@ -1,0 +1,19 @@
+---
+title: Test a flow in Vitest
+description: Drive the engine without rendering, and generate one test per reachable step.
+sidebar:
+    order: 7
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import { Code } from '@astrojs/starlight/components';
+import code from '../../../../snippets/test-a-flow.test.ts?raw';
+
+The engine has no DOM, so a flow test is plain Node: dispatch actions and read the snapshot. `getPaths` generates one test per reachable
+step. `engine.coverage()` lists the transitions no test walked, to write by hand.
+
+Generated tests cover the navigation map, not the UI: see [what they cover today](/guides/testing/#what-generated-tests-cover-today).
+
+<Code code={code} lang="ts" title="test-a-flow.test.ts" />
+
+<Aside title="v2 equivalent">In v2 testing a flow meant rendering the Provider.</Aside>

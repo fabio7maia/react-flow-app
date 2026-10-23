@@ -18,5 +18,5 @@
 			"react-flow-app/testing": ["./src/testing/index.ts"]
 		}
 	},
-	"include": ["src", "test", "examples", "stories", ".storybook", "tsup.config.ts", "vitest.config.ts"]
+	"include": ["website/snippets", "src", "test", "examples", "stories", ".storybook", "tsup.config.ts", "vitest.config.ts"]
 }

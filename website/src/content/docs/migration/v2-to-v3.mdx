@@ -187,6 +187,39 @@ dispatch('pay', { ok: true }); // typed payload
 
 </Steps>
 
+## Checklist per flow
+
+Copy this for each flow you migrate; each box is small and can be reviewed on its own.
+
+- [ ] The screens of the flow have a `*.screen.ts` with `defineScreen`, and the loader returns the module.
+- [ ] Actions that carry data have a `payload<T>()`.
+- [ ] The flow is a `defineFlow` with its steps, and `transitions` replaces every `f.step('x')({ … })`.
+- [ ] Every function that decided where to go is a `branch` listing all targets, with `samples`; side-effect-only ones are `effect`.
+- [ ] Links to other flows use `goto('flow', 'step')`, and `fromFlow`/`backExit` became `goto.exit()`.
+- [ ] The flow is in `createFlowApp([…])`, and `Register` is declared once.
+- [ ] URL, scroll and analytics are adapters of the Provider; listeners became `useFlowEvents` or an integration.
+- [ ] `npx react-flow-app check --app src/app.flow.ts` passes, and the graph snapshot and diagram are committed.
+- [ ] The flow has a test: at least the generated paths (see the [recipe](/recipes/test-a-flow/)).
+
+## FAQ
+
+**Can I have v2 and v3 in the same app?** Yes. Install v2 under an alias (see the note at the top) and migrate one flow at a time. Each
+Provider runs one version, so a flow is either all v2 or all v3, and the two do not share history or navigate to each other.
+
+**How long does a flow take?** It is mechanical: split the screens, write the flow, swap the Provider. We estimate an hour or two per flow
+(an estimate, not a measurement), most of it replacing deciding functions with `branch`.
+
+**What about `keepPreviousMounted`?** It is the same step option with the same behaviour. See [the recipe](/recipes/keep-list-state/).
+
+**What about templates with `StepRender`?** There is no `StepRender` or custom template in v3 yet: the screen is rendered first, then the
+Provider children. A layout around the screen goes in your own component, around or inside the `FlowProvider`, and
+`useFlowSelector` reads the current step if the layout depends on it.
+
+**What about `LoggerHelper`?** Log the events with an integration (`createFlowApp(flows, { integrations: [event => … ] })`) or
+`useFlowEvents('*', …)`. They carry more than v2's logger did, in a stable order.
+
+**Is there a codemod?** Not today. One could be written for the mechanical parts (screens and flow declarations); nothing is promised.
+
 ## Behaviour changes
 
 - **Actions without a transition** emit `action:unhandled`; v2 ignored them silently.

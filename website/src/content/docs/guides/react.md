@@ -3,6 +3,10 @@ title: React
 description: FlowProvider, the hooks, several flows on one page, and server rendering.
 ---
 
+:::note[v2 equivalent]
+v2's `<FlowProvider fm initialFlowName options listen />` is `<FlowProvider app initial adapters />`; `useFlow` has `canGoBack` instead of `hasPreviousStep()`.
+:::
+
 Everything React lives in `react-flow-app/react`.
 
 ## FlowProvider

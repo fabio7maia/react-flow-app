@@ -1,0 +1,17 @@
+---
+title: Deep link into the middle of a flow
+description: Open a step directly, with a history behind it so back works.
+sidebar:
+    order: 6
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import { Code } from '@astrojs/starlight/components';
+import code from '../../../../snippets/deep-link.tsx?raw';
+
+Only steps marked `entrypoint` open from a URL. For a step that you open from code, `initial.history` lists the steps behind it, so
+`back` goes there instead of having nowhere to go. See [URLs](/guides/urls/) and [history](/guides/history/).
+
+<Code code={code} lang="tsx" title="deep-link.tsx" />
+
+<Aside title="v2 equivalent">In v2 this was `initialFlowName`, `initialStepName` and `initialHistory`.</Aside>

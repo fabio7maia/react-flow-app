@@ -3,20 +3,25 @@ title: react-flow-app
 description: Event-based navigation for React. Flows declared as data, typed end to end, with a diagram, generated tests and analytics out of the box.
 template: splash
 hero:
+    image:
+        file: ../../assets/logo.svg
+        alt: react-flow-app
     tagline: Event-based navigation for React. Screens dispatch actions; flows declared as data decide where each action goes.
     actions:
         - text: Get started
           link: /getting-started/quick-start/
           icon: right-arrow
-        - text: Migrate from v2
-          link: /migration/v2-to-v3/
+        - text: Using v2?
+          link: /why-v3/
           variant: secondary
         - text: Try the demo
           link: /demo/
           variant: minimal
 ---
 
-import { Aside, Card, CardGrid } from '@astrojs/starlight/components';
+import { Aside, Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import demo from '../../assets/demo.png';
 
 <Aside type="caution" title="v3 is in alpha">
 	Install it with `npm install react-flow-app@alpha`. v2 stays on `latest` and keeps receiving fixes. See [releases](/reference/releases/)
@@ -56,3 +61,33 @@ type everything end to end.
 		The engine has no DOM. URL, browser back button and scroll restoration are optional adapters, and it runs in Node tests.
 	</Card>
 </CardGrid>
+
+## Using v2?
+
+<CardGrid>
+	<Card title="Same model" icon="approve-check">
+		Screens dispatch actions, flows decide where they go, and the history rules are the v2 ones. A parity suite runs the 41 v2 scenarios.
+	</Card>
+	<Card title="What you gain" icon="rocket">
+		Navigation as data (diagram, validation, generated tests), a stable event contract, and a browser back button that navigates.
+	</Card>
+	<Card title="Gradual migration" icon="right-arrow">
+		One flow at a time: each Provider runs one version, so v2 and v3 can live in the same app.
+	</Card>
+</CardGrid>
+
+<LinkCard title="Why v3" description="Before and after, what stays the same, the cost and the risks." href="/why-v3/" />
+<LinkCard title="Migration guide" description="Side by side, a checklist per flow and a FAQ." href="/migration/v2-to-v3/" />
+
+## See it
+
+<Image src={demo} alt="The example store next to the map of its flows" />
+
+[Open the interactive demo](/demo/): the real library, the event log, analytics, generated tests and a PR review.
+
+## Numbers you can check
+
+- **41 v2 scenarios** run against v3 as a parity suite, plus `keepPreviousMounted`.
+- **Chromium, Firefox and WebKit** run the end-to-end suite in CI, and the package is tested as a package (types, ESM, CJS and CLI).
+- **About 4 seconds** to type-check an app with 1000 screens, growing roughly linearly (`yarn bench`).
+- **Node 18 and 20**, with **React 18 and 19**, in the compatibility matrix.

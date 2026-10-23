@@ -1,0 +1,17 @@
+---
+title: List to detail without losing the list
+description: Keep the previous step mounted, hidden, so filters and scroll survive back.
+sidebar:
+    order: 5
+---
+
+import { Aside } from '@astrojs/starlight/components';
+import { Code } from '@astrojs/starlight/components';
+import code from '../../../../snippets/keep-previous-mounted.ts?raw';
+
+`keepPreviousMounted` keeps the previous step of the flow mounted (hidden) while this step is active: its state, refs and DOM stay, and
+`back` shows it again without remounting. Kept screens read their own URL params. See [history](/guides/history/).
+
+<Code code={code} lang="ts" title="keep-previous-mounted.ts" />
+
+<Aside title="v2 equivalent">Same option and same behaviour as v2.20.</Aside>

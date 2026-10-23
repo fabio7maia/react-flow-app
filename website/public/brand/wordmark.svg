@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 64" role="img" aria-label="react-flow-app">
+	<style>
+		.a { stroke: #1d63d8 } .b { stroke: #d9480f } .c { stroke: #7b35c9 } .s { fill: #fff } .t { fill: #16202c } .o { fill: #d9480f }
+		@media (prefers-color-scheme: dark) { .a { stroke: #5b95ff } .b { stroke: #ff7b3d } .c { stroke: #b383ff } .s { fill: #0d1219 } .t { fill: #e4e9f0 } .o { fill: #ff7b3d } }
+	</style>
+	<g fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+		<path class="b" d="M9 32H27"/>
+		<path class="a" d="M27 32C38 32 38 14 49 14H55"/>
+		<path class="c" d="M27 32C38 32 38 50 49 50H55"/>
+	</g>
+	<g stroke-width="4">
+		<circle class="b s" cx="9" cy="32" r="5"/>
+		<circle class="b s" cx="27" cy="32" r="5"/>
+		<circle class="a s" cx="55" cy="14" r="5"/>
+		<circle class="c s" cx="55" cy="50" r="5"/>
+	</g>
+	<text x="76" y="42" font-family="Overpass, 'Segoe UI', system-ui, sans-serif" font-size="30" font-weight="700" class="t">react-<tspan class="o">flow</tspan>-app</text>
+</svg>
