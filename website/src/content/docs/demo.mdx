@@ -1,0 +1,19 @@
+---
+title: Demo
+description: The example store running on the library, with the map of the flows, the event log, analytics, generated tests and a PR review.
+tableOfContents: false
+---
+
+The example store of the repository, running on the library itself, in a simulated browser. Browse it and watch, next to it:
+
+- the **map of the flows**, drawn from the graph, with the current step and the transitions walked;
+- the **events** of each navigation, grouped by `navigationId`;
+- what the **Segment adapter** sends;
+- the **generated tests** and their coverage, each one replayable on screen;
+- a **PR review**: the graph diff of a change, as `react-flow-app check --base` reports it;
+- the **source** of the current step.
+
+<iframe class="demo-frame" src="/demo-app/" title="react-flow-app demo"></iframe>
+
+[Open the demo in a full page](/demo-app/). The [Storybook](https://fabio7maia.github.io/react-flow-app/v3/) has one example per
+feature: basic flow, history options, branch, overlays, keeping screens mounted, and analytics.

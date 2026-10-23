@@ -1,0 +1,212 @@
+---
+title: Migrating from v2 to v3
+description: What changes, side by side, step by step, and what v3 does not have yet.
+---
+
+import { Aside, Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+v3 keeps the v2 model (screens dispatch actions, flows decide where they go) and the v2 history rules. It changes **how flows are
+declared**: as data, one file per screen and one per flow, typed through one `Register`.
+
+A parity suite runs the 41 v2 characterization scenarios, plus `keepPreviousMounted` from 2.20, against v3: most behave the same or the
+same through another API, and a few differ on purpose (see [behaviour changes](#behaviour-changes)).
+
+<Aside>
+	v2 keeps receiving fixes on the `latest` npm tag. To migrate gradually, install v2 under an alias (`npm install
+	react-flow-app-v2@npm:react-flow-app@2`) and move one flow at a time: each Provider runs one version.
+</Aside>
+
+## Side by side
+
+### Screens
+
+<Tabs>
+<TabItem label="v2">
+```tsx
+// screens.ts: every screen in one object
+export const screens = {
+	payment: {
+		actions: ['pay', 'cancel'],
+		loader: () => React.lazy(() => import('./Payment')),
+	},
+} as const;
+```
+</TabItem>
+<TabItem label="v3">
+```ts
+// screens/payment/payment.screen.ts: one file per screen
+export const paymentScreen = defineScreen({
+	name: 'payment',
+	actions: { pay: payload<{ ok: boolean }>(), cancel: null },
+	meta: { title: 'Payment' },
+	loader: () => import('./Payment'),
+});
+```
+</TabItem>
+</Tabs>
+
+The loader now returns the module, not a `React.lazy` component. Payload types are new.
+
+### Flows and transitions
+
+<Tabs>
+<TabItem label="v2">
+```ts
+const fm = new FlowManager(screens, anotherObjects);
+
+const checkout = fm.flow({ name: 'checkout', baseUrl: 'checkout' }).steps({
+cart: { initialStep: true },
+payment: { url: 'pay' },
+success: { clearHistory: true },
+failure: { ignoreHistory: true },
+});
+
+checkout.step('payment')({
+pay: () => (lastResult.ok ? checkout.navigateTo('success') : checkout.navigateTo('failure')),
+cancel: 'cart',
+});
+checkout.step('success')({ finish: () => home.navigateTo('dashboard') });
+
+````
+</TabItem>
+<TabItem label="v3">
+```ts
+export const checkoutFlow = defineFlow({
+	name: 'checkout',
+	baseUrl: 'checkout',
+	steps: {
+		cart: { screen: cartScreen, initial: true },
+		payment: { screen: paymentScreen, url: 'pay/:orderId' },
+		success: { screen: successScreen, clearHistory: true },
+		failure: { screen: failureScreen, ignoreHistory: true },
+	},
+});
+
+checkoutFlow.transitions({
+	payment: {
+		pay: branch(['success', 'failure'], (_, p) => (p.ok ? 'success' : 'failure')),
+		cancel: 'cart',
+	},
+	success: { finish: goto('home', 'dashboard') },
+});
+````
+
+</TabItem>
+</Tabs>
+
+### App and Provider
+
+<Tabs>
+<TabItem label="v2">
+```tsx
+<FlowProvider fm={fm} initialFlowName="home" options={{ withUrl: true, animation: true }} listen={input => track(input)} />
+```
+</TabItem>
+<TabItem label="v3">
+```tsx
+export const flowApp = createFlowApp([homeFlow, checkoutFlow, authFlow]);
+
+declare module 'react-flow-app' {
+interface Register {
+app: typeof flowApp;
+meta: { title: string };
+}
+}
+
+<FlowProvider
+	app={flowApp}
+	initial={{ flow: 'home' }}
+	adapters={[browserHistory(), scrollRestoration(), segment()]}
+	fallback={<Spinner />}
+/>;
+```
+</TabItem>
+</Tabs>
+
+### In a screen
+
+<Tabs>
+<TabItem label="v2">
+```tsx
+const { dispatch, back, hasPreviousStep, getHistory } = useFlow(screens.payment);
+dispatch('pay', { ok: true });
+```
+</TabItem>
+<TabItem label="v3">
+```tsx
+const { dispatch, back, canGoBack } = useFlow(paymentScreen);
+const history = useFlowSelector(snapshot => snapshot.history);
+dispatch('pay', { ok: true }); // typed payload
+```
+</TabItem>
+</Tabs>
+
+## Reference table
+
+| v2                                                                          | v3                                                                   |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `screens = { name: { actions, loader } }`                                   | `defineScreen({ name, actions, meta, loader })`, one file per screen |
+| `new FlowManager(screens, anotherObjects)`                                  | `createFlowApp([flows])` and `Register`                              |
+| `fm.flow({ name, baseUrl }).steps({ … })`                                   | `defineFlow({ name, baseUrl, steps })`                               |
+| `f.step('a')({ next: 'b' })`                                                | `flow.transitions({ a: { next: 'b' } })`                             |
+| An action returning `otherFlow.navigateTo('x')`                             | `goto('otherFlow', 'x')`                                             |
+| `otherFlow.navigateTo()` without a step                                     | `goto('otherFlow')` (resumes the flow)                               |
+| An action as a function that decides                                        | `branch([targets], (ctx, payload) => …)`                             |
+| An action as a function without a return value                              | `effect((ctx, payload) => …)`                                        |
+| `fromFlow` / `backExit`                                                     | `goto.exit()` and the `flow:exit` event                              |
+| `anotherObjects` + `f.anotherObject('modal')({ … })`                        | `overlays: { modal }` + `flow.transitions({ modal: { … } })`         |
+| `initialStep`, `url`, `ignoreHistory`, `clearHistory`, `allowCyclicHistory` | `initial`, `url` (with typed `:params`), the same options            |
+| `keepPreviousMounted` (2.20)                                                | Same option, same behaviour                                          |
+| `initialFlowName`, `initialStepName`, `initialHistory`                      | `initial={{ flow, step, history }}`                                  |
+| `options.withUrl`, `scrollRestoration`                                      | `adapters={[browserHistory(), scrollRestoration()]}`                 |
+| `hasPreviousStep()`                                                         | `canGoBack`                                                          |
+| `getHistory()`, `getCurrentStep()`                                          | `useFlowSelector(snapshot => …)`                                     |
+| `useFlowManager().start(…)`, `clearAllHistory()`                            | `useFlowEngine().start(flow, step, options)`, `.clearHistory()`      |
+| `listen`, `f.listen({ type })`                                              | `useFlowEvents(type, cb)`, `engine.on(type, cb)`, app `integrations` |
+| `onFlowMount` / `onFlowUnmount`                                             | `flow:start` / `flow:exit` events                                    |
+| Events `mount`, `dispatch`, `back`, `backExit`                              | `step:enter`, `action`, `step:leave` (reason `back`), `flow:exit`    |
+
+## Step by step
+
+<Steps>
+
+1. **Split the screens.** Move each entry of the v2 `screens` object to `screens/<name>/<name>.screen.ts` with `defineScreen`. Make the
+   loader return the module (`() => import('./Payment')`). Add payload types where actions carry data.
+
+2. **Write one flow per file.** `defineFlow` with the steps, then `flow.transitions({ … })` with what used to be
+   `f.step('x')({ … })`. Replace functions with `goto`, `branch` or `effect`; list every possible target in `branch`, and add `samples`.
+
+3. **Compose and register.** `createFlowApp([…])` in `app.flow.ts`, plus the `Register` augmentation.
+
+4. **Swap the Provider.** `FlowProvider` comes from `react-flow-app/react`. URLs and scroll restoration become adapters.
+
+5. **Move listeners to events.** Analytics becomes `segment()` or `ga4()`; anything else becomes `useFlowEvents` or an integration.
+
+6. **Check the result.** `npx react-flow-app check --app src/app.flow.ts --write` validates the flows and writes the diagram. Commit
+   both files, and add the check to CI.
+
+</Steps>
+
+## Behaviour changes
+
+- **Actions without a transition** emit `action:unhandled`; v2 ignored them silently.
+- **`back()` without history** emits `back:empty`; v2 did nothing.
+- **Overlays** work without extra configuration; a v2 `anotherObject` without a `name` was ignored, which was a bug.
+- **The browser back button navigates the flow.** v3 pushes a history entry per step; v2 only replaced the URL.
+- After a cycle without `allowCyclicHistory`, v3 keeps an empty history where v2 kept the current step in it. Back does not navigate in
+  either version.
+- Events always come in the order `action → step:leave → step:enter`, with one `navigationId` per navigation.
+- A transition without `params` keeps the URL params of the step's last visit.
+
+## Not in v3 yet
+
+These v2 features have no v3 equivalent in this alpha; each one is tracked for a decision before the beta.
+
+- **View Transitions** (2.17): v2 wraps every navigation in `document.startViewTransition`.
+- **`StepRender` and custom templates**: in v3 the screen is always rendered first, followed by the Provider children.
+- **`ErrorBoundary` / `UnexpectedError`**: wrap the `FlowProvider` in your own error boundary.
+- **`animation`** (built-in loading placeholder): pass your own `fallback`.
+- **Navigation options on a transition** (`navigateTo('x', { clearHistory, history })`): use the `clearHistory` step option, or
+  `useFlowEngine().start(flow, step, { clearHistory, history })`.
+- **`clearAllHistory(flowName)`** for a single flow, `getLastAction()` and `refresh()`.
+- **`LoggerHelper`**: log the events with an integration.

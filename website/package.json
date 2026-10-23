@@ -1,0 +1,15 @@
+{
+	"name": "react-flow-app-website",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview"
+	},
+	"dependencies": {
+		"@astrojs/starlight": "^0.37.0",
+		"astro": "^5.18.0",
+		"sharp": "^0.34.0"
+	}
+}

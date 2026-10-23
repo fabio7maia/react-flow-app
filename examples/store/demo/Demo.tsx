@@ -180,7 +180,7 @@ export function Demo() {
 		<div className="page">
 			<header className="masthead">
 				<div>
-					<p className="eyebrow">react-flow-app · API v3 · abordagem A</p>
+					<p className="eyebrow">react-flow-app · v3 demo</p>
 					<h1>Inside the Example Store</h1>
 					<p className="lede">
 						The example store running on this page: the engine, the browser adapter, analytics and the graph are the library

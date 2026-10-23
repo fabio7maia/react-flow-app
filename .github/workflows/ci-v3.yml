@@ -53,6 +53,8 @@ jobs:
               run: yarn smoke
             - name: Storybook
               run: yarn storybook:build --quiet
+            - name: Docs site
+              run: yarn --cwd website install --frozen-lockfile && yarn docs:build
     compat:
         name: Compatibility (Node ${{ matrix.node }}, React ${{ matrix.react }})
         runs-on: ubuntu-latest

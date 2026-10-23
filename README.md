@@ -236,6 +236,11 @@ npx react-flow-app check --base origin/main --report flows-report.md
 The graph snapshot and the Mermaid diagram live in the repo, so every PR that changes navigation shows it in the diff. With `--base`, the
 check writes a summary of new, removed and changed steps and transitions, with a highlighted diagram, for the PR.
 
+## Documentation
+
+The documentation site lives in [`website/`](./website) (Astro Starlight): guides, the migration guide from v2, the API reference and
+the demo. `yarn docs:dev` runs it locally; it deploys to Vercel (`vercel.json`).
+
 ## Examples, Storybook and demo
 
 [`examples/store`](./examples/store) is a small store (three flows) used by the tests, the e2e suite and the demo.
