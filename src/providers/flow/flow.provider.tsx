@@ -1,4 +1,5 @@
 import React from 'react';
+import { flushSync } from 'react-dom';
 import { useLoggerFlow } from '../../hooks';
 import { FlowManager } from '../../models';
 import { Flow } from '../../models/flow';
@@ -20,13 +21,13 @@ export const flowManagerContext = React.createContext<TFlowManagerContext>({
 		withUrl: false,
 	},
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	start: (flowName: string, stepName?: string, options?: TFlowActionOptions): void => {},
+	start: (flowName: string, stepName?: string, options?: TFlowActionOptions): void => { },
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	back: (): void => {},
+	back: (): void => { },
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	dispatch: (screen: TScreen, name: string, payload?: Record<string, any>): void => {},
+	dispatch: (screen: TScreen, name: string, payload?: Record<string, any>): void => { },
 	// eslint-disable-next-line @typescript-eslint/no-empty-function
-	refresh: (): void => {},
+	refresh: (): void => { },
 });
 
 export type FlowProviderLifeCycleHandlers<TFlows> = Partial<Record<keyof TFlows, () => void>>;
@@ -62,7 +63,7 @@ export const FlowProvider = <TFlows extends TDictionary>({
 	listen,
 	initialHistory,
 }: // eslint-disable-next-line sonarjs/cognitive-complexity
-FlowProviderProps<TFlows>) => {
+	FlowProviderProps<TFlows>) => {
 	const [_, setForceUpdate] = React.useState(0);
 	const currentFlowName = React.useRef<string>(initialFlowName as string);
 	const flow = React.useRef<Flow>(fm.getFlow(currentFlowName.current as string));
@@ -88,12 +89,14 @@ FlowProviderProps<TFlows>) => {
 	const forceUpdate = React.useCallback(() => {
 		flow.current = fm.getFlow(currentFlowName.current);
 
-		if (document.startViewTransition) {
-			document.startViewTransition(() => {
-				setForceUpdate((val) => val + 1);
-			});
+		const update = () => setForceUpdate((v) => v + 1);
+		if (animation && !document.hidden && document.startViewTransition) {
+			const transition = document.startViewTransition(() => flushSync(update));
+			const timer = setTimeout(() => transition.skipTransition(), 1000);
+			const clear = () => clearTimeout(timer);
+			transition.finished.then(clear, clear);
 		} else {
-			setForceUpdate((val) => val + 1);
+			update();
 		}
 	}, [fm]);
 
