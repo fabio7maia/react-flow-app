@@ -1,3 +1,10 @@
+## [2.20.2](https://github.com/fabio7maia/react-flow-app/compare/v2.20.1...v2.20.2) (2026-11-17)
+
+
+### Bug Fixes
+
+* update repository URL format in package.json ([9ad8234](https://github.com/fabio7maia/react-flow-app/commit/9ad8234e88140676faae5741b40269be1f90fd02))
+
 ## [2.20.1](https://github.com/fabio7maia/react-flow-app/compare/v2.20.0...v2.20.1) (2026-11-17)
 
 
