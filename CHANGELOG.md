@@ -1,3 +1,10 @@
+## [2.20.1](https://github.com/fabio7maia/react-flow-app/compare/v2.20.0...v2.20.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* resolve infinite animation issue by implementing flushSync and view transition handling ([8f7d517](https://github.com/fabio7maia/react-flow-app/commit/8f7d5170df57c0b9a0b50678f2b894120a12edbf))
+
 # [2.20.0](https://github.com/fabio7maia/react-flow-app/compare/v2.19.0...v2.20.0) (2026-08-20)
 
 
